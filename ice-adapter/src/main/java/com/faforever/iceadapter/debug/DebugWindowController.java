@@ -8,10 +8,12 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.util.Callback;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
+@NoArgsConstructor
 public class DebugWindowController {
     public static DebugWindowController INSTANCE;
 
@@ -45,8 +47,6 @@ public class DebugWindowController {
     public TableColumn remoteCandColumn;
 
     public Button killAdapterButton;
-
-    public DebugWindowController() {}
 
     public void onKillAdapterClicked(ActionEvent actionEvent) {
         IceAdapter.close(337);
@@ -90,18 +90,27 @@ public class DebugWindowController {
                 return new TableCell<>() {
                     final Button btn = new Button("reconnect");
 
+                    {
+                        btn.setOnAction(e -> {
+                            DebugWindow.DebugPeer peer = getTableRow().getItem();
+                            reconnectToPeer(peer);
+                        });
+                    }
+
                     @Override
                     protected void updateItem(DebugWindow.DebugPeer item, boolean empty) {
                         super.updateItem(item, empty);
                         setText(null);
                         if (empty) {
                             setGraphic(null);
-                        } else {
-                            btn.setOnAction(event -> {
-                                DebugWindow.DebugPeer peer = getTableRow().getItem();
-                                reconnectToPeer(peer);
-                            });
+                            return;
+                        }
+
+                        DebugWindow.DebugPeer peer = getTableView().getItems().get(getIndex());
+                        if (peer.isLocalOffer()) {
                             setGraphic(btn);
+                        } else {
+                            setGraphic(null);
                         }
                     }
                 };
