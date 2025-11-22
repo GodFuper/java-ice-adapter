@@ -11,15 +11,15 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.nbarraille.jjsonrpc.JJsonPeer;
 import java.net.ConnectException;
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
+
+import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Candidate;
@@ -29,102 +29,138 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 @Slf4j
+@EqualsAndHashCode
 public class TelemetryDebugger implements Debugger, AutoCloseable {
-    private final WebSocketClient websocketClient;
+    private static final int MAX_RECONNECT_ATTEMPTS = 2;
+    private static final Duration RECONNECT_BASE_DELAY = Duration.ofSeconds(1);
+    private static final Duration MAX_RECONNECT_DELAY = Duration.ofSeconds(30);
+
+    private final URI websocketUri;
+    private volatile WebSocketClient websocketClient;
     private final ObjectMapper objectMapper;
 
     private final Map<Integer, RateLimiter> peerRateLimiter = new ConcurrentHashMap<>();
-    private final BlockingQueue<OutgoingMessageV1> messageQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<OutgoingMessageV1> messageQueue = new LinkedBlockingQueue<>(1000); // Ограничение очереди
 
     private final Thread sendingLoopThread;
+
+    private volatile boolean shouldRun = true; // Для контроля цикла
+    private int reconnectAttempt = 0; // Счётчик попыток переподключения
 
     public TelemetryDebugger(String telemetryServer, int gameId, int playerId) {
         Debug.register(this);
 
-        URI uri = URI.create("%s/adapter/v1/game/%d/player/%d".formatted(telemetryServer, gameId, playerId));
+        websocketUri = URI.create("%s/adapter/v1/game/%d/player/%d".formatted(telemetryServer, gameId, playerId));
         log.info(
                 "Open the telemetry ui via {}/app.html?gameId={}&playerId={}",
                 telemetryServer.replaceFirst("ws", "http"),
                 gameId,
                 playerId);
 
-        websocketClient = new WebSocketClient(uri) {
+        // Создаём первый клиент
+        createNewWebSocketClient();
+
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        sendingLoopThread = Thread.ofVirtual().name("telemetry-sending-loop").start(this::sendingLoop);
+    }
+
+    private void createNewWebSocketClient() {
+        this.websocketClient = new WebSocketClient(websocketUri) {
             @Override
             public void onOpen(ServerHandshake handshakedata) {
                 log.info("Telemetry websocket opened");
+                reconnectAttempt = 0; // Сброс счётчика при успехе
             }
 
             @Override
             public void onMessage(String message) {
-                log.info("Telemetry websocket message: {}", message);
+                log.debug("Telemetry websocket message: {}", message);
             }
 
             @Override
             public void onClose(int code, String reason, boolean remote) {
-                log.info("Telemetry websocket closed (reason: {})", reason);
+                log.info("Telemetry websocket closed (code: {}, reason: {})", code, reason);
+                // Клиент закрыт — следующая попытка должна создать новый
             }
 
             @Override
             public void onError(Exception ex) {
                 if (ex instanceof ConnectException) {
-                    log.error("Error connecting to Telemetry websocket", ex);
-                    Debug.remove(TelemetryDebugger.this);
+                    log.warn("Failed to connect to telemetry server", ex);
                 } else {
-                    log.error("Error in Telemetry websocket", ex);
+                    log.error("Telemetry websocket error", ex);
                 }
             }
         };
-
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
-        sendingLoopThread = Thread.ofVirtual().name("sendingLoop").start(this::sendingLoop);
     }
 
     private void sendMessage(OutgoingMessageV1 message) {
-        try {
-            messageQueue.put(message);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        if (!messageQueue.offer(message)) {
+            log.warn("Telemetry message queue is full. Dropping message: {}", message.getType());
         }
     }
 
     @SneakyThrows
     private void sendingLoop() {
-        while (!Thread.currentThread().isInterrupted()) {
-            var message = messageQueue.take();
+        while (shouldRun && !Thread.currentThread().isInterrupted()) {
+            OutgoingMessageV1 message = messageQueue.poll(1, TimeUnit.SECONDS);
+            if (message == null) continue;
+
+            if (!ensureConnected()) {
+                log.warn("Failed to send telemetry message (no connection): {}", message.getType());
+                continue;
+            }
+
             try {
                 String json = objectMapper.writeValueAsString(message);
-
-                if (websocketClient.isClosed()) {
-                    log.warn("Telemetry websocket is closed");
-                    websocketClient.reconnectBlocking();
-                    log.info("Telemetry websocket reconnected");
-                }
-
-                log.trace("Sending telemetry message: {}", json);
                 websocketClient.send(json);
-            } catch (InterruptedException e) {
-                log.info("Sending loop interrupted");
-                return;
+                log.trace("Sent telemetry message: {}", json);
             } catch (Exception e) {
-                log.error("Error on sending message object: {}", message, e);
+                log.error("Failed to serialize or send telemetry message: {}", message, e);
             }
         }
     }
 
+    private boolean ensureConnected() throws InterruptedException {
+        while (shouldRun && !websocketClient.isOpen()) {
+            if (!shouldRun) return false;
+
+            // Экспоненциальная задержка с jitter
+            Duration delay = RECONNECT_BASE_DELAY.multipliedBy((long) Math.pow(2, Math.min(reconnectAttempt, 5)));
+            delay = delay.plusMillis(ThreadLocalRandom.current().nextLong(0, 1000));
+            delay = Duration.ofMillis(Math.min(delay.toMillis(), MAX_RECONNECT_DELAY.toMillis()));
+
+            log.info("Attempting to connect to telemetry server... Attempt {}/{}", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
+
+            Thread.sleep(delay.toMillis());
+
+            try {
+                createNewWebSocketClient(); // Создаём новый клиент
+                if (websocketClient.connectBlocking()) {
+                    return true;
+                } else {
+                    log.warn("Failed to connect to telemetry websocket (attempt {}/{})", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
+                }
+            } catch (Exception e) {
+                log.warn("Exception during connect attempt {}/{}", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS, e);
+            }
+
+            reconnectAttempt++;
+
+            if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+                log.error("Max reconnect attempts reached. Stopping telemetry debugger.");
+                shouldRun = false;
+                Debug.remove(this);
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public void startupComplete() {
-        try {
-            if (!websocketClient.connectBlocking()) {
-                Debug.remove(this);
-                return;
-            }
-        } catch (InterruptedException e) {
-            Debug.remove(this);
-            log.error("Failed to connect to telemetry websocket", e);
-        }
-
         sendMessage(new RegisterAsPeer(
                 UUID.randomUUID(), "java-ice-adapter/" + IceAdapter.getVersion(), IceAdapter.getLogin()));
     }
@@ -220,6 +256,15 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     @Override
     public void close() {
+        shouldRun = false;
+        if (websocketClient != null) {
+            websocketClient.close();
+        }
         sendingLoopThread.interrupt();
+        try {
+            sendingLoopThread.join(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

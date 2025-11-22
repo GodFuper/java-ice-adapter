@@ -10,4 +10,9 @@ public record UpdatePeerState(
         IceState iceState,
         CandidateType localCandidate,
         CandidateType remoteCandidate)
-        implements OutgoingMessageV1 {}
+        implements OutgoingMessageV1 {
+    @Override
+    public String getType() {
+        return getClass().getSimpleName();
+    }
+}

@@ -24,6 +24,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Candidate;
@@ -33,6 +34,7 @@ import org.ice4j.ice.Component;
 import org.jetbrains.annotations.NotNull;
 
 @Slf4j
+@EqualsAndHashCode(callSuper = false)
 public class DebugWindow extends Application implements Debugger {
     public static CompletableFuture<DebugWindow> INSTANCE = new CompletableFuture<>();
 

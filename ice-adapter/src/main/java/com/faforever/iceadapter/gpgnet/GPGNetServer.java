@@ -6,17 +6,18 @@ import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.NetworkToolbox;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -52,31 +53,20 @@ public class GPGNetServer implements AutoCloseable {
         INSTANCE = this;
         this.rpcService = rpcService;
 
-        if (gpgnetPort == 0) {
-            this.gpgnetPort = NetworkToolbox.findFreeTCPPort(20000, 65536);
-            log.info("Generated GPGNET_PORT: {}", this.gpgnetPort);
-        } else {
-            this.gpgnetPort = gpgnetPort;
-            log.info("Using GPGNET_PORT: {}", this.gpgnetPort);
-        }
+        // Автоматический выбор портов
+        this.gpgnetPort = gpgnetPort != 0 ? gpgnetPort : NetworkToolbox.findFreeTCPPort(20000, 65536);
+        this.lobbyPort = lobbyPort != 0 ? lobbyPort : NetworkToolbox.findFreeUDPPort(20000, 65536);
 
-        if (lobbyPort == 0) {
-            this.lobbyPort = NetworkToolbox.findFreeUDPPort(20000, 65536);
-            log.info("Generated LOBBY_PORT: {}", this.lobbyPort);
-        } else {
-            this.lobbyPort = lobbyPort;
-            log.info("Using LOBBY_PORT: {}", this.lobbyPort);
-        }
+        log.info("Using GPGNET_PORT: {}, LOBBY_PORT: {}", this.gpgnetPort, this.lobbyPort);
 
         try {
-            this.serverSocket = new ServerSocket(gpgnetPort);
+            this.serverSocket = new ServerSocket(this.gpgnetPort);
+            CompletableFuture.runAsync(this::acceptThread, IceAdapter.getExecutor());
+            log.info("GPGNetServer started");
         } catch (IOException e) {
-            log.error("Couldn't start GPGNetServer", e);
+            log.error("Failed to start GPGNetServer on port {}", this.gpgnetPort, e);
             IceAdapter.close(-1);
         }
-
-        CompletableFuture.runAsync(this::acceptThread, IceAdapter.getExecutor());
-        log.info("GPGNetServer started");
     }
 
     /**
@@ -85,7 +75,6 @@ public class GPGNetServer implements AutoCloseable {
     @Getter
     public class GPGNetClient {
         private volatile GameState gameState = GameState.NONE;
-
         private final Socket socket;
         private final Thread listenerThread;
         private volatile boolean stopping = false;
@@ -95,26 +84,23 @@ public class GPGNetServer implements AutoCloseable {
 
         private GPGNetClient(Socket socket) {
             this.socket = socket;
-
             try {
                 gpgnetOut = new FaDataOutputStream(socket.getOutputStream());
             } catch (IOException e) {
-                log.error("Could not create GPGNet output steam to FA", e);
+                log.error("Failed to create output stream to FA", e);
             }
-            listenerThread = Thread.startVirtualThread(this::listenerThread);
 
+            listenerThread = Thread.startVirtualThread(this::listenerThread);
             rpcService.onConnectionStateChanged("Connected");
-            log.info("GPGNetClient has connected");
+            log.info("GPGNetClient connected");
         }
 
-        /**
-         * Process an incoming message from FA
-         */
         private void processGpgnetMessage(String command, List<Object> args) {
             switch (command) {
                 case "GameState" -> {
-                    gameState = GameState.getByName((String) args.get(0));
-                    log.debug("New GameState: {}", gameState.getName());
+                    String stateName = (String) args.get(0);
+                    gameState = GameState.getByName(stateName);
+                    log.debug("GameState changed: {}", gameState.getName());
 
                     if (gameState == GameState.IDLE) {
                         sendGpgnetMessage(
@@ -123,7 +109,8 @@ public class GPGNetServer implements AutoCloseable {
                                 GPGNetServer.getLobbyPort(),
                                 IceAdapter.getLogin(),
                                 IceAdapter.getId(),
-                                1);
+                                1
+                        );
                     } else if (gameState == GameState.LOBBY) {
                         lobbyFuture.complete(this);
                     }
@@ -131,20 +118,17 @@ public class GPGNetServer implements AutoCloseable {
                     debug().gameStateChanged();
                 }
                 case "GameEnded" -> {
-                    if (IceAdapter.getGameSession() != null) {
-                        IceAdapter.getGameSession().setGameEnded(true);
-                        log.info("GameEnded received, stopping reconnects...");
+                    var session = IceAdapter.getGameSession();
+                    if (session != null) {
+                        session.setGameEnded(true);
+                        log.info("GameEnded received, stopping reconnects");
                     }
                 }
                 default -> {
                     // No need to log, as we are not processing all messages but just forward them via RPC
                 }
             }
-
-            log.info(
-                    "Received GPGNet message: {} {}",
-                    command,
-                    args.stream().map(Object::toString).collect(Collectors.joining(" ")));
+            log.debug("Received GPGNet message: {} {}", command, formatArgs(args));
             rpcService.onGpgNetMessageReceived(command, args);
         }
 
@@ -153,60 +137,58 @@ public class GPGNetServer implements AutoCloseable {
          */
         public void sendGpgnetMessage(String command, Object... args) {
             LockUtil.executeWithLock(lockStream, () -> {
+                if (gpgnetOut == null) {
+                    return;
+                }
                 try {
-
                     gpgnetOut.writeMessage(command, args);
-                    log.info(
-                            "Sent GPGNet message: {} {}",
-                            command,
-                            Arrays.stream(args).map(Object::toString).collect(Collectors.joining(" ")));
+                    log.info("Sent GPGNet message: {} {}", command, formatArgs(args));
                 } catch (IOException e) {
-                    log.error("Error while communicating with FA (output), assuming shutdown", e);
-                    GPGNetServer.this.onGpgnetConnectionLost();
+                    log.error("Error sending to FA", e);
+                    onGpgnetConnectionLost();
                 }
             });
         }
 
-        /**
-         * Listens for incoming messages from FA
-         */
         private void listenerThread() {
-            log.debug("Listening for GPG messages");
-            boolean triggerActive =
-                    false; // Prevents a race condition between this thread and the thread that has created this object
-            // and is now going to set GPGNetServer.currentClient
-            try (var inputStream = socket.getInputStream();
-                    var gpgnetIn = new FaDataInputStream(inputStream)) {
-                while (!Thread.currentThread().isInterrupted()
-                        && (!triggerActive || currentClient == this)
-                        && !stopping) {
+            log.debug("Starting GPGNet input listener");
+            boolean triggerActive = false;
+
+            try (var gpgnetIn = new FaDataInputStream(socket.getInputStream())) {
+                while (!Thread.currentThread().isInterrupted() && !stopping && (triggerActive || currentClient == this)) {
                     String command = gpgnetIn.readString();
                     List<Object> args = gpgnetIn.readChunks();
 
                     processGpgnetMessage(command, args);
 
-                    if (!triggerActive && currentClient != null) {
-                        triggerActive =
-                                true; // From now on we will check GPGNetServer.currentClient to see if we should stop
+                    if (!triggerActive && currentClient == this) {
+                        triggerActive = true;
                     }
                 }
             } catch (IOException e) {
-                log.error("Error while communicating with FA (input), assuming shutdown", e);
+                if (!(e instanceof SocketException && e.getMessage().contains("Socket closed"))) {
+                    log.error("GPGNet input error", e);
+                } else {
+                    log.error("GPGNet error", e);
+                }
+            } finally {
+                log.debug("GPGNet listener stopped");
                 GPGNetServer.this.onGpgnetConnectionLost();
             }
-            log.debug("No longer listening for GPGPNET from FA");
         }
 
         public void close() {
+            if (stopping) return;
             stopping = true;
-            this.listenerThread.interrupt();
-            log.debug("Closing GPGNetClient");
 
+            listenerThread.interrupt();
             try {
                 socket.close();
             } catch (IOException e) {
-                log.error("Error while closing GPGNetClient socket", e);
+                log.warn("Error closing GPGNetClient socket", e);
             }
+
+            log.debug("GPGNetClient closed");
         }
     }
 
@@ -219,68 +201,70 @@ public class GPGNetServer implements AutoCloseable {
     private void onGpgnetConnectionLost() {
         log.info("GPGNet connection lost");
         LockUtil.executeWithLock(lockSocket, () -> {
-            if (currentClient != null) {
-                currentClient.close();
-                currentClient = null;
-
-                if (clientFuture.isDone()) {
-                    clientFuture = new CompletableFuture<>();
-                }
-
-                rpcService.onConnectionStateChanged("Disconnected");
-
-                IceAdapter.onFAShutdown();
+            if (currentClient == null) {
+                return;
             }
+
+            currentClient = null;
+            if (clientFuture.isDone()) {
+                clientFuture = new CompletableFuture<>();
+            }
+
+            rpcService.onConnectionStateChanged("Disconnected");
+            debug().gpgnetConnectedDisconnected();
         });
-        debug().gpgnetConnectedDisconnected();
     }
 
     /**
      * Listens for incoming connections from a game instance
      */
     private void acceptThread() {
+        log.info("GPGNetServer accept loop started");
         while (!Thread.currentThread().isInterrupted()) {
-            log.info("Listening for incoming connections from game");
             try {
-                // The socket declaration must not be moved into a try-with-resources block, as the socket must not be
-                // closed. It is passed into the GPGNetClient.
                 Socket socket = serverSocket.accept();
+                log.debug("New connection from FA detected");
 
                 LockUtil.executeWithLock(lockSocket, () -> {
                     if (currentClient != null) {
-                        onGpgnetConnectionLost();
+                        log.info("Replacing existing GPGNetClient");
+                        currentClient.close();
                     }
 
                     currentClient = new GPGNetClient(socket);
                     clientFuture.complete(currentClient);
-
                     debug().gpgnetConnectedDisconnected();
                 });
             } catch (SocketException e) {
-                log.error("Game thread socket crashed", e);
-                // TODO: Clarify
-                // If we return here, why do we have the code in a while loop?
-                // We could also not return and try to reconnect?
-                return;
+                if (!serverSocket.isClosed()) {
+                    log.error("Unexpected socket exception in accept loop", e);
+                }
+                break; // Сервер закрыт — выходим
             } catch (IOException e) {
-                log.error("Could not listen on socket", e);
+                if (!Thread.currentThread().isInterrupted()) {
+                    log.error("IO error in accept loop", e);
+                }
             }
         }
+        log.info("GPGNetServer accept loop stopped");
     }
 
     /**
      * @return whether the game is connected via GPGNET
      */
     public static boolean isConnected() {
-        return INSTANCE.currentClient != null;
+        return INSTANCE != null && INSTANCE.currentClient != null;
     }
+
 
     public static String getGameStateString() {
         return getGameState().map(GameState::getName).orElse("");
     }
 
     public static Optional<GameState> getGameState() {
-        return Optional.ofNullable(INSTANCE.currentClient).map(GPGNetClient::getGameState);
+        return Optional.ofNullable(INSTANCE)
+                .map(s -> s.currentClient)
+                .map(GPGNetClient::getGameState);
     }
 
     public static int getGpgnetPort() {
@@ -294,20 +278,31 @@ public class GPGNetServer implements AutoCloseable {
     /**
      * Stops the GPGNetServer and thereby the connection to a currently connected client
      */
+    @Override
     public void close() {
-        if (currentClient != null) {
-            currentClient.close();
-            currentClient = null;
-            clientFuture = new CompletableFuture<>();
-        }
-
-        if (serverSocket != null) {
-            try {
-                serverSocket.close();
-            } catch (IOException e) {
-                log.error("Could not close gpgnet server socket", e);
+        log.info("Shutting down GPGNetServer");
+        LockUtil.executeWithLock(lockSocket, () -> {
+            if (currentClient != null) {
+                currentClient.close();
+                currentClient = null;
+                clientFuture = new CompletableFuture<>();
             }
-        }
+
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                try {
+                    serverSocket.close();
+                } catch (IOException e) {
+                    log.error("Failed to close server socket", e);
+                }
+            }
+        });
         log.info("GPGNetServer stopped");
+    }
+
+    // Утилита: форматирует аргументы в строку
+    private static String formatArgs(Object... args) {
+        return Stream.of(args)
+                .map(arg -> arg instanceof Double d ? d.intValue() + "" : String.valueOf(arg))
+                .collect(java.util.stream.Collectors.joining(" "));
     }
 }
