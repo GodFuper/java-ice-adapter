@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * ONLY THE OFFERING ADAPTER of a connection will send echos and reoffer.
  */
 @Slf4j
+@RequiredArgsConstructor
 public class PeerConnectivityCheckerModule {
 
     private static final int ECHO_INTERVAL = 1000;
@@ -30,17 +32,13 @@ public class PeerConnectivityCheckerModule {
     private float averageRTT = 0.0f;
 
     @Getter
-    private long lastPacketReceived;
+    private volatile long lastPacketReceived;
 
     @Getter
     private long echosReceived = 0;
 
     @Getter
     private long invalidEchosReceived = 0;
-
-    public PeerConnectivityCheckerModule(PeerIceModule ice) {
-        this.ice = ice;
-    }
 
     void start() {
         LockUtil.executeWithLock(lockIce, () -> {
@@ -49,7 +47,7 @@ public class PeerConnectivityCheckerModule {
             }
 
             running = true;
-            log.debug("Starting connectivity checker for peer {}", ice.getPeer().getRemoteId());
+            log.debug("Starting connectivity checker for peer");
 
             averageRTT = 0.0f;
             lastPacketReceived = System.currentTimeMillis();
@@ -62,7 +60,7 @@ public class PeerConnectivityCheckerModule {
     }
 
     private String getThreadName() {
-        return "connectivityChecker-" + ice.getPeer().getRemoteId();
+        return "connectivityChecker-%s".formatted(ice.getPeer().getPeerIdentifier());
     }
 
     void stop() {
@@ -82,6 +80,7 @@ public class PeerConnectivityCheckerModule {
 
     /**
      * an echo has been received, RTT and last_received will be updated
+     *
      * @param data
      * @param offset
      * @param length
@@ -94,19 +93,17 @@ public class PeerConnectivityCheckerModule {
             invalidEchosReceived++;
         }
 
-        int rtt =
-                (int) (System.currentTimeMillis() - Longs.fromByteArray(Arrays.copyOfRange(data, offset + 1, length)));
+        long sentMs = Longs.fromByteArray(Arrays.copyOfRange(data, offset + 1, length));
+        long rttMs = System.currentTimeMillis() - sentMs;
+        int rtt = (int) (rttMs);
+
         if (averageRTT == 0) {
             averageRTT = rtt;
         } else {
-            averageRTT = (float) averageRTT * 0.8f + (float) rtt * 0.2f;
+            averageRTT = averageRTT * 0.8f + (float) rtt * 0.2f;
         }
 
-        lastPacketReceived = System.currentTimeMillis();
-
         debug().peerConnectivityUpdate(ice.getPeer());
-        //      System.out.printf("Received echo from %d after %d ms, averageRTT: %d ms", ice.getPeer().getRemoteId(),
-        // rtt, (int) averageRTT);
     }
 
     private void checkerThread() {
@@ -123,25 +120,29 @@ public class PeerConnectivityCheckerModule {
             ice.sendViaIce(data, 0, data.length);
 
             debug().peerConnectivityUpdate(peer);
-
             try {
                 Thread.sleep(ECHO_INTERVAL);
             } catch (InterruptedException e) {
-                log.warn(
-                        "{} (sleeping checkerThread) was interrupted",
-                        Thread.currentThread().getName());
+                log.warn("{} (sleeping checkerThread) was interrupted", Thread.currentThread().getName());
                 return;
             }
 
-            if (System.currentTimeMillis() - lastPacketReceived > 10000) {
-                log.warn(
-                        "Didn't receive any answer to echo requests for the past 10 seconds from {}, aborting connection",
-                        peer.getRemoteLogin());
+            long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;
+
+            if (sinceLastReal > 10_000) {
+                log.warn("No traffic (echo or game) from {} for {} ms (> 10000 ms timeout). Closing connection.",
+                        peer.getRemoteLogin(), lastPacketReceived);
                 CompletableFuture.runAsync(ice::onConnectionLost, IceAdapter.getExecutor());
                 return;
             }
+            debug().peerConnectivityUpdate(peer);
         }
 
         log.info("{} stopped gracefully", Thread.currentThread().getName());
+    }
+
+    public void notifyTrafficReceived() {
+        lastPacketReceived = System.currentTimeMillis();
+        debug().peerConnectivityUpdate(ice.getPeer());
     }
 }

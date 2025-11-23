@@ -2,6 +2,7 @@ package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
 import java.io.IOException;
 import java.net.*;
@@ -11,6 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 
 /**
  * Represents a peer in the current game session which we are connected to
@@ -61,6 +64,7 @@ public class Peer {
     private DatagramSocket initForwarding(int port) {
         try {
             DatagramSocket socket = new DatagramSocket(port);
+            DatagramSocketUtils.resizeBuffer(socket);
             log.debug("Now forwarding data to peer {}", getPeerIdentifier());
             return socket;
         } catch (SocketException e) {
@@ -100,8 +104,7 @@ public class Peer {
      * This method get's invoked by the thread listening for data from FA
      */
     private void faListener() {
-        byte[] data = new byte
-                [65536]; // 64KiB = UDP MTU, in practice due to ethernet frames being <= 1500 B, this is often not used
+        byte[] data = new byte[MAX_SIZE_PACKET];
         while (!Thread.currentThread().isInterrupted() && IceAdapter.getGameSession() == gameSession && !closing) {
             try {
                 DatagramPacket packet = new DatagramPacket(data, data.length);

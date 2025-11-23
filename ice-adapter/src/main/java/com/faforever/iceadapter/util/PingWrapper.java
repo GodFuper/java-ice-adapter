@@ -28,7 +28,9 @@ public class PingWrapper {
             Pattern output_pattern;
 
             if (System.getProperty("os.name").startsWith("Windows")) {
-                process = new ProcessBuilder("ping", "-n", count.toString(), address).start();
+                // Force English output using code page 437
+                String command = String.format("chcp 437 > NUL && ping -n %d %s", count, address);
+                process = new ProcessBuilder("cmd", "/c", command).start();
                 output_pattern = WINDOWS_OUTPUT_PATTERN;
             } else {
                 process = new ProcessBuilder("ping", "-c", count.toString(), address).start();
@@ -50,8 +52,8 @@ public class PingWrapper {
                                 log.debug("Pinged {} with an RTT of {}", address, result);
                                 return result;
                             } else {
-                                log.warn("Failed to ping {}", address);
-                                throw new RuntimeException("Failed to contact the host");
+                                log.warn("Failed to ping {}: output='{}'", address, output);
+                                throw new RuntimeException("Failed to contact the host or parse ping output");
                             }
                         } catch (InterruptedException | IOException | RuntimeException e) {
                             throw new CompletionException(e);

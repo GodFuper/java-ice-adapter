@@ -359,8 +359,8 @@ public class DebugWindow extends Application implements Debugger {
                     .orElse(-1.0f)
                     .intValue());
             lastReceived.set(connectivityChecker
-                    .map(PeerConnectivityCheckerModule::getLastRealPacketReceived)
-                    .map(last -> (System.nanoTime() - last) / 1_000_000)
+                    .map(PeerConnectivityCheckerModule::getLastPacketReceived)
+                    .map(last -> System.currentTimeMillis() - last)
                     .orElse(-1L)
                     .intValue());
             echosReceived.set(connectivityChecker
