@@ -4,6 +4,7 @@ import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceStatus;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.gpgnet.LobbyInitMode;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
@@ -96,7 +97,7 @@ public class RPCHandler {
     @SneakyThrows
     public String status() {
         IceStatus.IceGPGNetState gpgpnet = new IceStatus.IceGPGNetState(
-                gpgNetServer.getGpgnetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameStateString(), "-");
+                gpgNetServer.getGpgnetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameState().orElse(GameState.NONE).getName(), "-");
 
         List<IceStatus.IceRelay> relays = new ArrayList<>();
         GameSession gameSession = IceAdapter.getGameSession();

@@ -67,6 +67,7 @@ public class PeerIceModule {
     private Component component;
 
     private volatile IceState iceState = NEW;
+    @Getter
     private volatile boolean connected = false;
     private volatile Thread listenerThread;
 
@@ -542,7 +543,6 @@ public class PeerIceModule {
                 }
                 return;
             }
-            log.debug("{} No longer listening for messages from ICE", getLogPrefix());
         }
 
         log.debug("{} No longer listening for messages from ICE", getLogPrefix());
