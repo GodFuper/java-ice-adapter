@@ -10,6 +10,7 @@ apply plugin: 'java'
 apply plugin: 'java-library'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.diffplug.spotless'
+apply plugin: 'org.openjfx.javafxplugin'
 
 group 'com.faforever'
 
@@ -55,6 +56,10 @@ dependencies {
         implementation("org.openjfx:javafx-web:${javafxVersion}:${javafxPlatform}")
         implementation("org.openjfx:javafx-media:${javafxVersion}:${javafxPlatform}")
     }
+
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.10.2')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.10.2')
+    testImplementation('org.junit.jupiter:junit-jupiter-params:5.10.2')
 }
 
 shadowJar {
@@ -63,7 +68,7 @@ shadowJar {
         plattformSuffix = "nojfx"
     }
 
-    getArchiveFileName().set("faf-ice-adapter-${version}-${plattformSuffix}.jar")
+    getArchiveFileName().set("faf-ice-adapter.jar")
     manifest {
         attributes 'Main-Class': 'com.faforever.iceadapter.IceAdapter'
     }
@@ -78,4 +83,8 @@ spotless {
         cleanthat()
         palantirJavaFormat()
     }
+}
+
+test {
+    useJUnitPlatform()
 }

@@ -1,16 +1,12 @@
 package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.Peer;
 import com.faforever.iceadapter.ice.PeerConnectivityCheckerModule;
 import com.nbarraille.jjsonrpc.JJsonPeer;
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -21,7 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -32,6 +27,12 @@ import org.ice4j.ice.CandidatePair;
 import org.ice4j.ice.CandidateType;
 import org.ice4j.ice.Component;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = false)
@@ -54,7 +55,10 @@ public class DebugWindow extends Application implements Debugger {
         Debug.register(this);
 
         this.stage = stage;
-        stage.getIcons().add(new Image("https://faforever.com/images/faf-logo.png"));
+        LogoUtils.getLogoFx().ifPresent(logo -> {
+            stage.getIcons().add(logo);
+        });
+
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/debugWindow.fxml"));
@@ -85,7 +89,7 @@ public class DebugWindow extends Application implements Debugger {
 
         if (Debug.ENABLE_INFO_WINDOW) {
             CompletableFuture.runAsync(
-                    () -> runOnUIThread(() -> new InfoWindow().init()),
+                    () -> runOnUIThread(InfoWindow::launch),
                     CompletableFuture.delayedExecutor(
                             Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS, IceAdapter.getExecutor()));
         }
@@ -109,7 +113,7 @@ public class DebugWindow extends Application implements Debugger {
             controller.versionLabel.setText("Version: %s".formatted(IceAdapter.getVersion()));
             controller.userLabel.setText("User: %s(%d)".formatted(IceAdapter.getLogin(), IceAdapter.getId()));
             controller.rpcPortLabel.setText("RPC_PORT: %d".formatted(Debug.RPC_PORT));
-            controller.gpgnetPortLabel.setText("GPGNET_PORT: %d".formatted(GPGNetServer.getGpgnetPort()));
+            controller.gpgnetPortLabel.setText("GPGNET_PORT: %d".formatted(GPGNetServer.getGpgNetPort()));
             controller.lobbyPortLabel.setText("LOBBY_PORT: %d".formatted(GPGNetServer.getLobbyPort()));
         });
     }
@@ -367,8 +371,8 @@ public class DebugWindow extends Application implements Debugger {
                     .map(PeerConnectivityCheckerModule::getEchosReceived)
                     .orElse(-1L)
                     .intValue());
-            echosReceived.set(connectivityChecker
-                    .map(PeerConnectivityCheckerModule::getEchosReceived)
+            invalidEchosReceived.set(connectivityChecker
+                    .map(PeerConnectivityCheckerModule::getInvalidEchosReceived)
                     .orElse(-1L)
                     .intValue());
         }

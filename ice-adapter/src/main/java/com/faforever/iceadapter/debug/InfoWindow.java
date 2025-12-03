@@ -1,17 +1,18 @@
 package com.faforever.iceadapter.debug;
 
-import static javafx.application.Application.STYLESHEET_MODENA;
-import static javafx.application.Application.setUserAgentStylesheet;
-
-import java.io.IOException;
+import com.faforever.iceadapter.LogoUtils;
 import javafx.application.Platform;
 import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+
+import static javafx.application.Application.STYLESHEET_MODENA;
+import static javafx.application.Application.setUserAgentStylesheet;
 
 @Slf4j
 public class InfoWindow {
@@ -32,14 +33,13 @@ public class InfoWindow {
 
     public void init() {
         stage = new Stage();
-        stage.getIcons().add(new Image("https://faforever.com/images/faf-logo.png"));
-
+        LogoUtils.getLogoFx().ifPresent(logo -> {
+            stage.getIcons().add(logo);
+        });
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/infoWindow.fxml"));
             root = loader.load();
-
             controller = loader.getController();
-
         } catch (IOException e) {
             log.error("Could not load debugger window fxml", e);
         }
@@ -61,10 +61,18 @@ public class InfoWindow {
         Platform.runLater(this.stage::hide);
     }
 
-    public void show() {
+    public void showWindow() {
         Platform.runLater(() -> {
             this.stage.show();
             Platform.setImplicitExit(true);
         });
+    }
+
+    public static void launch() {
+        if (INSTANCE == null) {
+            new InfoWindow().init();
+        } else {
+            INSTANCE.showWindow();
+        }
     }
 }

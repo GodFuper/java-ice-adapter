@@ -1,15 +1,20 @@
 package com.faforever.iceadapter.ice;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-import static com.faforever.iceadapter.ice.IceState.*;
-import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
-
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.TrayIcon;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.ice4j.TransportAddress;
+import org.ice4j.ice.*;
+import org.ice4j.ice.harvest.StunCandidateHarvester;
+import org.ice4j.ice.harvest.TurnCandidateHarvester;
+import org.ice4j.security.LongTermCredential;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -22,15 +27,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.TransportAddress;
-import org.ice4j.ice.*;
-import org.ice4j.ice.harvest.StunCandidateHarvester;
-import org.ice4j.ice.harvest.TurnCandidateHarvester;
-import org.ice4j.security.LongTermCredential;
+import static com.faforever.iceadapter.debug.Debug.debug;
+import static com.faforever.iceadapter.ice.IceState.*;
+import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 
 @Getter
 @Slf4j
@@ -38,22 +37,6 @@ import org.ice4j.security.LongTermCredential;
 public class PeerIceModule {
     @Setter
     private static RPCService rpcService;
-
-    private static boolean ALLOW_HOST = true;
-    private static boolean ALLOW_REFLEXIVE = true;
-    private static boolean ALLOW_RELAY = true;
-
-    public static void setForceRelay(boolean forceRelay) {
-        if (forceRelay) {
-            ALLOW_HOST = false;
-            ALLOW_REFLEXIVE = false;
-            ALLOW_RELAY = true;
-        } else {
-            ALLOW_HOST = true;
-            ALLOW_REFLEXIVE = true;
-            ALLOW_RELAY = true;
-        }
-    }
 
     private static final int MINIMUM_PORT = 6112; // PORT (range +1000) to be used by ICE for communicating, each peer needs a seperate port
     private static final long FORCE_SRFLX_RELAY_INTERVAL = 2 * 60 * 1000; // 2 mins, the interval in which multiple connects have to happen to force srflx/relay
@@ -212,8 +195,8 @@ public class PeerIceModule {
                 peer.getRemoteId(),
                 agent,
                 component,
-                previousConnectivityAttempts < FORCE_SRFLX_COUNT && ALLOW_HOST,
-                previousConnectivityAttempts < FORCE_RELAY_COUNT && ALLOW_REFLEXIVE, ALLOW_RELAY);
+                previousConnectivityAttempts < FORCE_SRFLX_COUNT && peer.isAllowHost(),
+                previousConnectivityAttempts < FORCE_RELAY_COUNT && peer.isAllowReflexive(), peer.isAllowRelay());
         log.debug("{} Sending own candidates to {}, offered candidates: {}",
                 getLogPrefix(),
                 peer.getRemoteId(),
@@ -299,8 +282,8 @@ public class PeerIceModule {
                         agent,
                         component,
                         mediaStream,
-                        previousConnectivityAttempts < FORCE_SRFLX_COUNT && ALLOW_HOST,
-                        previousConnectivityAttempts < FORCE_RELAY_COUNT && ALLOW_REFLEXIVE, ALLOW_RELAY);
+                        previousConnectivityAttempts < FORCE_SRFLX_COUNT && peer.isAllowHost(),
+                        previousConnectivityAttempts < FORCE_RELAY_COUNT && peer.isAllowReflexive(), peer.isAllowRelay());
 
                 startIce();
             }, IceAdapter.getExecutor());

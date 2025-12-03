@@ -1,7 +1,5 @@
 package com.faforever.iceadapter;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
@@ -11,11 +9,15 @@ import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.TrayIcon;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
+
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import lombok.extern.slf4j.Slf4j;
-import picocli.CommandLine;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 @CommandLine.Command(
         name = "faf-ice-adapter",
@@ -24,18 +26,21 @@ import picocli.CommandLine;
         description = "An ice (RFC 5245) based network bridge between FAF client and ForgedAlliance.exe")
 @Slf4j
 public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallbacks {
-    private static volatile IceAdapter INSTANCE;
-    private static String VERSION = "SNAPSHOT";
+    public static volatile IceAdapter INSTANCE;
+    private static String VERSION = "DEBUG-SNAPSHOT";
     private static volatile GameSession GAME_SESSION;
+    private static final Lock lockGameSession = new ReentrantLock();
 
     @CommandLine.ArgGroup(exclusive = false)
     private IceOptions iceOptions;
 
+    @Getter
     private GPGNetServer gpgNetServer;
+    @Getter
     private RPCService rpcService;
 
     private final ExecutorService executor = ExecutorHolder.getExecutor();
-    private static final Lock lockGameSession = new ReentrantLock();
+
 
     public static void main(String[] args) {
         new CommandLine(new IceAdapter()).setUnmatchedArgumentsAllowed(true).execute(args);
@@ -60,11 +65,10 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         TrayIcon.create();
 
-        PeerIceModule.setForceRelay(iceOptions.isForceRelay());
-        gpgNetServer = new GPGNetServer();
-        rpcService = new RPCService();
-        gpgNetServer.init(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort(), rpcService);
-        rpcService.init(iceOptions.getRpcPort(), gpgNetServer, this);
+        gpgNetServer = new GPGNetServer(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort());
+        rpcService = new RPCService(iceOptions.getRpcPort());
+        gpgNetServer.init(rpcService);
+        rpcService.init(gpgNetServer, this);
 
         PeerIceModule.setRpcService(rpcService);
 
@@ -90,7 +94,17 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         createGameSession();
         GameSession gs = getGameSessionSafe();
         if (gs != null) {
-            int port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, false, 0);
+
+            boolean allowHost = true;
+            boolean allowReflexive = true;
+            boolean allowRelay = true;
+
+            if (iceOptions.isForceRelay()) {
+                allowHost = false;
+                allowReflexive = false;
+            }
+
+            int port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, false, 0, allowHost, allowReflexive, allowRelay);
             sendToGpgNet("JoinGame", "127.0.0.1:" + port, remotePlayerLogin, remotePlayerId);
         } else {
             log.warn("onJoinGame: GAME_SESSION was null after createGameSession");
@@ -121,8 +135,16 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         }
 
         int port;
+        boolean allowHost = true;
+        boolean allowReflexive = true;
+        boolean allowRelay = true;
+
+        if (iceOptions.isForceRelay()) {
+            allowHost = false;
+            allowReflexive = false;
+        }
         try {
-            port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, offer, 0);
+            port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, offer, 0, allowHost, allowReflexive, allowRelay);
         } catch (RuntimeException e) {
             log.error("connectToPeer failed for {} {}: {}", remotePlayerId, remotePlayerLogin, e.toString());
             return;
@@ -142,6 +164,16 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         }
 
         sendToGpgNet("DisconnectFromPeer", remotePlayerId);
+    }
+
+    public void reconnectToPeer(int remotePlayerId, boolean allowHost, boolean allowReflexive, boolean allowRelay) {
+        log.info("reconnectToPeer {} allowHost={} allowReflexive={} allowRelay={}", remotePlayerId, allowHost, allowReflexive, allowRelay);
+        GameSession gs = getGameSessionSafe();
+        if (gs != null) {
+            gs.reconnectToPeer(remotePlayerId, allowHost, allowReflexive, allowRelay);
+        } else {
+            log.warn("reconnectToPeer: GAME_SESSION is null");
+        }
     }
 
     private static void createGameSession() {

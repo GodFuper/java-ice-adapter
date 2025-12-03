@@ -2,8 +2,12 @@ plugins {
     id 'java'
     id 'com.diffplug.spotless' version '6.25.0'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
+javafx {
+    modules = ['javafx.controls', 'javafx.fxml']
+}
 
 group 'com.faforever'
 version '1.0-SNAPSHOT'

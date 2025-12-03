@@ -1,18 +1,20 @@
 package com.faforever.iceadapter.gpgnet;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.NetworkToolbox;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -20,22 +22,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 @Slf4j
+@Data
 public class GPGNetServer implements AutoCloseable {
     private static final Object INSTANCE_LOCK = new Object();
     private static GPGNetServer INSTANCE;
 
     private final Lock lockSocket = new ReentrantLock();
 
-    private int gpgnetPort;
-    private int lobbyPort;
+    private final int gpgNetPort;
+    private final int lobbyPort;
     private RPCService rpcService;
     private ServerSocket serverSocket;
 
@@ -48,12 +48,30 @@ public class GPGNetServer implements AutoCloseable {
     @Setter
     private volatile LobbyInitMode lobbyInitMode = LobbyInitMode.NORMAL;
 
+    public GPGNetServer(int gpgNetPort, int lobbyPort) {
+        if (gpgNetPort == 0) {
+            this.gpgNetPort = NetworkToolbox.findFreeTCPPort(20000, 65536);
+            log.info("Generated GPGNET_PORT: {}", this.gpgNetPort);
+        } else {
+            this.gpgNetPort = gpgNetPort;
+            log.info("Using GPGNET_PORT: {}", this.gpgNetPort);
+        }
+
+        if (lobbyPort == 0) {
+            this.lobbyPort = NetworkToolbox.findFreeUDPPort(20000, 65536);
+            log.info("Generated LOBBY_PORT: {}", this.lobbyPort);
+        } else {
+            this.lobbyPort = lobbyPort;
+            log.info("Using LOBBY_PORT: {}", this.lobbyPort);
+        }
+    }
+
     public static LobbyInitMode getLobbyInitMode() {
         return INSTANCE != null ? INSTANCE.lobbyInitMode : LobbyInitMode.NORMAL;
     }
 
-    public static int getGpgnetPort() {
-        return INSTANCE != null ? INSTANCE.gpgnetPort : 0;
+    public static int getGpgNetPort() {
+        return INSTANCE != null ? INSTANCE.gpgNetPort : 0;
     }
 
     public static int getLobbyPort() {
@@ -70,30 +88,14 @@ public class GPGNetServer implements AutoCloseable {
         log.debug("Dropping GPGNet message because no client ready: {} {}", header, formatArgs(args));
     }
 
-    public void init(int gpgnetPort, int lobbyPort, RPCService rpcService) {
+    public void init(RPCService rpcService) {
         synchronized (INSTANCE_LOCK) {
             INSTANCE = this;
         }
         this.rpcService = rpcService;
 
-        if (gpgnetPort == 0) {
-            this.gpgnetPort = NetworkToolbox.findFreeTCPPort(20000, 65536);
-            log.info("Generated GPGNET_PORT: {}", this.gpgnetPort);
-        } else {
-            this.gpgnetPort = gpgnetPort;
-            log.info("Using GPGNET_PORT: {}", this.gpgnetPort);
-        }
-
-        if (lobbyPort == 0) {
-            this.lobbyPort = NetworkToolbox.findFreeUDPPort(20000, 65536);
-            log.info("Generated LOBBY_PORT: {}", this.lobbyPort);
-        } else {
-            this.lobbyPort = lobbyPort;
-            log.info("Using LOBBY_PORT: {}", this.lobbyPort);
-        }
-
         try {
-            this.serverSocket = new ServerSocket(this.gpgnetPort);
+            this.serverSocket = new ServerSocket(this.gpgNetPort);
         } catch (IOException e) {
             log.error("Couldn't start GPGNetServer", e);
             IceAdapter.close(-1);
@@ -102,7 +104,7 @@ public class GPGNetServer implements AutoCloseable {
 
         // start accept loop on executor
         executor.submit(this::acceptLoop);
-        log.info("GPGNetServer started on port {}", this.gpgnetPort);
+        log.info("GPGNetServer started on port {}", this.gpgNetPort);
     }
 
     /**
@@ -294,6 +296,10 @@ public class GPGNetServer implements AutoCloseable {
 
     public static boolean isConnected() {
         return INSTANCE != null && INSTANCE.currentClient.get() != null;
+    }
+
+    public static boolean isServerRunning() {
+        return INSTANCE != null && INSTANCE.serverSocket != null && !INSTANCE.serverSocket.isClosed();
     }
 
     public static Optional<GameState> getGameState() {

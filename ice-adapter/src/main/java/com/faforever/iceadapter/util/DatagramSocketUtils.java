@@ -17,7 +17,9 @@ public class DatagramSocketUtils {
             socket.setReceiveBufferSize(MAX_SIZE_PACKET);
             socket.setSendBufferSize(MAX_SIZE_PACKET);
         } catch (SocketException e) {
-            log.error("Failed to resize socket buffer on {}", MAX_SIZE_PACKET, e);
+            if (!socket.isClosed()) {
+                log.error("Failed to resize socket buffer on {}", MAX_SIZE_PACKET, e);
+            }
         }
     }
 

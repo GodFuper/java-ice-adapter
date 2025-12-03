@@ -4,21 +4,27 @@ import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
+import lombok.Data;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.ice4j.ice.Candidate;
+import org.ice4j.ice.CandidatePair;
+import org.ice4j.ice.CandidateType;
+import org.ice4j.ice.Component;
+
 import java.io.IOException;
 import java.net.*;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 
 import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 
 /**
  * Represents a peer in the current game session which we are connected to
  */
-@Getter
+@Data
 @Slf4j
 public class Peer {
     private final GameSession gameSession;
@@ -27,6 +33,9 @@ public class Peer {
     private final String remoteLogin;
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
     private final int preferredPort;
+    private final boolean allowHost;
+    private final boolean allowReflexive;
+    private final boolean allowRelay;
 
     public volatile boolean closing = false;
 
@@ -37,12 +46,22 @@ public class Peer {
     // Future handle for the FA listener task so we can cancel it cleanly
     private volatile CompletableFuture<?> faListenerFuture;
 
-    public Peer(GameSession gameSession, int remoteId, String remoteLogin, boolean localOffer, int preferredPort) {
+    public Peer(GameSession gameSession,
+                int remoteId,
+                String remoteLogin,
+                boolean localOffer,
+                int preferredPort,
+                boolean allowHost,
+                boolean allowReflexive,
+                boolean allowRelay) {
         this.gameSession = gameSession;
         this.remoteId = remoteId;
         this.remoteLogin = remoteLogin;
         this.localOffer = localOffer;
         this.preferredPort = preferredPort;
+        this.allowHost = allowHost;
+        this.allowReflexive = allowReflexive;
+        this.allowRelay = allowRelay;
 
         log.debug(
                 "Peer created: {}, localOffer: {}, preferredPort: {}", getPeerIdentifier(), localOffer, preferredPort);
@@ -92,7 +111,7 @@ public class Peer {
 
         // If ICE isn't established, drop early and log at trace level.
         try {
-            if (!ice.isConnected()) {
+            if (!isConnected()) {
                 log.trace("Dropping incoming ICE packet because ICE not connected yet: {}", getPeerIdentifier());
                 return;
             }
@@ -182,6 +201,56 @@ public class Peer {
         log.debug("No longer listening for messages from FA for peer {}", getPeerIdentifier());
     }
 
+    /**
+     * @return %username%(%id%)
+     */
+    public String getPeerIdentifier() {
+        return "%s(%d)".formatted(this.remoteLogin, this.remoteId);
+    }
+
+    public boolean isConnected() {
+        return ice.isConnected();
+    }
+
+    public Optional<CandidateType> getLocalCandidateType() {
+        return Optional.ofNullable(ice.getComponent())
+                .map(Component::getSelectedPair)
+                .map(CandidatePair::getLocalCandidate)
+                .map(Candidate::getType);
+    }
+
+    public Optional<CandidateType> getRemoteCandidateType() {
+        return Optional.ofNullable(ice.getComponent())
+                .map(Component::getSelectedPair)
+                .map(CandidatePair::getRemoteCandidate)
+                .map(Candidate::getType);
+    }
+
+    public IceState getState() {
+        return ice.getIceState();
+    }
+
+    public Optional<Float> getAverageRtt() {
+        return Optional.ofNullable(ice.getConnectivityChecker())
+                .map(PeerConnectivityCheckerModule::getAverageRTT);
+    }
+
+    public Optional<Long> getLastReceived() {
+        return Optional.ofNullable(ice.getConnectivityChecker())
+                .map(PeerConnectivityCheckerModule::getLastPacketReceived)
+                .map(last -> System.currentTimeMillis() - last);
+    }
+
+    public Optional<Long> countEchosReceived() {
+        return Optional.ofNullable(ice.getConnectivityChecker())
+                .map(PeerConnectivityCheckerModule::getEchosReceived);
+    }
+
+    public Optional<Long> countInvalidEchosReceived() {
+        return Optional.ofNullable(ice.getConnectivityChecker())
+                .map(PeerConnectivityCheckerModule::getInvalidEchosReceived);
+    }
+
     public void close() {
         if (closing) {
             return;
@@ -219,13 +288,6 @@ public class Peer {
         }
 
         log.info("Peer closed: {}", getPeerIdentifier());
-    }
-
-    /**
-     * @return %username%(%id%)
-     */
-    public String getPeerIdentifier() {
-        return "%s(%d)".formatted(this.remoteLogin, this.remoteId);
     }
 }
 

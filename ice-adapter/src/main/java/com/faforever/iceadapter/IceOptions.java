@@ -1,11 +1,11 @@
 package com.faforever.iceadapter;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import picocli.CommandLine.Option;
 
-@Getter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class IceOptions {

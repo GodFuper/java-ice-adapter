@@ -1,37 +1,31 @@
 package com.faforever.iceadapter.ice;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.PingWrapper;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.Transport;
 import org.ice4j.TransportAddress;
+
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 /**
  * Represents a game session and the current ICE status/communication with all peers
  * Is created by a JoinGame or HostGame event (via RPC), is destroyed by a gpgnet connection breakdown
  */
 @Slf4j
+@NoArgsConstructor
 public class GameSession {
 
     private static final String STUN = "stun";
@@ -49,19 +43,23 @@ public class GameSession {
     @Setter
     private volatile boolean gameEnded = false;
 
-    public GameSession() {}
-
     /**
      * Initiates a connection to a peer (ICE)
      *
      * @return the port the ice adapter will be listening/sending for FA
      */
-    public int connectToPeer(String remotePlayerLogin, int remotePlayerId, boolean offer, int preferredPort) {
+    public int connectToPeer(String remotePlayerLogin,
+                             int remotePlayerId,
+                             boolean offer,
+                             int preferredPort,
+                             boolean allowHost,
+                             boolean allowReflexive,
+                             boolean allowRelay) {
         if (peers.containsKey(remotePlayerId)) {
-            reconnectToPeer(remotePlayerId);
+            reconnectToPeer(remotePlayerId, null, null, null);
             return peers.get(remotePlayerId).getLocalPort();
         }
-        Peer peer = new Peer(this, remotePlayerId, remotePlayerLogin, offer, preferredPort);
+        Peer peer = new Peer(this, remotePlayerId, remotePlayerLogin, offer, preferredPort, allowHost, allowReflexive, allowRelay);
         peers.put(remotePlayerId, peer);
         debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
         return peer.getLocalPort();
@@ -90,9 +88,27 @@ public class GameSession {
             String remotePlayerLogin = reconnectPeer.getRemoteLogin();
             boolean offer = reconnectPeer.isLocalOffer();
             int port = reconnectPeer.getLocalPort();
+            boolean allowHost = reconnectPeer.isAllowHost();
+            boolean allowReflexive = reconnectPeer.isAllowReflexive();
+            boolean allowRelay = reconnectPeer.isAllowRelay();
 
             disconnectFromPeer(remotePlayerId);
-            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port);
+            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, allowHost, allowReflexive, allowRelay);
+        }
+    }
+
+    public void reconnectToPeer(Integer remotePlayerId, Boolean allowHost, Boolean allowReflexive, Boolean allowRelay) {
+        Peer reconnectPeer = peers.get(remotePlayerId);
+        if (Objects.nonNull(reconnectPeer)) {
+            String remotePlayerLogin = reconnectPeer.getRemoteLogin();
+            boolean offer = reconnectPeer.isLocalOffer();
+            int port = reconnectPeer.getLocalPort();
+            boolean isAllowHost = allowHost != null ? allowHost : reconnectPeer.isAllowHost();
+            boolean isAllowReflexive = allowReflexive != null ? allowReflexive : reconnectPeer.isAllowReflexive();
+            boolean isAllowRelay = allowRelay != null ? allowRelay : reconnectPeer.isAllowRelay();
+
+            disconnectFromPeer(remotePlayerId);
+            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, isAllowHost, isAllowReflexive, isAllowRelay);
         }
     }
 

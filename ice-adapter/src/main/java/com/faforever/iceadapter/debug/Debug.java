@@ -1,9 +1,9 @@
 package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.IceAdapter;
-import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class Debug {
@@ -42,19 +42,7 @@ public class Debug {
         }
 
         if (isJavaFxSupported()) {
-            CompletableFuture.runAsync(
-                    () -> {
-                        try {
-                            Class.forName("com.faforever.iceadapter.debug.DebugWindow")
-                                    .getMethod("launchApplication")
-                                    .invoke(null);
-                        } catch (InvocationTargetException e) {
-                            log.info("DebugWindows stopped");
-                        } catch (IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
-                            log.error("Could not create DebugWindow. Running without debug window.", e);
-                        }
-                    },
-                    IceAdapter.getExecutor());
+            CompletableFuture.runAsync(IceWindow::launch, IceAdapter.getExecutor());
         } else {
             log.info("No JavaFX support detected. Running without debug window.");
         }

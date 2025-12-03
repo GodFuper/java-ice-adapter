@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.IceAdapter;
-import java.util.concurrent.CompletableFuture;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -11,6 +10,8 @@ import javafx.util.Callback;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @NoArgsConstructor
@@ -55,7 +56,7 @@ public class DebugWindowController {
     public void reconnectToPeer(DebugWindow.DebugPeer peer) {
         if (peer != null) {
             CompletableFuture.runAsync(
-                    () -> IceAdapter.getGameSession().reconnectToPeer(peer.getId()), IceAdapter.getExecutor());
+                    () -> IceAdapter.getGameSession().reconnectToPeer(peer.getId(), null, null, null), IceAdapter.getExecutor());
         }
     }
 

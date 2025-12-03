@@ -9,6 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.util.concurrent.RateLimiter;
 import com.nbarraille.jjsonrpc.JJsonPeer;
+import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.ice4j.ice.Candidate;
+import org.ice4j.ice.CandidatePair;
+import org.ice4j.ice.Component;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+
 import java.net.ConnectException;
 import java.net.URI;
 import java.time.Duration;
@@ -18,15 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
-
-import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Candidate;
-import org.ice4j.ice.CandidatePair;
-import org.ice4j.ice.Component;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
 
 @Slf4j
 @EqualsAndHashCode
@@ -104,22 +104,33 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     @SneakyThrows
     private void sendingLoop() {
-        while (shouldRun && !Thread.currentThread().isInterrupted()) {
-            OutgoingMessageV1 message = messageQueue.poll(1, TimeUnit.SECONDS);
-            if (message == null) continue;
+        try {
+            while (shouldRun && !Thread.currentThread().isInterrupted()) {
+                OutgoingMessageV1 message = messageQueue.poll(1, TimeUnit.SECONDS);
+                if (message == null) continue;
 
-            if (!ensureConnected()) {
-                log.warn("Failed to send telemetry message (no connection): {}", message.getType());
-                continue;
-            }
+                if (!ensureConnected()) {
+                    log.warn("Failed to send telemetry message (no connection): {}", message.getType());
+                    continue;
+                }
 
-            try {
-                String json = objectMapper.writeValueAsString(message);
-                websocketClient.send(json);
-                log.trace("Sent telemetry message: {}", json);
-            } catch (Exception e) {
-                log.error("Failed to serialize or send telemetry message: {}", message, e);
+                try {
+                    String json = objectMapper.writeValueAsString(message);
+                    websocketClient.send(json);
+                    log.trace("Sent telemetry message: {}", json);
+                } catch (Exception e) {
+                    log.error("Failed to serialize or send telemetry message: {}", message, e);
+                }
             }
+        } catch (InterruptedException e) {
+            // Restore interrupt and exit cleanly
+            Thread.currentThread().interrupt();
+            log.debug("Telemetry sending loop interrupted, shutting down.");
+        } catch (Exception e) {
+            log.error("Unexpected error in telemetry sending loop", e);
+        } finally {
+            close();
+            log.debug("Telemetry sending loop terminated.");
         }
     }
 

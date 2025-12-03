@@ -1,17 +1,18 @@
 package com.faforever.iceadapter.ice;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.util.LockUtil;
 import com.google.common.primitives.Longs;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 /**
  * Periodically sends echo requests via the ICE data channel and initiates a reconnect after timeout
@@ -32,7 +33,7 @@ public class PeerConnectivityCheckerModule {
     private float averageRTT = 0.0f;
 
     @Getter
-    private volatile long lastPacketReceived;
+    private volatile Long lastPacketReceived;
 
     @Getter
     private long echosReceived = 0;
