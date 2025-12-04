@@ -52,16 +52,15 @@
                             <TableColumn fx:id="hostColumn" text="host"/>
                             <TableColumn fx:id="reflexiveColumn" text="reflexive"/>
                             <TableColumn fx:id="relayColumn" text="relay"/>
-                            <TableColumn fx:id="localCandColumn" text="local"/>
-                            <TableColumn fx:id="remoteCandColumn" text="remote"/>
+                            <TableColumn fx:id="pairConColumn" text="pair"/>
                             <TableColumn fx:id="stateColumn" text="state"/>
+                            <TableColumn fx:id="agentStateColumn" text="agent"/>
                             <TableColumn fx:id="offerColumn" text="localOffer"/>
                             <TableColumn fx:id="rttColumn" text="average rtt"/>
                             <TableColumn fx:id="lastColumn" text="last recv"/>
                             <TableColumn fx:id="echosRcvColumn" text="echos s/f"/>
                         </columns>
                     </TableView>
-                    <TextArea fx:id="logTextArea" editable="false" wrapText="false" VBox.vgrow="NEVER"/>
                 </VBox>
                 <!-- Панель действий справа -->
                 <VBox fx:id="peerActionPane" visible="false" managed="false"

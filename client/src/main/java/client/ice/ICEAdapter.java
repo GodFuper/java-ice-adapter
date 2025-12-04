@@ -35,7 +35,7 @@ import static com.github.nocatch.NoCatch.noCatch;
 
 public class ICEAdapter {
 
-	private static final String LOG_LEVEL = "info";
+	private static final String LOG_LEVEL = "debug";
 
 	private static final int CONNECTION_ATTEMPTS = 100;
 
@@ -219,6 +219,9 @@ public class ICEAdapter {
 					"--id", String.valueOf(TestClient.playerID),
 					"--login", TestClient.username,
 					"--rpc-port", String.valueOf(ADAPTER_PORT),
+					"--game-id", String.valueOf(100),
+					"--debug-window=true",
+					"--info-window=true",
 //				"--gpgnet-port", String.valueOf(GPG_PORT), retrieved afterwards
 //				"--lobby-port", String.valueOf(LOBBY_PORT),
 					"--log-level", LOG_LEVEL,

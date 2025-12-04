@@ -3,17 +3,20 @@ package com.faforever.iceadapter.ice;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
+import com.faforever.iceadapter.util.IceUtils;
 import com.faforever.iceadapter.util.LockUtil;
+import kotlin.Pair;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Candidate;
-import org.ice4j.ice.CandidatePair;
+import org.ice4j.ice.Agent;
 import org.ice4j.ice.CandidateType;
 import org.ice4j.ice.Component;
+import org.ice4j.ice.IceProcessingState;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
@@ -33,9 +36,9 @@ public class Peer {
     private final String remoteLogin;
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
     private final int preferredPort;
-    private final boolean allowHost;
-    private final boolean allowReflexive;
-    private final boolean allowRelay;
+    private boolean allowHost;
+    private boolean allowReflexive;
+    private boolean allowRelay;
 
     public volatile boolean closing = false;
 
@@ -59,9 +62,7 @@ public class Peer {
         this.remoteLogin = remoteLogin;
         this.localOffer = localOffer;
         this.preferredPort = preferredPort;
-        this.allowHost = allowHost;
-        this.allowReflexive = allowReflexive;
-        this.allowRelay = allowRelay;
+        setAllows(allowHost, allowReflexive, allowRelay);
 
         log.debug(
                 "Peer created: {}, localOffer: {}, preferredPort: {}", getPeerIdentifier(), localOffer, preferredPort);
@@ -74,6 +75,16 @@ public class Peer {
         if (localOffer) {
             CompletableFuture.runAsync(ice::initiateIce, IceAdapter.getExecutor());
         }
+    }
+
+    public void setAllows(boolean allowHost, boolean allowReflexive, boolean allowRelay) {
+        this.allowHost = allowHost;
+        this.allowReflexive = allowReflexive;
+        this.allowRelay = allowRelay;
+    }
+
+    public void reconnect() {
+        ice.reconnect();
     }
 
     public int getLocalPort() {
@@ -98,6 +109,7 @@ public class Peer {
 
     /**
      * Forwards data received on ICE to FA
+     *
      * @param data
      * @param offset
      * @param length
@@ -164,7 +176,7 @@ public class Peer {
                 System.arraycopy(packet.getData(), packet.getOffset(), copy, 0, packet.getLength());
 
                 // Forward to ICE - this method will drop packets if ICE isn't ready
-                ice.onFaDataReceived(copy, copy.length);
+                ice.onFaDataReceived(copy);
             } catch (SocketException se) {
                 // socket closed or network error
                 if (closing) {
@@ -212,22 +224,24 @@ public class Peer {
         return ice.isConnected();
     }
 
-    public Optional<CandidateType> getLocalCandidateType() {
-        return Optional.ofNullable(ice.getComponent())
+    public List<Pair<CandidateType, CandidateType>> getCandidateTypes() {
+        return Optional.ofNullable(ice.getMediaStream())
+                .map(IceUtils::getActiveComponents)
+                .orElse(List.of())
+                .stream()
                 .map(Component::getSelectedPair)
-                .map(CandidatePair::getLocalCandidate)
-                .map(Candidate::getType);
-    }
+                .map(pair -> new Pair<>(pair.getLocalCandidate().getType(), pair.getRemoteCandidate().getType()))
+                .toList();
 
-    public Optional<CandidateType> getRemoteCandidateType() {
-        return Optional.ofNullable(ice.getComponent())
-                .map(Component::getSelectedPair)
-                .map(CandidatePair::getRemoteCandidate)
-                .map(Candidate::getType);
     }
 
     public IceState getState() {
         return ice.getIceState();
+    }
+
+    public Optional<IceProcessingState> getAgentState() {
+        return Optional.ofNullable(ice.getAgent())
+                .map(Agent::getState);
     }
 
     public Optional<Float> getAverageRtt() {
@@ -237,8 +251,7 @@ public class Peer {
 
     public Optional<Long> getLastReceived() {
         return Optional.ofNullable(ice.getConnectivityChecker())
-                .map(PeerConnectivityCheckerModule::getLastPacketReceived)
-                .map(last -> System.currentTimeMillis() - last);
+                .map(PeerConnectivityCheckerModule::getLastPacketReceived);
     }
 
     public Optional<Long> countEchosReceived() {
@@ -265,7 +278,10 @@ public class Peer {
             if (faListenerFuture != null) {
                 faListenerFuture.cancel(true);
                 // wait briefly for cancel to take effect
-                try { Thread.sleep(10); } catch (InterruptedException ignored) {}
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ignored) {
+                }
             }
         } catch (Exception e) {
             log.debug("Error cancelling faListenerFuture for {}: {}", getPeerIdentifier(), e.toString());

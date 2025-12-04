@@ -40,11 +40,11 @@ public class WindowController {
     @FXML
     private TableColumn<PeerInfo, String> connectedColumn;
     @FXML
-    private TableColumn<PeerInfo, String> localCandColumn;
-    @FXML
-    private TableColumn<PeerInfo, String> remoteCandColumn;
+    private TableColumn<PeerInfo, String> pairConColumn;
     @FXML
     private TableColumn<PeerInfo, String> stateColumn;
+    @FXML
+    private TableColumn<PeerInfo, String> agentStateColumn;
     @FXML
     private TableColumn<PeerInfo, String> offerColumn;
     @FXML
@@ -73,9 +73,6 @@ public class WindowController {
     private CheckBox reflexiveCheckBox;
     @FXML
     private CheckBox relayCheckBox;
-
-    @FXML
-    private TextArea logTextArea;
 
     private Adapter adapter;
     private ScheduledExecutorService updateScheduler;
@@ -119,48 +116,13 @@ public class WindowController {
         loginColumn.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         connectedColumn.setCellValueFactory(cellData -> cellData.getValue().getConnected());
 
-        localCandColumn.setCellValueFactory(cellData -> cellData.getValue().getLocalCand());
-        remoteCandColumn.setCellValueFactory(cellData -> cellData.getValue().getRemoteCand());
+        pairConColumn.setCellValueFactory(cellData -> cellData.getValue().getPairConnection());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
+        agentStateColumn.setCellValueFactory(cellData -> cellData.getValue().getAgent());
         offerColumn.setCellValueFactory(cellData -> cellData.getValue().getOffer());
         rttColumn.setCellValueFactory(cellData -> cellData.getValue().getRtt());
         lastColumn.setCellValueFactory(cellData -> cellData.getValue().getLastRecv());
         echosRcvColumn.setCellValueFactory(cellData -> cellData.getValue().getEchosReceived());
-
-//        buttonReconnect.setCellFactory(new Callback<TableColumn<PeerInfo, String>, TableCell<PeerInfo, String>>() {
-//            @Override
-//            public TableCell<PeerInfo, String> call(TableColumn<PeerInfo, String> peerInfoStringTableColumn) {
-//                return new TableCell<>() {
-//                    final Button btn = new Button("reconnect");
-//
-//                    {
-//                        btn.setOnAction(event -> {
-//                            PeerInfo peer = getTableView().getItems().get(getIndex());
-//                            log.info("reconnect {}", peer);
-//                        });
-//                    }
-//
-//                    @Override
-//                    protected void updateItem(String s, boolean b) {
-//                        super.updateItem(s, b);
-//
-//                        setText(null);
-//                        if (b) {
-//                            setGraphic(null);
-//                            return;
-//                        }
-//
-//                        PeerInfo peer = getTableView().getItems().get(getIndex());
-//                        if (!peer.connectedProperty().isBound()) {
-//                            btn.setText(peer.reconnectButtonProperty().get());
-//                            setGraphic(btn);
-//                        } else {
-//                            setGraphic(null);
-//                        }
-//                    }
-//                };
-//            }
-//        });
 
         hostColumn.setCellValueFactory(param -> param.getValue().getAllowHost());
         hostColumn.setCellFactory(CheckBoxTableCell.forTableColumn(hostColumn));

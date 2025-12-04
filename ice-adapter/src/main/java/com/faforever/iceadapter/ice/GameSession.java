@@ -56,13 +56,30 @@ public class GameSession {
                              boolean allowReflexive,
                              boolean allowRelay) {
         if (peers.containsKey(remotePlayerId)) {
-            reconnectToPeer(remotePlayerId, null, null, null);
+            reCreatePeer(remotePlayerId);
             return peers.get(remotePlayerId).getLocalPort();
         }
         Peer peer = new Peer(this, remotePlayerId, remotePlayerLogin, offer, preferredPort, allowHost, allowReflexive, allowRelay);
         peers.put(remotePlayerId, peer);
         debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
         return peer.getLocalPort();
+    }
+
+    private void reCreatePeer(Integer remotePlayerId) {
+        Peer reconnectPeer = peers.get(remotePlayerId);
+        if (Objects.nonNull(reconnectPeer)) {
+            String remotePlayerLogin = reconnectPeer.getRemoteLogin();
+            boolean offer = reconnectPeer.isLocalOffer();
+            int port = reconnectPeer.getLocalPort();
+            boolean isAllowHost = reconnectPeer.isAllowHost();
+            boolean isAllowReflexive = reconnectPeer.isAllowReflexive();
+            boolean isAllowRelay = reconnectPeer.isAllowRelay();
+            reconnectPeer.setAllows(isAllowHost, isAllowReflexive, isAllowRelay);
+            reconnectPeer.reconnect();
+
+            disconnectFromPeer(remotePlayerId);
+            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, isAllowHost, isAllowReflexive, isAllowRelay);
+        }
     }
 
     /**
@@ -78,37 +95,18 @@ public class GameSession {
         // TODO: still attempting to ICE
     }
 
-    /**
-     * Does a manual {@link #disconnectFromPeer} and {@link #connectToPeer}.
-     * Uses the same port that was on the previous connection.
-     */
-    public void reconnectToPeer(Integer remotePlayerId) {
-        Peer reconnectPeer = peers.get(remotePlayerId);
-        if (Objects.nonNull(reconnectPeer)) {
-            String remotePlayerLogin = reconnectPeer.getRemoteLogin();
-            boolean offer = reconnectPeer.isLocalOffer();
-            int port = reconnectPeer.getLocalPort();
-            boolean allowHost = reconnectPeer.isAllowHost();
-            boolean allowReflexive = reconnectPeer.isAllowReflexive();
-            boolean allowRelay = reconnectPeer.isAllowRelay();
-
-            disconnectFromPeer(remotePlayerId);
-            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, allowHost, allowReflexive, allowRelay);
-        }
-    }
-
     public void reconnectToPeer(Integer remotePlayerId, Boolean allowHost, Boolean allowReflexive, Boolean allowRelay) {
         Peer reconnectPeer = peers.get(remotePlayerId);
         if (Objects.nonNull(reconnectPeer)) {
-            String remotePlayerLogin = reconnectPeer.getRemoteLogin();
-            boolean offer = reconnectPeer.isLocalOffer();
-            int port = reconnectPeer.getLocalPort();
+
             boolean isAllowHost = allowHost != null ? allowHost : reconnectPeer.isAllowHost();
             boolean isAllowReflexive = allowReflexive != null ? allowReflexive : reconnectPeer.isAllowReflexive();
             boolean isAllowRelay = allowRelay != null ? allowRelay : reconnectPeer.isAllowRelay();
+            reconnectPeer.setAllows(isAllowHost, isAllowReflexive, isAllowRelay);
+            reconnectPeer.reconnect();
 
-            disconnectFromPeer(remotePlayerId);
-            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, isAllowHost, isAllowReflexive, isAllowRelay);
+//            disconnectFromPeer(remotePlayerId);
+//            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, isAllowHost, isAllowReflexive, isAllowRelay);
         }
     }
 

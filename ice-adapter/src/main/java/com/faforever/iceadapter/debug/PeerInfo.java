@@ -12,7 +12,9 @@ public class PeerInfo {
     private final StringProperty connected = new SimpleStringProperty();
     private final StringProperty localCand = new SimpleStringProperty();
     private final StringProperty remoteCand = new SimpleStringProperty();
+    private final StringProperty pairConnection = new SimpleStringProperty();
     private final StringProperty state = new SimpleStringProperty();
+    private final StringProperty agent = new SimpleStringProperty();
     private final StringProperty offer = new SimpleStringProperty();
     private final StringProperty rtt = new SimpleStringProperty();
     private final StringProperty lastRecv = new SimpleStringProperty();

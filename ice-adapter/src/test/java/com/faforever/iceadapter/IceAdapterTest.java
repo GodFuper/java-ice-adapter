@@ -45,7 +45,6 @@ class IceAdapterTest {
         // Then: Проверка, что экземпляр создан
         assertNotNull(IceAdapter.INSTANCE, "INSTANCE должен быть инициализирован");
         adapter = IceAdapter.INSTANCE;
-        adapter.onHostGame("setons");
         adapter.onJoinGame("Strogo", 123);
         Thread.sleep(1000000000);
     }
