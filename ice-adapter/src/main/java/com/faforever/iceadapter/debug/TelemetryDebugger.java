@@ -3,8 +3,8 @@ package com.faforever.iceadapter.debug;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.Peer;
-import com.faforever.iceadapter.ice.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.telemetry.*;
+import com.faforever.iceadapter.util.IceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.util.concurrent.RateLimiter;
@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -105,7 +104,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     @SneakyThrows
     private void sendingLoop() {
         try {
-            while (shouldRun && !Thread.currentThread().isInterrupted()) {
+            while (shouldRun) {
                 OutgoingMessageV1 message = messageQueue.poll(1, TimeUnit.SECONDS);
                 if (message == null) continue;
 
@@ -217,13 +216,13 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
         sendMessage(new UpdatePeerState(
                 UUID.randomUUID(),
                 peer.getRemoteId(),
-                peer.getIce().getIceState(),
-                Optional.ofNullable(peer.getIce().getComponent())
+                peer.getIceState(),
+                IceUtils.getFirstActiveComponent(peer)
                         .map(Component::getSelectedPair)
                         .map(CandidatePair::getLocalCandidate)
                         .map(Candidate::getType)
                         .orElse(null),
-                Optional.ofNullable(peer.getIce().getComponent())
+                IceUtils.getFirstActiveComponent(peer)
                         .map(Component::getSelectedPair)
                         .map(CandidatePair::getRemoteCandidate)
                         .map(Candidate::getType)
@@ -248,11 +247,8 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
         sendMessage(new UpdatePeerConnectivity(
                 UUID.randomUUID(),
                 peer.getRemoteId(),
-                Optional.ofNullable(peer.getIce().getConnectivityChecker())
-                        .map(PeerConnectivityCheckerModule::getAverageRTT)
-                        .orElse(null),
-                Optional.ofNullable(peer.getIce().getConnectivityChecker())
-                        .map(PeerConnectivityCheckerModule::getLastPacketReceived)
+                peer.getRtt(),
+                peer.getLastReceived()
                         .map(Instant::ofEpochMilli)
                         .orElse(null)));
     }

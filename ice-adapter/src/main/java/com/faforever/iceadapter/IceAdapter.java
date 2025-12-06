@@ -46,6 +46,12 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         new CommandLine(new IceAdapter()).setUnmatchedArgumentsAllowed(true).execute(args);
     }
 
+//    private void settingIce4j() {
+//        System.setProperty(StackProperties.FIRST_CTRAN_RETRANS_AFTER, "1");
+//        System.setProperty(StackProperties.MAX_CTRAN_RETRANS_TIMER, String.valueOf(Duration.ofMinutes(2).toMillis()));
+//        System.setProperty(StackProperties.KEEP_CRANS_AFTER_A_RESPONSE, Boolean.toString(true));
+//    }
+
     @Override
     public Integer call() {
         INSTANCE = this;
@@ -55,6 +61,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     }
 
     public void start() {
+//        settingIce4j();
         determineVersion();
         log.info("Version: {}", VERSION);
 

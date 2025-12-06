@@ -195,7 +195,7 @@ public class GPGNetServer implements AutoCloseable {
         private void listenerLoop() {
             log.debug("Listening for GPG messages from {}", socket.getRemoteSocketAddress());
             try (InputStream in = socket.getInputStream(); var gpgnetIn = new FaDataInputStream(in)) {
-                while (!stopping && !Thread.currentThread().isInterrupted()) {
+                while (!stopping) {
                     String command = gpgnetIn.readString();
                     List<Object> args = gpgnetIn.readChunks();
 
@@ -255,7 +255,7 @@ public class GPGNetServer implements AutoCloseable {
 
     private void acceptLoop() {
         log.info("Accept loop started for GPGNetServer");
-        while (!Thread.currentThread().isInterrupted() && serverSocket != null && !serverSocket.isClosed()) {
+        while (serverSocket != null && !serverSocket.isClosed()) {
             try {
                 Socket socket = serverSocket.accept();
 

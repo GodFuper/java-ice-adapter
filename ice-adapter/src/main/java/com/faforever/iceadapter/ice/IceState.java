@@ -3,11 +3,11 @@ package com.faforever.iceadapter.ice;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 /**
  * IceState, does not match WebRTC states, represents peer connection "lifecycle"
  */
+@Getter
+@RequiredArgsConstructor
 public enum IceState {
     NEW("new"),
     GATHERING("gathering"),

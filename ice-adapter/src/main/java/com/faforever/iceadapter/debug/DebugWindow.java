@@ -5,7 +5,7 @@ import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.Peer;
-import com.faforever.iceadapter.ice.PeerConnectivityCheckerModule;
+import com.faforever.iceadapter.util.IceUtils;
 import com.nbarraille.jjsonrpc.JJsonPeer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -339,15 +338,15 @@ public class DebugWindow extends Application implements Debugger {
         }
 
         public void stateChangedUpdate(Peer peer) {
-            connected.set(peer.getIce().isConnected());
-            state.set(peer.getIce().getIceState().getMessage());
-            localCandidate.set(Optional.ofNullable(peer.getIce().getComponent())
+            connected.set(peer.isConnected());
+            state.set(peer.getIceState().getMessage());
+            localCandidate.set(IceUtils.getFirstActiveComponent(peer)
                     .map(Component::getSelectedPair)
                     .map(CandidatePair::getLocalCandidate)
                     .map(Candidate::getType)
                     .map(CandidateType::toString)
                     .orElse(""));
-            remoteCandidate.set(Optional.ofNullable(peer.getIce().getComponent())
+            remoteCandidate.set(IceUtils.getFirstActiveComponent(peer)
                     .map(Component::getSelectedPair)
                     .map(CandidatePair::getRemoteCandidate)
                     .map(Candidate::getType)
@@ -356,23 +355,17 @@ public class DebugWindow extends Application implements Debugger {
         }
 
         public void connectivityUpdate(Peer peer) {
-            Optional<PeerConnectivityCheckerModule> connectivityChecker =
-                    Optional.ofNullable(peer.getIce().getConnectivityChecker());
-            averageRtt.set(connectivityChecker
-                    .map(PeerConnectivityCheckerModule::getAverageRTT)
+            averageRtt.set(peer.getAverageRtt()
                     .orElse(-1.0f)
                     .intValue());
-            lastReceived.set(connectivityChecker
-                    .map(PeerConnectivityCheckerModule::getLastPacketReceived)
+            lastReceived.set(peer.getLastReceived()
                     .map(last -> System.currentTimeMillis() - last)
                     .orElse(-1L)
                     .intValue());
-            echosReceived.set(connectivityChecker
-                    .map(PeerConnectivityCheckerModule::getEchosReceived)
+            echosReceived.set(peer.countEchosReceived()
                     .orElse(-1L)
                     .intValue());
-            invalidEchosReceived.set(connectivityChecker
-                    .map(PeerConnectivityCheckerModule::getInvalidEchosReceived)
+            invalidEchosReceived.set(peer.countInvalidEchosReceived()
                     .orElse(-1L)
                     .intValue());
         }

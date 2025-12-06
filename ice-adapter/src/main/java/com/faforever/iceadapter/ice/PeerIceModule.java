@@ -1,21 +1,17 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.ice.modules.IceModule;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.TransportAddress;
 import org.ice4j.ice.*;
-import org.ice4j.ice.harvest.StunCandidateHarvester;
-import org.ice4j.ice.harvest.TurnCandidateHarvester;
-import org.ice4j.security.LongTermCredential;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
+import static com.faforever.iceadapter.ice.ConnectivityModule.COMMAND_ECHO;
 import static com.faforever.iceadapter.ice.IceState.*;
 import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 
@@ -33,11 +30,9 @@ import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 public class PeerIceModule {
     @Setter
     private static RPCService rpcService;
-    private static boolean ALLOW_HOST = true;
-    private static boolean ALLOW_REFLEXIVE = true;
-    private static boolean ALLOW_RELAY = true;
     private static final int MINIMUM_PORT = 6112; // PORT (range +1000) to be used by ICE for communicating, each peer needs a seperate port
-    private static final long FORCE_SRFLX_RELAY_INTERVAL = 2 * 60 * 1000; // 2 mins, the interval in which multiple connects have to happen to force srflx/relay
+    private static final int MAXIMUM_PORT = 7112; // PORT (range +1000) to be used by ICE for communicating, each peer needs a seperate port
+
     private static final int TIMEOUT_ON_CHECKING = 30000;
 
     private final Peer peer;
@@ -49,11 +44,6 @@ public class PeerIceModule {
     @Getter
     private volatile boolean connected = false;
     private volatile Thread listenerThread;
-
-    private PeerTurnRefreshModule turnRefreshModule;
-
-    // Checks the connection by sending echo requests and initiates a reconnect if needed
-    private final PeerConnectivityCheckerModule connectivityChecker = new PeerConnectivityCheckerModule(this);
 
     // How often have we been waiting for a response to local candidates/offer
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
@@ -139,24 +129,24 @@ public class PeerIceModule {
         log.info("{} Gathering ice candidates", getLogPrefix());
 
         // For STUN all servers are relevant (latency is not an issue)
-        GameSession.getIceServers().stream()
-                .flatMap(s -> s.getStunAddresses().stream())
-                .forEach(address -> {
-                    log.info("{} Add STUN harvester for {}", getLogPrefix(), address.getHostName());
-                    agent.addCandidateHarvester(new StunCandidateHarvester(address));
-                });
+//        GameSession.getIceServers().stream()
+//                .flatMap(s -> s.getStunAddresses().stream())
+//                .forEach(address -> {
+//                    log.info("{} Add STUN harvester for {}", getLogPrefix(), address.getHostName());
+//                    agent.addCandidateHarvester(new StunCandidateHarvester(address));
+//                });
 
         // TURN is latency sensitive
-        List<IceServer> iceServers = getViableIceServers();
-        iceServers.forEach(iceServer -> iceServer.getTurnAddresses().forEach(address -> {
-            var harvester = new TurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
-            log.info("{} Add TURN harvester for {}", getLogPrefix(), address.getHostName());
-            agent.addCandidateHarvester(harvester);
-        }));
+//        List<IceServer> iceServers = GameSession.getFilteredIceServers();
+//        iceServers.forEach(iceServer -> iceServer.getTurnAddresses().forEach(address -> {
+//            var harvester = new TurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
+//            log.info("{} Add TURN harvester for {}", getLogPrefix(), address.getHostName());
+//            agent.addCandidateHarvester(harvester);
+//        }));
 
         CompletableFuture<Void> gatheringFuture = CompletableFuture.runAsync(() -> {
             try {
-                Component component = agent.createComponent(mediaStream, ThreadLocalRandom.current().nextInt(MINIMUM_PORT, MINIMUM_PORT + 999), MINIMUM_PORT, MINIMUM_PORT + 1000);
+                Component component = agent.createComponent(mediaStream, ThreadLocalRandom.current().nextInt(MINIMUM_PORT, MAXIMUM_PORT), MINIMUM_PORT, MAXIMUM_PORT);
                 DatagramSocketUtils.resizeBuffer(component.getSocket());
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -221,40 +211,6 @@ public class PeerIceModule {
                     }
                 },
                 CompletableFuture.delayedExecutor(6000, TimeUnit.MILLISECONDS, IceAdapter.getExecutor()));
-    }
-
-    private List<IceServer> getViableIceServers() {
-        List<IceServer> allIceServers = GameSession.getIceServers();
-        if (IceAdapter.getPingCount() <= 0 || allIceServers.isEmpty()) {
-            return allIceServers;
-        }
-
-        // Try servers with acceptable latency
-        List<IceServer> viableIceServers =
-                allIceServers.stream().filter(IceServer::hasAcceptableLatency).collect(Collectors.toList());
-        if (!viableIceServers.isEmpty()) {
-            log.info(
-                    "Using all viable ice servers: {}",
-                    viableIceServers.stream()
-                            .map(it -> "["
-                                    + it.getTurnAddresses().stream()
-                                    .map(TransportAddress::toString)
-                                    .collect(Collectors.joining(", "))
-                                    + "]")
-                            .collect(Collectors.joining(", ")));
-            return viableIceServers;
-        }
-
-        log.info(
-                "Using all ice servers: {}",
-                allIceServers.stream()
-                        .map(it -> "["
-                                + it.getTurnAddresses().stream()
-                                .map(TransportAddress::toString)
-                                .collect(Collectors.joining(", "))
-                                + "]")
-                        .collect(Collectors.joining(", ")));
-        return allIceServers;
     }
 
     /**
@@ -362,16 +318,8 @@ public class PeerIceModule {
         rpcService.onConnected(IceAdapter.getId(), peer.getRemoteId(), true);
         setState(CONNECTED);
 
-        for (Component component : mediaStream.getComponents()) {
-            if (component.getSelectedPair().getLocalCandidate().getType() == CandidateType.RELAYED_CANDIDATE) {
-                turnRefreshModule = new PeerTurnRefreshModule(
-                        this, (RelayedCandidate) component.getSelectedPair().getLocalCandidate());
-            }
-        }
-
-        if (peer.isLocalOffer()) {
-            connectivityChecker.start();
-        }
+        peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+                .ifPresent(ConnectivityModule::start);
 
         for (Component component : mediaStream.getComponents()) {
             listenerThread = new Thread(() -> listener(component));
@@ -398,16 +346,8 @@ public class PeerIceModule {
                 listenerThread = null;
             }
 
-            if (turnRefreshModule != null) {
-                try {
-                    turnRefreshModule.close();
-                } catch (Exception e) {
-                    log.warn("{} Error closing turnRefreshModule", getLogPrefix(), e);
-                }
-                turnRefreshModule = null;
-            }
-
-            connectivityChecker.stop();
+            peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+                    .ifPresent(ConnectivityModule::stop);
 
             if (connected) {
                 connected = false;
@@ -429,7 +369,7 @@ public class PeerIceModule {
                 return;
             }
 
-            if (peer.getGameSession().isGameEnded()) {
+            if (peer.getIceSession().isGameEnded()) {
                 log.warn("{} GAME ENDED, ABORTING onConnectionLost of ICE for peer ", getLogPrefix());
                 return;
             }
@@ -504,23 +444,25 @@ public class PeerIceModule {
         Component localComponent = component;
 
         byte[] data = new byte[MAX_SIZE_PACKET];
-        while (IceAdapter.getGameSession() == peer.getGameSession()) {
+        while (IceAdapter.getGameSession() == peer.getIceSession()) {
             try {
                 DatagramPacket packet = new DatagramPacket(data, data.length);
                 localComponent.getSocket().receive(packet);
 
-                connectivityChecker.notifyTrafficReceived();
+                peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+                        .ifPresent(ConnectivityModule::onReceivePacket);
                 if (packet.getLength() == 0) {
                     continue;
                 }
 
                 if (data[0] == 'd') {
                     // Received data
-                    peer.onIceDataReceived(data, 1, packet.getLength() - 1);
-                } else if (data[0] == 'e') {
+//                    peer.onIceDataReceived(data, 1, packet.getLength() - 1);
+                } else if (data[0] == COMMAND_ECHO) {
                     // Received echo req/res
                     if (peer.isLocalOffer()) {
-                        connectivityChecker.echoReceived(data, 0, packet.getLength());
+                        peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+                                .ifPresent(module -> module.onEchoReceived(data, packet.getLength()));
                     } else {
                         sendViaIce(data, 0, packet.getLength()); // Turn around, send echo back
                     }
@@ -530,9 +472,6 @@ public class PeerIceModule {
 
             } catch (IOException e) { // TODO: nullpointer from localComponent.xxxx????
                 log.warn("{} Error while reading from ICE adapter", getLogPrefix(), e);
-//                if (component == localComponent) {
-//                    onConnectionLost();
-//                }
                 break;
             }
         }
@@ -551,14 +490,13 @@ public class PeerIceModule {
             listenerThread.interrupt();
             listenerThread = null;
         }
-        if (turnRefreshModule != null) {
-            turnRefreshModule.close();
-        }
         if (agent != null) {
             closeAgent(agent);
             agent = null;
         }
-        connectivityChecker.stop();
+
+        peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+                .ifPresent(ConnectivityModule::stop);
     }
 
     public String getLogPrefix() {

@@ -1,9 +1,5 @@
 package com.faforever.iceadapter.ice;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.time.Duration;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.RelayedCandidate;
@@ -13,11 +9,17 @@ import org.ice4j.message.MessageFactory;
 import org.ice4j.message.Request;
 import org.ice4j.stack.TransactionID;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.time.Duration;
+
 /**
  * Sends continuous refresh requests to the turn server
  */
 @Slf4j
-public class PeerTurnRefreshModule {
+@Deprecated
+public class PeerTurnRefreshModule implements ModuleBase {
 
     private static final int REFRESH_INTERVAL = (int) Duration.ofMinutes(2).toMillis();
 
@@ -37,7 +39,7 @@ public class PeerTurnRefreshModule {
     }
 
     @Getter
-    private final PeerIceModule ice;
+    private final Peer peer;
 
     @Getter
     private final RelayedCandidate candidate;
@@ -47,10 +49,14 @@ public class PeerTurnRefreshModule {
     private Thread refreshThread;
     private volatile boolean running = true;
 
-    public PeerTurnRefreshModule(PeerIceModule ice, RelayedCandidate candidate) {
-        this.ice = ice;
+    public PeerTurnRefreshModule(Peer peer, RelayedCandidate candidate) {
+        this.peer = peer;
         this.candidate = candidate;
 
+        init();
+    }
+
+    private void init() {
         try {
             harvest = (TurnCandidateHarvest) harvestField.get(candidate);
         } catch (IllegalAccessException e) {
@@ -58,12 +64,11 @@ public class PeerTurnRefreshModule {
         }
 
         if (harvest == null) {
-            log.warn("No TurnCandidateHarvest available for peer {}; TURN refresh will not run", ice.getPeer().getRemoteLogin());
+            log.warn("No TurnCandidateHarvest available for peer {}; TURN refresh will not run", peer.getRemoteLogin());
             return;
         }
 
-        refreshThread = Thread.startVirtualThread(this::refreshThread);
-        log.debug("Started TURN refresh module for peer {}", ice.getPeer().getRemoteLogin());
+        start();
     }
 
     private void refreshThread() {
@@ -74,32 +79,21 @@ public class PeerTurnRefreshModule {
             return;
         }
 
-        while (running && !Thread.currentThread().isInterrupted()) {
+        while (running) {
             if (harvest == null) {
-                log.warn("TurnCandidateHarvest is null during refresh; stopping for peer {}", ice.getPeer().getPeerIdentifier());
+                log.warn("TurnCandidateHarvest is null during refresh; stopping for peer {}", peer.getPeerIdentifier());
                 break;
             }
-
-            Request refreshRequest = MessageFactory.createRefreshRequest(600); // Request max lifetime
 
             try {
-                TransactionID tid = (TransactionID) sendRequestMethod.invoke(harvest, refreshRequest, false, null);
-                log.debug("Sent TURN refresh request for peer {}", ice.getPeer().getPeerIdentifier());
-            } catch (IllegalAccessException e) {
-                log.error("Reflection access failed for sendRequest. TURN refresh will stop for peer {}",
-                        ice.getPeer().getRemoteLogin(), e);
-                break;
-            } catch (InvocationTargetException e) {
-                log.warn("TURN server rejected refresh request for peer {}", ice.getPeer().getPeerIdentifier(), e.getCause());
-                // Continue — may recover after transient error
+                sendRequest(600);
             } catch (Exception e) {
-                log.warn("Unexpected error during TURN refresh for peer {}", ice.getPeer().getPeerIdentifier(), e);
+                break;
             }
-
             try {
                 Thread.sleep(REFRESH_INTERVAL);
             } catch (InterruptedException e) {
-                log.debug("Refresh thread interrupted for peer {}", ice.getPeer().getPeerIdentifier());
+                log.debug("Refresh thread interrupted for peer {}", peer.getPeerIdentifier());
                 Thread.currentThread().interrupt();
                 return;
             }
@@ -110,7 +104,40 @@ public class PeerTurnRefreshModule {
      * Closes the refresh module and sends a final REFRESH with LIFETIME=0 to free the TURN allocation.
      */
     public void close() {
+        stop();
+    }
+
+    private void sendRequest(int lifetime) {
+        Request refreshRequest = MessageFactory.createRefreshRequest(lifetime);
+        try {
+            TransactionID tid = (TransactionID) sendRequestMethod.invoke(harvest, refreshRequest, false, null);
+            log.debug("Sent TURN refresh request for peer {}", peer.getPeerIdentifier());
+        } catch (IllegalAccessException e) {
+            log.error("Reflection access failed for sendRequest. TURN refresh will stop for peer {}",
+                    peer.getRemoteLogin(), e);
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            log.warn("TURN server rejected refresh request for peer {}", peer.getPeerIdentifier(), e.getCause());
+            // Continue — may recover after transient error
+        } catch (Exception e) {
+            log.warn("Unexpected error during TURN refresh for peer {}", peer.getPeerIdentifier(), e);
+        }
+    }
+
+    @Override
+    public void start() {
+        running = true;
+        refreshThread = Thread.startVirtualThread(this::refreshThread);
+        log.debug("Started TURN refresh module for peer {}", peer.getPeerIdentifier());
+    }
+
+    @Override
+    public void stop() {
         running = false;
+
+        if (!running) {
+            return;
+        }
 
         if (refreshThread != null) {
             refreshThread.interrupt();
@@ -118,16 +145,13 @@ public class PeerTurnRefreshModule {
 
         if (harvest != null && candidate != null) {
             try {
-                Request releaseRequest = MessageFactory.createRefreshRequest(0); // Free allocation
-                sendRequestMethod.invoke(harvest, releaseRequest, false, null);
-                log.debug("Sent TURN refresh with LIFETIME=0 to release allocation for peer {}", ice.getPeer().getRemoteLogin());
+                sendRequest(0);
             } catch (Exception e) {
-                log.warn("Failed to release TURN allocation for peer {}", ice.getPeer().getRemoteLogin(), e);
+                log.warn("Failed to release TURN allocation for peer {}", peer.getPeerIdentifier(), e);
             } finally {
                 harvest = null;
             }
         }
-
-        log.debug("TURN refresh module stopped for peer {}", ice.getPeer().getRemoteLogin());
+        log.debug("TURN refresh module stopped for peer {}", peer.getPeerIdentifier());
     }
 }

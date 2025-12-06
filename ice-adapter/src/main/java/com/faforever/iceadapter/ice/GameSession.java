@@ -1,8 +1,16 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.services.ConnectService;
+import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.services.IceTrigger;
+import com.faforever.iceadapter.services.MessagesService;
+import com.faforever.iceadapter.services.impl.*;
 import com.faforever.iceadapter.telemetry.CoturnServer;
+import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.PingWrapper;
+import com.faforever.iceadapter.util.TrayIcon;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -17,6 +25,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -26,7 +35,7 @@ import static com.faforever.iceadapter.debug.Debug.debug;
  */
 @Slf4j
 @NoArgsConstructor
-public class GameSession {
+public class GameSession implements IceGameSession {
 
     private static final String STUN = "stun";
     private static final String TURN = "turn";
@@ -36,8 +45,18 @@ public class GameSession {
             new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
             new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
 
+    private static final List<IceServer> iceServers = new ArrayList<>();
+
     @Getter
     private final Map<Integer, Peer> peers = new ConcurrentHashMap<>();
+
+    private final IceAsync iceAsync = new IceAsyncImpl(ExecutorHolder.getExecutor(), ExecutorHolder.getScheduledExecutor());
+    private final ConnectService controlledConnectService = new ConnectServiceControlledImpl(this, iceAsync);
+    private final ConnectService notControlledConnectService = new ConnectServiceNotControlledImpl(this, iceAsync);
+    private final ConnectService connectServiceHandler = new ConnectServiceHandler(this, controlledConnectService, notControlledConnectService);
+    private final IceTrigger iceTrigger = new IceTriggerImpl(iceAsync, connectServiceHandler);
+    private final MessagesService messagesService = new MessageServiceImpl(this, connectServiceHandler);
+    private final IcePeerAdapter icePeerAdapter = new IcePeerAdapterImpl(connectServiceHandler, messagesService);
 
     @Getter
     @Setter
@@ -59,7 +78,10 @@ public class GameSession {
             reCreatePeer(remotePlayerId);
             return peers.get(remotePlayerId).getLocalPort();
         }
-        Peer peer = new Peer(this, remotePlayerId, remotePlayerLogin, offer, preferredPort, allowHost, allowReflexive, allowRelay);
+        Peer peer = new Peer(this, iceTrigger, remotePlayerId, remotePlayerLogin, offer, preferredPort);
+        peer.setAllows(allowHost, allowReflexive, allowRelay);
+        peer.initModules(this, icePeerAdapter);
+        peer.init();
         peers.put(remotePlayerId, peer);
         debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
         return peer.getLocalPort();
@@ -104,9 +126,6 @@ public class GameSession {
             boolean isAllowRelay = allowRelay != null ? allowRelay : reconnectPeer.isAllowRelay();
             reconnectPeer.setAllows(isAllowHost, isAllowReflexive, isAllowRelay);
             reconnectPeer.reconnect();
-
-//            disconnectFromPeer(remotePlayerId);
-//            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, isAllowHost, isAllowReflexive, isAllowRelay);
         }
     }
 
@@ -119,8 +138,42 @@ public class GameSession {
         peers.clear();
     }
 
-    @Getter
-    private static final List<IceServer> iceServers = new ArrayList<>();
+
+    public List<IceServer> getIceServers() {
+        return iceServers;
+    }
+
+    public List<IceServer> getFilteredIceServers() {
+        List<IceServer> allIceServers = iceServers;
+        if (IceAdapter.getPingCount() <= 0 || allIceServers.isEmpty()) {
+            return allIceServers;
+        }
+
+        // Try servers with acceptable latency
+        List<IceServer> viableIceServers =
+                allIceServers.stream().filter(IceServer::hasAcceptableLatency).collect(Collectors.toList());
+        if (!viableIceServers.isEmpty()) {
+            log.info("Using all viable ice servers: {}",
+                    viableIceServers.stream()
+                            .map(it -> "["
+                                    + it.getTurnAddresses().stream()
+                                    .map(TransportAddress::toString)
+                                    .collect(Collectors.joining(", "))
+                                    + "]")
+                            .collect(Collectors.joining(", ")));
+            return viableIceServers;
+        }
+
+        log.info("Using all ice servers: {}",
+                allIceServers.stream()
+                        .map(it -> "["
+                                + it.getTurnAddresses().stream()
+                                .map(TransportAddress::toString)
+                                .collect(Collectors.joining(", "))
+                                + "]")
+                        .collect(Collectors.joining(", ")));
+        return allIceServers;
+    }
 
     /**
      * Set ice servers (to be used for harvesting candidates)
@@ -220,5 +273,34 @@ public class GameSession {
                         .mapToInt(iceServer -> iceServer.getStunAddresses().size()
                                 + iceServer.getTurnAddresses().size())
                         .sum());
+    }
+
+    public void onIceMessageReceived(CandidatesMessage message) {
+        connectServiceHandler.onIceMessageReceived(message);
+    }
+
+    @Override
+    public int getLobbyPort() {
+        return GPGNetServer.getLobbyPort();
+    }
+
+    @Override
+    public int getMyId() {
+        return IceAdapter.getId();
+    }
+
+    @Override
+    public void sendToRpc(CandidatesMessage message) {
+        IceAdapter.INSTANCE.getRpcService().onIceMsg(message);
+    }
+
+    @Override
+    public void onConnected(Peer peer, boolean connected) {
+        IceAdapter.INSTANCE.getRpcService().onConnected(getMyId(), peer.getRemoteId(), connected);
+    }
+
+    @Override
+    public void showMessage(String message) {
+        TrayIcon.showMessage(message);
     }
 }
