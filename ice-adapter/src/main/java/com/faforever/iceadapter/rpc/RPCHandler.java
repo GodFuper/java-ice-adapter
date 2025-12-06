@@ -8,7 +8,6 @@ import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.gpgnet.LobbyInitMode;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
-import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.Peer;
 import com.faforever.iceadapter.util.IceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,7 +70,7 @@ public class RPCHandler {
             Peer peer = gameSession.getPeers().get((int) remotePlayerId);
             if (peer != null) { // This is highly unlikely, peer is present if connectToPeer was called first
                 try {
-                    gameSession.onIceMessageReceived(objectMapper.readValue((String) msg, CandidatesMessage.class));
+                    IceAdapter.getGameSession().onIceMessageReceived(objectMapper.readValue((String) msg, CandidatesMessage.class));
                     err = false;
                 } catch (IOException e) {
                     log.error("Failed to parse iceMsg {}", msg, e);
@@ -153,10 +152,9 @@ public class RPCHandler {
             }
         }
 
-        IceGameSession iceGameSession = IceAdapter.getGameSession();
         IceStatus status = new IceStatus(
                 IceAdapter.getVersion(),
-                iceGameSession.getIceServers().stream()
+                IceAdapter.getGameSession().getIceServers().stream()
                         .mapToInt(s -> s.getTurnAddresses().size()
                                 + s.getStunAddresses().size())
                         .sum(),
