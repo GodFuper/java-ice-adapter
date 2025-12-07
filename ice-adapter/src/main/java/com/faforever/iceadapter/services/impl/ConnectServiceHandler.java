@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.ice.CandidatesMessage;
-import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.Peer;
 import com.faforever.iceadapter.services.ConnectService;
@@ -11,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class ConnectServiceHandler implements ConnectService {
-    private final IceGameSession iceSession;
     private final ConnectService controlledConnectService;
     private final ConnectService notControlledConnectService;
 
@@ -38,25 +36,6 @@ public class ConnectServiceHandler implements ConnectService {
             controlledConnectService.onConnectionLost(peer);
         } else {
             notControlledConnectService.onConnectionLost(peer);
-        }
-    }
-
-    @Override
-    public void onIceMessageReceived(CandidatesMessage message) {
-        if (message == null) {
-            return;
-        }
-
-        Peer peer = iceSession.getPeers().get(message.destId());
-
-        if (peer == null) {
-            return;
-        }
-
-        if (peer.isLocalOffer()) {
-            controlledConnectService.onIceMessageReceived(peer, message);
-        } else {
-            notControlledConnectService.onIceMessageReceived(peer, message);
         }
     }
 

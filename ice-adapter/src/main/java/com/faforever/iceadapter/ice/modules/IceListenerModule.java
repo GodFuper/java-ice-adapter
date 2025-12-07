@@ -60,7 +60,7 @@ public class IceListenerModule implements ModuleBase {
      * Listens for data incoming via ice socket
      */
     public Runnable listener(Component component) {
-        Optional<ConnectivityModule> connectivityModule = peer.getModule(IceModule.ICE_LISTENER_MODULE, ConnectivityModule.class);
+        Optional<ConnectivityModule> connectivityModule = peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class);
         return () -> {
             Thread.currentThread().setName(getThreadName());
             log.debug("Now forwarding data from ICE to FA for peer");

@@ -15,8 +15,6 @@ import org.ice4j.ice.harvest.TurnCandidateHarvester;
 import org.ice4j.security.LongTermCredential;
 
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static com.faforever.iceadapter.ice.IceState.*;
 
@@ -30,8 +28,6 @@ public abstract class ConnectServiceCommon {
     protected static final int TIMEOUT_ON_CHECKING = 15000;
     protected final IceGameSession iceGameSession;
     protected final IceAsync iceAsync;
-
-    protected Lock lockMessageReceived = new ReentrantLock();
 
     public void onChangeIceState(Peer peer, IceState oldState, IceState iceState) {
         if (peer == null || iceState == null) {
@@ -107,7 +103,7 @@ public abstract class ConnectServiceCommon {
             if (!gatheringFuture.isDone()) {
                 gatheringFuture.cancel(true);
             }
-        }, 5000);
+        }, 10000);
 
         boolean success = true;
         try {
@@ -121,7 +117,7 @@ public abstract class ConnectServiceCommon {
         }
 
         if (!success) {
-            onConnectionLost(peer);
+            connectLost(peer);
             return;
         }
 
@@ -134,7 +130,7 @@ public abstract class ConnectServiceCommon {
                     true,
                     true,
                     true);
-            log.debug("Sending own candidates, offered candidates: {}", candidatesMessage.getStrCandidates());
+            log.debug("Sending own candidates, offered candidates: {}", candidatesMessage.toStrCandidates());
 
             iceGameSession.sendToRpc(candidatesMessage);
         }
@@ -153,7 +149,7 @@ public abstract class ConnectServiceCommon {
             return;
         }
 
-        if (peer.getIceSession().isGameEnded()) {
+        if (iceGameSession.isGameEnded()) {
             log.warn("GAME ENDED, ABORTING onConnectionLost of ICE for peer ");
             return;
         }
@@ -171,11 +167,9 @@ public abstract class ConnectServiceCommon {
             return;
         }
 
-        if (!peer.isConnected()) {
-            peer.setConnected(false);
-            log.warn("ICE connection has been lost for peer");
-            iceGameSession.onConnected(peer, false);
-        }
+        peer.stopModules();
+
+        iceGameSession.onConnected(peer, peer.isConnected());
 
         peer.setIceState(DISCONNECTED);
     }
@@ -193,9 +187,9 @@ public abstract class ConnectServiceCommon {
         agent.startConnectivityEstablishment();
 
         try {
-            return future.get(TIMEOUT_ON_CHECKING * 2, TimeUnit.MILLISECONDS);
+            return future.get(TIMEOUT_ON_CHECKING, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            log.error("Timeout while waiting for connection ICE", e);
+            log.error("Timeout while waiting for connection ICE");
             return false;
         }
     }
@@ -204,9 +198,6 @@ public abstract class ConnectServiceCommon {
         log.info("ICE state connected");
 
         log.debug("ICE terminated, connected, candidate pair: {} ", peer.getStrCandidateTypes("|"));
-
-        // We are connected
-        peer.setConnected(true);
 
         iceGameSession.onConnected(peer, true);
 
@@ -225,7 +216,7 @@ public abstract class ConnectServiceCommon {
                 return;
             }
             if (peer.getIceState() == AWAITING_CANDIDATES) {
-                onConnectionLost(peer);
+                connectLost(peer);
             }
         });
     }

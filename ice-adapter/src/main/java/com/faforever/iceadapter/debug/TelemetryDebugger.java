@@ -16,6 +16,7 @@ import org.ice4j.ice.Candidate;
 import org.ice4j.ice.CandidatePair;
 import org.ice4j.ice.Component;
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.ConnectException;
@@ -24,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -43,12 +45,10 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     private final Thread sendingLoopThread;
 
-    private volatile boolean shouldRun = true; // Для контроля цикла
-    private int reconnectAttempt = 0; // Счётчик попыток переподключения
+    private volatile boolean shouldRun = true;
+    private int reconnectAttempt = 0;
 
     public TelemetryDebugger(String telemetryServer, int gameId, int playerId) {
-        Debug.register(this);
-
         websocketUri = URI.create("%s/adapter/v1/game/%d/player/%d".formatted(telemetryServer, gameId, playerId));
         log.info(
                 "Open the telemetry ui via {}/app.html?gameId={}&playerId={}",
@@ -117,6 +117,8 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
                     String json = objectMapper.writeValueAsString(message);
                     websocketClient.send(json);
                     log.trace("Sent telemetry message: {}", json);
+                } catch (WebsocketNotConnectedException e) {
+                    log.warn("Telemetry websocket not connected: {}", message.getType());
                 } catch (Exception e) {
                     log.error("Failed to serialize or send telemetry message: {}", message, e);
                 }
@@ -137,7 +139,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
         while (shouldRun && !websocketClient.isOpen()) {
             if (!shouldRun) return false;
 
-            // Экспоненциальная задержка с jitter
+            // Exponential latency with jitter
             Duration delay = RECONNECT_BASE_DELAY.multipliedBy((long) Math.pow(2, Math.min(reconnectAttempt, 5)));
             delay = delay.plusMillis(ThreadLocalRandom.current().nextLong(0, 1000));
             delay = Duration.ofMillis(Math.min(delay.toMillis(), MAX_RECONNECT_DELAY.toMillis()));
@@ -213,18 +215,16 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     @Override
     public void peerStateChanged(Peer peer) {
+        Optional<CandidatePair> pair = IceUtils.getFirstActiveComponent(peer)
+                .map(Component::getSelectedPair);
         sendMessage(new UpdatePeerState(
                 UUID.randomUUID(),
                 peer.getRemoteId(),
                 peer.getIceState(),
-                IceUtils.getFirstActiveComponent(peer)
-                        .map(Component::getSelectedPair)
-                        .map(CandidatePair::getLocalCandidate)
+                pair.map(CandidatePair::getLocalCandidate)
                         .map(Candidate::getType)
                         .orElse(null),
-                IceUtils.getFirstActiveComponent(peer)
-                        .map(Component::getSelectedPair)
-                        .map(CandidatePair::getRemoteCandidate)
+                pair.map(CandidatePair::getRemoteCandidate)
                         .map(Candidate::getType)
                         .orElse(null)));
     }

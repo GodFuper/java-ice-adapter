@@ -214,19 +214,40 @@ public class ICEAdapter {
 			String command[] = new String[]{
 //					(System.getProperty("os.name").contains("Windows") ? "faf-ice-adapter.exe" : "./faf-ice-adapter"),
 					"java",
-					"-jar",
-					"faf-ice-adapter.jar",
-					"--id", String.valueOf(TestClient.playerID),
-					"--login", TestClient.username,
-					"--rpc-port", String.valueOf(ADAPTER_PORT),
-					"--game-id", String.valueOf(100),
-					"--debug-window=true",
-					"--info-window=true",
+                    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5004",
+                    "-jar",
+                    "faf-ice-adapter.jar",
+                    "--id", String.valueOf(TestClient.playerID),
+                    "--login", TestClient.username,
+                    "--rpc-port", String.valueOf(ADAPTER_PORT),
+                    "--game-id", String.valueOf(100),
+                    "--debug-window=true",
+                    "--info-window=true",
 //				"--gpgnet-port", String.valueOf(GPG_PORT), retrieved afterwards
 //				"--lobby-port", String.valueOf(LOBBY_PORT),
-					"--log-level", LOG_LEVEL,
+                    "--log-level", LOG_LEVEL,
 //					"--log-directory", "iceAdapterLogs/"
-			};
+            };
+
+            if (Objects.equals(TestClient.username, "2")) {
+                command = new String[]{
+//					(System.getProperty("os.name").contains("Windows") ? "faf-ice-adapter.exe" : "./faf-ice-adapter"),
+                        "java",
+                        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
+                        "-jar",
+                        "faf-ice-adapter.jar",
+                        "--id", String.valueOf(TestClient.playerID),
+                        "--login", TestClient.username,
+                        "--rpc-port", String.valueOf(ADAPTER_PORT),
+                        "--game-id", String.valueOf(100),
+                        "--debug-window=true",
+                        "--info-window=true",
+//				"--gpgnet-port", String.valueOf(GPG_PORT), retrieved afterwards
+//				"--lobby-port", String.valueOf(LOBBY_PORT),
+                        "--log-level", LOG_LEVEL,
+//					"--log-directory", "iceAdapterLogs/"
+                };
+            }
 
 			ProcessBuilder processBuilder = new ProcessBuilder(command);
 //			processBuilder.inheritIO();

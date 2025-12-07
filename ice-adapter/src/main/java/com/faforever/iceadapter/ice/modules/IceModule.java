@@ -13,6 +13,10 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 @Getter
 public enum IceModule {
+    EVENT_BUS(triple -> {
+        Peer peer = triple.getFirst();
+        return new EventBusModule(peer);
+    }),
     FA_SOCKET_MODULE(triple -> {
         Peer peer = triple.getFirst();
         ModuleBase module = new FASocketModule(peer);

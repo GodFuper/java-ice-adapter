@@ -1,8 +1,6 @@
 package com.faforever.iceadapter.util;
 
-import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.LogoUtils;
-import com.faforever.iceadapter.debug.IceWindow;
 import com.faforever.iceadapter.debug.InfoWindow;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,8 +41,7 @@ public class TrayIcon {
 
             @Override
             public void mousePressed(MouseEvent mouseEvent) {
-                CompletableFuture.runAsync(IceWindow::launch, IceAdapter.getExecutor());
-                CompletableFuture.runAsync(InfoWindow::launch, IceAdapter.getExecutor());
+                CompletableFuture.runAsync(InfoWindow::launch);
             }
 
             @Override

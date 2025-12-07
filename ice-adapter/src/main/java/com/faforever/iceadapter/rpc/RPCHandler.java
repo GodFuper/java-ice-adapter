@@ -21,10 +21,10 @@ import org.ice4j.ice.CandidatePair;
 import org.ice4j.ice.CandidateType;
 import org.ice4j.ice.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -63,27 +63,40 @@ public class RPCHandler {
     }
 
     public void iceMsg(long remotePlayerId, Object msg) {
-        boolean err = true;
-
-        GameSession gameSession = IceAdapter.getGameSession();
-        if (gameSession != null) { // This is highly unlikely, game session got created if JoinGame/HostGame came first
-            Peer peer = gameSession.getPeers().get((int) remotePlayerId);
-            if (peer != null) { // This is highly unlikely, peer is present if connectToPeer was called first
-                try {
-                    IceAdapter.getGameSession().onIceMessageReceived(objectMapper.readValue((String) msg, CandidatesMessage.class));
-                    err = false;
-                } catch (IOException e) {
-                    log.error("Failed to parse iceMsg {}", msg, e);
-                    return;
-                }
-            }
-        }
-
-        if (err) {
-            log.error("ICE MESSAGE IGNORED for id: {}", remotePlayerId);
-        }
-
         log.info("IceMsg received {}", msg);
+        boolean err = true;
+        CandidatesMessage message;
+        try {
+            message = objectMapper.readValue((String) msg, CandidatesMessage.class);
+        } catch (Exception e) {
+            log.error("Failed to parse iceMsg {}", msg, e);
+            return;
+        }
+        int idFrom = message.srcId();
+        int idTo = message.destId();
+        int myId = IceAdapter.getId();
+        if (myId != idTo) {
+            log.error("The iceMsg {} is not meant for {}. IceMsg ignored", message, idTo);
+            return;
+        }
+
+        if (remotePlayerId != idFrom) {
+            log.error("The sender {} != {} does not match the IceMsg source. IceMsg ignored", remotePlayerId, idFrom);
+            return;
+        }
+
+        GameSession gameSession = IceAdapter.getGameSessionSafe();
+        if (gameSession == null) {
+            log.error("The gameSession is null. IceMsg ignored. {}", message);
+            return;
+        }
+
+        Peer peer = gameSession.getPeers().get((int) remotePlayerId);
+        if (peer == null) {
+            log.error("Peer not found for id: {}. IceMsg ignored. {}", remotePlayerId, message);
+            return;
+        }
+        gameSession.onIceMessageReceived(peer, message);
     }
 
     public void sendToGpgNet(String header, Object... args) {
@@ -101,12 +114,14 @@ public class RPCHandler {
                 gpgNetServer.getGpgNetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameState().orElse(GameState.NONE).getName(), "-");
 
         List<IceStatus.IceRelay> relays = new ArrayList<>();
-        GameSession gameSession = IceAdapter.getGameSession();
+        GameSession gameSession = IceAdapter.getGameSessionSafe();
         if (gameSession != null) {
             lockStatus.lock();
             try {
                 gameSession.getPeers().values().stream()
                         .map(peer -> {
+                            Optional<CandidatePair> pair = IceUtils.getFirstActiveComponent(peer)
+                                    .map(Component::getSelectedPair);
                             IceStatus.IceRelay.IceRelayICEState iceRelayICEState =
                                     new IceStatus.IceRelay.IceRelayICEState(
                                             peer.isLocalOffer(),
@@ -114,27 +129,19 @@ public class RPCHandler {
                                             "",
                                             "",
                                             peer.isConnected(),
-                                            IceUtils.getFirstActiveComponent(peer)
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getLocalCandidate)
+                                            pair.map(CandidatePair::getLocalCandidate)
                                                     .map(Candidate::getHostAddress)
                                                     .map(TransportAddress::toString)
                                                     .orElse(""),
-                                            IceUtils.getFirstActiveComponent(peer)
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getRemoteCandidate)
+                                            pair.map(CandidatePair::getRemoteCandidate)
                                                     .map(Candidate::getHostAddress)
                                                     .map(TransportAddress::toString)
                                                     .orElse(""),
-                                            IceUtils.getFirstActiveComponent(peer)
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getLocalCandidate)
+                                            pair.map(CandidatePair::getLocalCandidate)
                                                     .map(Candidate::getType)
                                                     .map(CandidateType::toString)
                                                     .orElse(""),
-                                            IceUtils.getFirstActiveComponent(peer)
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getRemoteCandidate)
+                                            pair.map(CandidatePair::getRemoteCandidate)
                                                     .map(Candidate::getType)
                                                     .map(CandidateType::toString)
                                                     .orElse(""),
@@ -154,7 +161,7 @@ public class RPCHandler {
 
         IceStatus status = new IceStatus(
                 IceAdapter.getVersion(),
-                IceAdapter.getGameSession().getIceServers().stream()
+                GameSession.getAllServers().stream()
                         .mapToInt(s -> s.getTurnAddresses().size()
                                 + s.getStunAddresses().size())
                         .sum(),

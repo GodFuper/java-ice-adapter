@@ -80,11 +80,14 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
         if (!peer.isLocalOffer()) {
             return;
         }
-
         LockUtil.executeWithLock(peer.getLock(LOCK_CHECKER_MODULE), () -> {
-            if (isRunning() && !peer.isClosing()) {
+            if (peer.isClosing()) {
                 return;
             }
+            if (isRunning()) {
+                return;
+            }
+
 
             log.debug("Starting connectivity checker for peer");
 
@@ -97,7 +100,7 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
     }
 
     private boolean isRunning() {
-        return scheduledFuture != null;
+        return scheduledFuture != null && !scheduledFuture.isDone();
     }
 
     private String getThreadName() {
@@ -128,7 +131,7 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
         // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
         System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, data, 1, 8);
 
-        icePeerAdapter.sendPacketToPeer(peer, data, 0, 9);
+        icePeerAdapter.sendPacketToPeer(peer, data, 0, data.length);
 
         long lastPacketReceived = peer.getLastPacketReceived();
         long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;

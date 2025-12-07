@@ -15,12 +15,14 @@ import java.util.Comparator;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 @Slf4j
-public class DebugAdapterImpl implements Adapter {
+public class UIAdapterImpl implements UIAdapter {
 
     private final IceAdapter iceAdapter;
 
-    public DebugAdapterImpl(IceAdapter iceAdapter) {
+    public UIAdapterImpl(IceAdapter iceAdapter) {
         this.iceAdapter = iceAdapter;
     }
 
@@ -93,6 +95,11 @@ public class DebugAdapterImpl implements Adapter {
         if (gameSession == null) {
             return FXCollections.emptyObservableList();
         }
+
+        gameSession.getPeers().values().forEach(peer -> {
+            debug().peerStateChanged(peer);
+            debug().peerConnectivityUpdate(peer);
+        });
 
         return FXCollections.observableArrayList(
                 gameSession.getPeers()

@@ -33,7 +33,7 @@ public class PeerIceModule {
     private static final int MINIMUM_PORT = 6112; // PORT (range +1000) to be used by ICE for communicating, each peer needs a seperate port
     private static final int MAXIMUM_PORT = 7112; // PORT (range +1000) to be used by ICE for communicating, each peer needs a seperate port
 
-    private static final int TIMEOUT_ON_CHECKING = 30000;
+    private static final int TIMEOUT_ON_CHECKING = 15000;
 
     private final Peer peer;
 
@@ -369,10 +369,10 @@ public class PeerIceModule {
                 return;
             }
 
-            if (peer.getIceSession().isGameEnded()) {
-                log.warn("{} GAME ENDED, ABORTING onConnectionLost of ICE for peer ", getLogPrefix());
-                return;
-            }
+//            if (peer.getIceSession().isGameEnded()) {
+//                log.warn("{} GAME ENDED, ABORTING onConnectionLost of ICE for peer ", getLogPrefix());
+//                return;
+//            }
 
             if (previousState == CONNECTED) {
                 TrayIcon.showMessage("Reconnecting to %s (connection lost)".formatted(this.peer.getRemoteLogin()));
@@ -444,7 +444,7 @@ public class PeerIceModule {
         Component localComponent = component;
 
         byte[] data = new byte[MAX_SIZE_PACKET];
-        while (IceAdapter.getGameSession() == peer.getIceSession()) {
+        while (!IceAdapter.getGameSession().isGameEnded()) {
             try {
                 DatagramPacket packet = new DatagramPacket(data, data.length);
                 localComponent.getSocket().receive(packet);

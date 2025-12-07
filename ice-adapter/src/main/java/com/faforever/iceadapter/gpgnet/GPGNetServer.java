@@ -95,7 +95,7 @@ public class GPGNetServer implements AutoCloseable {
         this.rpcService = rpcService;
 
         try {
-            this.serverSocket = new ServerSocket(this.gpgNetPort);
+            serverSocket = new ServerSocket(gpgNetPort);
         } catch (IOException e) {
             log.error("Couldn't start GPGNetServer", e);
             IceAdapter.close(-1);

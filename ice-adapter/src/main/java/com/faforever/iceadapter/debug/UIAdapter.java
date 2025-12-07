@@ -6,7 +6,7 @@ import javafx.collections.ObservableList;
  * Интерфейс или заглушка для основного адаптера.
  * Предполагается, что реальный класс (например, IceAdapter) реализует эти методы.
  */
-public interface Adapter {
+public interface UIAdapter {
 
     String getVersion();
 

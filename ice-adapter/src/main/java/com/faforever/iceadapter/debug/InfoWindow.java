@@ -1,21 +1,22 @@
 package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.LogoUtils;
+import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
-import static javafx.application.Application.STYLESHEET_MODENA;
-import static javafx.application.Application.setUserAgentStylesheet;
-
 @Slf4j
-public class InfoWindow {
+@EqualsAndHashCode(callSuper = false)
+public class InfoWindow extends Application {
 
     public static InfoWindow INSTANCE;
 
@@ -27,12 +28,10 @@ public class InfoWindow {
     private static final int WIDTH = 533;
     private static final int HEIGHT = 330;
 
-    public InfoWindow() {
+    @Override
+    public void start(Stage stage) {
         INSTANCE = this;
-    }
-
-    public void init() {
-        stage = new Stage();
+        this.stage = stage;
         LogoUtils.getLogoFx().ifPresent(logo -> {
             stage.getIcons().add(logo);
         });
@@ -50,7 +49,12 @@ public class InfoWindow {
 
         stage.setScene(scene);
         stage.setTitle("FAF ICE adapter");
-        stage.setOnCloseRequest(Event::consume);
+        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                minimize();
+            }
+        });
         stage.show();
 
         log.info("Created info window.");
@@ -58,19 +62,32 @@ public class InfoWindow {
 
     public void minimize() {
         Platform.setImplicitExit(false);
-        Platform.runLater(this.stage::hide);
+        runOnUIThread(this.stage::hide);
     }
 
     public void showWindow() {
-        Platform.runLater(() -> {
+        runOnUIThread(() -> {
             this.stage.show();
             Platform.setImplicitExit(true);
         });
     }
 
+    private static void runOnUIThread(Runnable runnable) {
+        if (Platform.isFxApplicationThread()) {
+            runnable.run();
+        } else {
+            Platform.runLater(runnable);
+        }
+    }
+
     public static void launch() {
+        log.info("Launching info window.");
         if (INSTANCE == null) {
-            new InfoWindow().init();
+            try {
+                launch(InfoWindow.class, null);
+            } catch (IllegalStateException e) {
+                runOnUIThread(() -> new InfoWindow().start(new Stage()));
+            }
         } else {
             INSTANCE.showWindow();
         }

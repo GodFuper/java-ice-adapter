@@ -12,7 +12,7 @@ public record CandidatesMessage(
         candidates = List.copyOf(candidates);
     }
 
-    public String getStrCandidates() {
+    public String toStrCandidates() {
         if (candidates == null) {
             return "";
         }

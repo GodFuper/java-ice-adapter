@@ -1,17 +1,19 @@
 package com.faforever.iceadapter.ice;
 
-import com.faforever.iceadapter.ice.modules.FAModule;
+import com.faforever.iceadapter.ice.modules.EventBusModule;
 import com.faforever.iceadapter.ice.modules.IceModule;
-import com.faforever.iceadapter.services.IceTrigger;
+import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.IceUtils;
 import kotlin.Pair;
 import kotlin.Triple;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.*;
 
 import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -31,9 +34,6 @@ import static com.faforever.iceadapter.debug.Debug.debug;
 @Slf4j
 @RequiredArgsConstructor
 public class Peer {
-    private final IceGameSession iceSession;
-    private final IceTrigger iceTrigger;
-
     private final int remoteId;
     private final String remoteLogin;
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
@@ -47,12 +47,13 @@ public class Peer {
 
     public volatile boolean closing = false;
 
+    private DatagramSocket faSocket;
+
     private volatile Agent agent;
     private volatile IceMediaStream mediaStream;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = IceState.NEW;
-    private volatile boolean connected = false;
 
     //    private final PeerIceModule ice = new PeerIceModule(this);
 //    private DatagramSocket faSocket; // Socket on which we are listening for FA / sending data to FA
@@ -76,23 +77,33 @@ public class Peer {
         }
     }
 
+    public void stopModules() {
+        for (ModuleBase module : modules.values()) {
+            module.stop();
+        }
+    }
+
+    public boolean isConnected() {
+        return IceUtils.getFirstActiveComponent(this).isPresent();
+    }
+
     public void init() {
         log.debug(
                 "Peer created: {}, localOffer: {}, preferredPort: {}", getPeerIdentifier(), localOffer, preferredPort);
 
-//        faSocket = initForwarding(preferredPort);
-//
-
-        // Start FA listener and keep a handle so we can cancel it during shutdown
-//        faListenerFuture = CompletableFuture.runAsync(this::faListener, IceAdapter.getExecutor());
-
+        faSocket = initForwarding(preferredPort);
         setIceState(IceState.NEW);
     }
 
     public void setIceState(IceState iceState) {
         IceState old = this.iceState;
         this.iceState = iceState;
-        iceTrigger.onChangeIceState(this, old, iceState);
+        event(bus -> bus.onIceStateChange(this, old, iceState));
+        debug().peerStateChanged(this);
+    }
+
+    public void setIceStateWithoutTrigger(IceState iceState) {
+        this.iceState = iceState;
         debug().peerStateChanged(this);
     }
 
@@ -111,34 +122,46 @@ public class Peer {
         if (type != null && type.isInstance(foundModule)) {
             return Optional.of(type.cast(foundModule));
         } else {
+            log.warn("Could not find module {} - {}", module, type);
             return Optional.empty();
         }
     }
 
-    public void reconnect() {
-//        ice.reconnect();
+    private void event(Consumer<EventBusModule> consumer) {
+        getEventBus().ifPresent(consumer);
+    }
+
+    private Optional<EventBusModule> getEventBus() {
+        return getModule(IceModule.EVENT_BUS, EventBusModule.class);
     }
 
     public int getLocalPort() {
-        DatagramSocket socket = getModule(IceModule.FA_SOCKET_MODULE, FAModule.class).map(FAModule::getSocket).orElse(null);
-        return socket != null ? socket.getLocalPort() : 0;
+        return faSocket.getLocalPort();
+    }
+
+    public void addEventListener(PeerEventListener listener) {
+        getEventBus().ifPresent(bus -> bus.register(listener));
+    }
+
+    public void removeEventListener(PeerEventListener listener) {
+        getEventBus().ifPresent(bus -> bus.unregister(listener));
     }
 
     /**
      * Starts waiting for data from FA
      */
-//    @SneakyThrows(SocketException.class)
-//    private DatagramSocket initForwarding(int port) {
-//        try {
-//            DatagramSocket socket = new DatagramSocket(port);
-//            DatagramSocketUtils.resizeBuffer(socket);
-//            log.debug("Now forwarding data to peer {}", getPeerIdentifier());
-//            return socket;
-//        } catch (SocketException e) {
-//            log.error("Could not create socket for peer: {}", getPeerIdentifier(), e);
-//            throw e;
-//        }
-//    }
+    @SneakyThrows(SocketException.class)
+    private DatagramSocket initForwarding(int port) {
+        try {
+            DatagramSocket socket = new DatagramSocket(port);
+            DatagramSocketUtils.resizeBuffer(socket);
+            log.debug("Now forwarding data to peer {}", getPeerIdentifier());
+            return socket;
+        } catch (SocketException e) {
+            log.error("Could not create socket for peer: {}", getPeerIdentifier(), e);
+            throw e;
+        }
+    }
 
     /**
      * This method get's invoked by the thread listening for data from FA
@@ -252,7 +275,7 @@ public class Peer {
         log.info("Closing peer for player {}", getPeerIdentifier());
 
         closing = true;
-
+        event(bus -> bus.onClose(this));
         for (ModuleBase module : modules.values()) {
             module.stop();
         }
@@ -261,13 +284,13 @@ public class Peer {
 //            faListenerFuture.cancel(true);
 //        }
 //
-//        try {
-//            if (faSocket != null && !faSocket.isClosed()) {
-//                faSocket.close();
-//            }
-//        } catch (Exception e) {
-//            log.debug("Error closing faSocket for {}", getPeerIdentifier(), e);
-//        }
+        try {
+            if (faSocket != null && !faSocket.isClosed()) {
+                faSocket.close();
+            }
+        } catch (Exception e) {
+            log.debug("Error closing faSocket for {}", getPeerIdentifier(), e);
+        }
 
         log.info("Peer closed: {}", getPeerIdentifier());
     }

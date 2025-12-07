@@ -12,8 +12,6 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = false)
@@ -35,11 +33,11 @@ public class IceWindow extends Application {
 
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/debugWindow2.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/iceWindow.fxml"));
             root = loader.load();
 
             controller = loader.getController();
-            controller.setAdapter(new DebugAdapterImpl(IceAdapter.INSTANCE));
+            controller.setAdapter(new UIAdapterImpl(IceAdapter.INSTANCE));
             controller.initialize();
         } catch (IOException e) {
             log.error("Could not load debugger window fxml", e);
@@ -52,18 +50,9 @@ public class IceWindow extends Application {
         stage.setScene(scene);
         stage.setTitle("FAF ICE adapter - Debugger - Build: %s".formatted(IceAdapter.getVersion()));
 
-        if (Debug.ENABLE_DEBUG_WINDOW) {
-            showWindow();
-        }
+        showWindow();
 
         log.info("Created debug window.");
-
-        if (Debug.ENABLE_INFO_WINDOW) {
-            CompletableFuture.runAsync(
-                    () -> runOnUIThread(InfoWindow::launch),
-                    CompletableFuture.delayedExecutor(
-                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS, IceAdapter.getExecutor()));
-        }
     }
 
     public void showWindow() {
@@ -73,7 +62,7 @@ public class IceWindow extends Application {
     }
 
 
-    private void runOnUIThread(Runnable runnable) {
+    private static void runOnUIThread(Runnable runnable) {
         if (Platform.isFxApplicationThread()) {
             runnable.run();
         } else {
@@ -82,8 +71,13 @@ public class IceWindow extends Application {
     }
 
     public static void launch() {
+        log.info("Launching ice window.");
         if (INSTANCE == null) {
-            launch(IceWindow.class, null);
+            try {
+                launch(IceWindow.class, null);
+            } catch (IllegalStateException e) {
+                runOnUIThread(() -> new IceWindow().start(new Stage()));
+            }
         } else {
             INSTANCE.showWindow();
         }

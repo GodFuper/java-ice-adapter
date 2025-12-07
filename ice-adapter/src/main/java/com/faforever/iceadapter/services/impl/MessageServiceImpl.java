@@ -2,8 +2,6 @@ package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.Peer;
-import com.faforever.iceadapter.ice.modules.FAModule;
-import com.faforever.iceadapter.ice.modules.IceModule;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.MessagesService;
 import com.faforever.iceadapter.util.IceUtils;
@@ -14,7 +12,6 @@ import org.ice4j.ice.Component;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
@@ -35,13 +32,11 @@ public class MessageServiceImpl implements MessagesService {
         Optional<Component> activeComponent = IceUtils.getFirstActiveComponent(peer.getMediaStream());
 
         activeComponent.ifPresent(component -> {
-            if (peer.isConnected()) {
-                try {
-                    DatagramPacket packet = new DatagramPacket(data, offset, length);
-                    component.getSocket().send(packet);
-                } catch (Exception e) {
-                    log.warn("{} Failed send data to peer", peer.getPeerIdentifier(), e);
-                }
+            try {
+                DatagramPacket packet = new DatagramPacket(data, offset, length);
+                component.getSocket().send(packet);
+            } catch (Exception e) {
+                log.warn("{} Failed send data to peer", peer.getPeerIdentifier(), e);
             }
         });
     }
@@ -63,11 +58,7 @@ public class MessageServiceImpl implements MessagesService {
 
             try {
                 DatagramPacket packet = new DatagramPacket(data, offset, length, InetAddress.getByName(LOCALHOST), iceSession.getLobbyPort());
-                DatagramSocket socket = peer.getModule(IceModule.FA_SOCKET_MODULE, FAModule.class)
-                        .map(FAModule::getSocket).orElse(null);
-                if (socket != null) {
-                    socket.send(packet);
-                }
+                peer.getFaSocket().send(packet);
             } catch (UnknownHostException e) {
                 // should never happen for 127.0.0.1 but log at debug if it does
                 log.debug("UnknownHostException when forwarding to FA for {}", peer.getPeerIdentifier(), e);

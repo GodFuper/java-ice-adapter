@@ -74,7 +74,7 @@ public class WindowController {
     @FXML
     private CheckBox relayCheckBox;
 
-    private Adapter adapter;
+    private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
     private PeerInfo selectedPeer;
@@ -91,7 +91,7 @@ public class WindowController {
         stage.sizeToScene();
     }
 
-    public void setAdapter(Adapter adapter) {
+    public void setAdapter(UIAdapter adapter) {
         this.adapter = adapter;
         updateAllInfo();
     }

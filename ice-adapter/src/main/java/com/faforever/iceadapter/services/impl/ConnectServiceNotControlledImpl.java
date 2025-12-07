@@ -13,23 +13,19 @@ import org.ice4j.ice.Agent;
 import org.ice4j.ice.Component;
 import org.ice4j.ice.IceMediaStream;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import static com.faforever.iceadapter.ice.IceState.*;
 
 @Slf4j
 public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implements ConnectService {
 
-    private final Map<Integer, Peer> newAndDisconnectedPeers = new ConcurrentHashMap<>();
+//    private final Map<Integer, Peer> newAndDisconnectedPeers = new ConcurrentHashMap<>();
 
     public ConnectServiceNotControlledImpl(IceGameSession iceGameSession, IceAsync iceAsync) {
         super(iceGameSession, iceAsync);
     }
 
     void onIceStateNew(Peer peer) {
-        LockUtil.executeWithLock(lockMessageReceived, () -> newAndDisconnectedPeers.put(peer.getRemoteId(), peer));
+//        LockUtil.executeWithLock(lockMessageReceived, () -> newAndDisconnectedPeers.put(peer.getRemoteId(), peer));
     }
 
     void onIceStateGathering(Peer peer) {
@@ -46,7 +42,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
 
     @Override
     void onIceStateDisconnected(Peer peer, IceState oldState) {
-        LockUtil.executeWithLock(lockMessageReceived, () -> newAndDisconnectedPeers.put(peer.getRemoteId(), peer));
+//        LockUtil.executeWithLock(lockMessageReceived, () -> newAndDisconnectedPeers.put(peer.getRemoteId(), peer));
         onDisconnected(peer, oldState);
     }
 
@@ -54,11 +50,14 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
         boolean connected = checking(peer);
         if (connected) {
             peer.setIceState(CONNECTED);
+        } else {
+            connectLost(peer);
         }
     }
 
     void onIceStateConnected(Peer peer) {
         onConnected(peer);
+//        newAndDisconnectedPeers.remove(peer.getRemoteId());
     }
 
     @Override
@@ -70,53 +69,9 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
     }
 
     @Override
-    public void onIceMessageReceived(CandidatesMessage message) {
-        if (message == null) {
-            return;
-        }
-        Peer peer = iceGameSession.getPeers().get(message.srcId());
-        onIceMessageReceived(peer, message);
-    }
-
-    @Override
     public void onIceMessageReceived(Peer peer, CandidatesMessage message) {
-        if (message == null || peer == null) {
-            return;
-        }
-        int idFrom = message.srcId();
-        int idTo = message.destId();
-
-        int myId = iceGameSession.getMyId();
-        if (idTo != myId) {
-            log.warn("Received a message that wasn't meant for me. My id is {}, message for {}", myId, idTo);
-            return;
-        }
-
-        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-        LockUtil.executeWithLock(lockMessageReceived, () -> {
-            Peer peerWithNeedStatus = newAndDisconnectedPeers.get(idFrom);
-            if (peerWithNeedStatus == null) {
-                log.error("Peer with id {} wasn't not newAndDisconnectedPeers", idFrom);
-
-                Map<Integer, Peer> allPeers = iceGameSession.getPeers();
-                peerWithNeedStatus = allPeers.get(idFrom);
-
-                if (peerWithNeedStatus == null) {
-                    log.warn("Peer with id {} wasn't not found in game session", idFrom);
-                    return;
-                }
-            }
-            atomicBoolean.set(true);
-        });
-
-        if (!atomicBoolean.get()) {
-            return;
-        }
-
-        iceAsync.runAsync(peer, () -> {
-            LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> {
-                logicOnIceMessageReceived(peer, message);
-            });
+        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> {
+            logicOnIceMessageReceived(peer, message);
         });
     }
 
@@ -126,16 +81,19 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
             return;
         }
 
-        log.debug("Got IceMsg for peer, offered candidates: {}", message.getStrCandidates());
+        log.debug("Got IceMsg for peer, offered candidates: {}", message.toStrCandidates());
 
         IceState iceState = peer.getIceState();
 
         if (iceState != NEW && iceState != DISCONNECTED) {
-            log.info("Received new candidates/offer, stopping...");
-            onConnectionLost(peer);
+            peer.setIceStateWithoutTrigger(DISCONNECTED);
+            log.info("Restarting the connection...");
+            onDisconnected(peer, iceState);
         }
 
+        peer.setIceStateWithoutTrigger(NEW);
         createAgent(peer);
+        peer.setIceStateWithoutTrigger(GATHERING);
         gatherCandidates(peer);
 
         Agent agent = peer.getAgent();
@@ -152,6 +110,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
                     peer.isAllowRelay());
         }
 
-        peer.setIceState(CHECKING);
+        peer.setIceStateWithoutTrigger(CHECKING);
+        onIceStateChecking(peer);
     }
 }

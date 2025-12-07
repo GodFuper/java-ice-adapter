@@ -10,9 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
@@ -45,11 +43,9 @@ public class FARepeaterModule implements ModuleBase {
     }
 
     private void stopListeners() {
-        if (!peer.isClosing()) {
-            return;
-        }
-        if (listener != null && !listener.isDone()) {
+        if (peer.isClosing() && listener != null && !listener.isDone()) {
             listener.cancel(true);
+            listener = null;
         }
     }
 
@@ -58,15 +54,10 @@ public class FARepeaterModule implements ModuleBase {
      */
     private void faListener() {
         byte[] data = new byte[MAX_SIZE_PACKET];
-        Optional<FAModule> socketModule = peer.getModule(IceModule.FA_SOCKET_MODULE, FAModule.class);
         while (!peer.isConnected()) {
             try {
                 DatagramPacket packet = new DatagramPacket(data, data.length);
-                DatagramSocket socket = socketModule.map(FAModule::getSocket).orElse(null);
-                if (socket == null) {
-                    continue;
-                }
-                socket.receive(packet);
+                peer.getFaSocket().receive(packet);
 
                 // Defensive copy of payload to avoid races with the receive buffer
                 byte[] copy = new byte[packet.getLength()];

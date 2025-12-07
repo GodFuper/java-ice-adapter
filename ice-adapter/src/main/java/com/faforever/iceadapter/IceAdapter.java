@@ -11,8 +11,11 @@ import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.TrayIcon;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.ice4j.StackProperties;
 import picocli.CommandLine;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,11 +49,16 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         new CommandLine(new IceAdapter()).setUnmatchedArgumentsAllowed(true).execute(args);
     }
 
-//    private void settingIce4j() {
-//        System.setProperty(StackProperties.FIRST_CTRAN_RETRANS_AFTER, "1");
-//        System.setProperty(StackProperties.MAX_CTRAN_RETRANS_TIMER, String.valueOf(Duration.ofMinutes(2).toMillis()));
-//        System.setProperty(StackProperties.KEEP_CRANS_AFTER_A_RESPONSE, Boolean.toString(true));
-//    }
+    private void settingIce4j() {
+        Map<String, Object> settings = Map.of(StackProperties.FIRST_CTRAN_RETRANS_AFTER, 1,
+                StackProperties.MAX_CTRAN_RETRANS_TIMER, Duration.ofMinutes(2).toMillis(),
+                StackProperties.KEEP_CRANS_AFTER_A_RESPONSE, Boolean.toString(true));
+
+        settings.forEach((key, value) -> {
+            System.setProperty(key, String.valueOf(value));
+            log.info("Setting Ice4j property {}={}", key, value);
+        });
+    }
 
     @Override
     public Integer call() {
@@ -61,7 +69,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     }
 
     public void start() {
-//        settingIce4j();
         determineVersion();
         log.info("Version: {}", VERSION);
 
@@ -80,6 +87,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         PeerIceModule.setRpcService(rpcService);
 
         debug().startupComplete();
+        settingIce4j();
     }
 
     @Override
@@ -321,7 +329,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         return GAME_SESSION;
     }
 
-    private static GameSession getGameSessionSafe() {
+    public static GameSession getGameSessionSafe() {
         // quick non-blocking read followed by a locked check to avoid races
         if (GAME_SESSION == null) return null;
         final GameSession[] holder = new GameSession[1];

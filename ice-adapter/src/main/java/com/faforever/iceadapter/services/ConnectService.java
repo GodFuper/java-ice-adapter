@@ -10,7 +10,5 @@ public interface ConnectService {
 
     void onConnectionLost(Peer peer);
 
-    void onIceMessageReceived(CandidatesMessage message);
-
     void onIceMessageReceived(Peer peer, CandidatesMessage message);
 }
