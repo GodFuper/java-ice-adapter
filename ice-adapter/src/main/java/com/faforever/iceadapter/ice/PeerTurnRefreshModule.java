@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.ice;
 
+import com.faforever.iceadapter.ice.peer.Peer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.RelayedCandidate;
@@ -19,7 +20,7 @@ import java.time.Duration;
  */
 @Slf4j
 @Deprecated
-public class PeerTurnRefreshModule implements ModuleBase {
+public class PeerTurnRefreshModule {
 
     private static final int REFRESH_INTERVAL = (int) Duration.ofMinutes(2).toMillis();
 
@@ -124,14 +125,14 @@ public class PeerTurnRefreshModule implements ModuleBase {
         }
     }
 
-    @Override
+    //    @Override
     public void start() {
         running = true;
         refreshThread = Thread.startVirtualThread(this::refreshThread);
         log.debug("Started TURN refresh module for peer {}", peer.getPeerIdentifier());
     }
 
-    @Override
+    //    @Override
     public void stop() {
         running = false;
 

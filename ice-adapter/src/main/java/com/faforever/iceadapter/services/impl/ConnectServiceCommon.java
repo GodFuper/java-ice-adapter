@@ -1,15 +1,21 @@
 package com.faforever.iceadapter.services.impl;
 
-import com.faforever.iceadapter.ice.*;
+import com.faforever.iceadapter.ice.CandidatesMessage;
+import com.faforever.iceadapter.ice.IceGameSession;
+import com.faforever.iceadapter.ice.IceState;
+import com.faforever.iceadapter.ice.PeerConnectionSuccessMonitor;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
+import com.faforever.iceadapter.util.IceUtils;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Agent;
 import org.ice4j.ice.Component;
 import org.ice4j.ice.IceMediaStream;
+import org.ice4j.ice.KeepAliveStrategy;
 import org.ice4j.ice.harvest.StunCandidateHarvester;
 import org.ice4j.ice.harvest.TurnCandidateHarvester;
 import org.ice4j.security.LongTermCredential;
@@ -26,6 +32,7 @@ public abstract class ConnectServiceCommon {
     protected static final int MINIMUM_PORT = 6112;
     protected static final int MAXIMUM_PORT = 7112;
     protected static final int TIMEOUT_ON_CHECKING = 15000;
+    protected static final int LOST_CONNECT_DURATION = 5000;
     protected final IceGameSession iceGameSession;
     protected final IceAsync iceAsync;
 
@@ -97,7 +104,7 @@ public abstract class ConnectServiceCommon {
             agent.addCandidateHarvester(harvester);
         }));
 
-        CompletableFuture<Void> gatheringFuture = iceAsync.runAsync(peer, () -> createComponent(agent, mediaStream));
+        CompletableFuture<Void> gatheringFuture = iceAsync.runAsync(peer, () -> createComponent(peer, agent, mediaStream));
 
         iceAsync.runAsyncDelay(peer, () -> {
             if (!gatheringFuture.isDone()) {
@@ -138,6 +145,15 @@ public abstract class ConnectServiceCommon {
 
     protected void onDisconnected(Peer peer, IceState oldState) {
         log.info("ICE state disconnected");
+
+        Component component = peer.getComponent();
+        if (component != null) {
+            peer.setComponent(null);
+        }
+        IceMediaStream mediaStream = peer.getMediaStream();
+        if (mediaStream != null) {
+            peer.setMediaStream(null);
+        }
         Agent agent = peer.getAgent();
         if (agent != null) {
             closeAgent(agent);
@@ -160,12 +176,18 @@ public abstract class ConnectServiceCommon {
     }
 
     protected void connectLost(Peer peer) {
-        log.info("Lost connection");
-
         if (peer.getIceState() == DISCONNECTED) {
             log.warn("Lost connection, albeit already in ice state disconnected");
             return;
         }
+        long now = System.currentTimeMillis();
+        long lastLostConnect = peer.getLastLostConnect();
+        if (now - lastLostConnect < LOST_CONNECT_DURATION) {
+            log.debug("Skipping the lost connection, since the last connection loss was less than {}ms ago", LOST_CONNECT_DURATION);
+            return;
+        }
+        peer.setLastLostConnect(now);
+        log.info("Lost connection");
 
         peer.stopModules();
 
@@ -191,6 +213,8 @@ public abstract class ConnectServiceCommon {
         } catch (Exception e) {
             log.error("Timeout while waiting for connection ICE");
             return false;
+        } finally {
+            monitor.shutdown();
         }
     }
 
@@ -200,6 +224,9 @@ public abstract class ConnectServiceCommon {
         log.debug("ICE terminated, connected, candidate pair: {} ", peer.getStrCandidateTypes("|"));
 
         iceGameSession.onConnected(peer, true);
+
+        Component component = IceUtils.getFirstComponent(peer.getMediaStream()).orElseThrow();
+        peer.setComponent(component);
 
         peer.startModules();
     }
@@ -221,9 +248,10 @@ public abstract class ConnectServiceCommon {
         });
     }
 
-    protected void createComponent(Agent agent, IceMediaStream mediaStream) {
+    protected void createComponent(Peer peer, Agent agent, IceMediaStream mediaStream) {
         try {
-            Component component = agent.createComponent(mediaStream, ThreadLocalRandom.current().nextInt(MINIMUM_PORT, MAXIMUM_PORT), MINIMUM_PORT, MAXIMUM_PORT);
+            KeepAliveStrategy strategy = peer.getKeepAliveStrategy() != null ? peer.getKeepAliveStrategy() : KeepAliveStrategy.SELECTED_ONLY;
+            Component component = agent.createComponent(mediaStream, ThreadLocalRandom.current().nextInt(MINIMUM_PORT, MAXIMUM_PORT), MINIMUM_PORT, MAXIMUM_PORT, strategy);
             DatagramSocketUtils.resizeBuffer(component.getSocket());
         } catch (Exception e) {
             throw new RuntimeException(e);

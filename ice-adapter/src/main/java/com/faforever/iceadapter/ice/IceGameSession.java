@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.ice;
 
+import com.faforever.iceadapter.ice.peer.Peer;
+
 import java.util.List;
 import java.util.Map;
 

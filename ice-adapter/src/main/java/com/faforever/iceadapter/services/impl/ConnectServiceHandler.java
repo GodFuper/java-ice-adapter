@@ -2,7 +2,7 @@ package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.ConnectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

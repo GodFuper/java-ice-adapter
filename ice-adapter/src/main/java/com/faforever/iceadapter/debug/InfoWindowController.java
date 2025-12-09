@@ -32,7 +32,13 @@ public class InfoWindowController {
     }
 
     public void onShowDebugWindowClicked(ActionEvent actionEvent) {
-        IceWindow.launch();
+        if (IceWindow.INSTANCE == null) {
+            Debug.ENABLE_DEBUG_WINDOW = true;
+            IceWindow.launch();
+        } else {
+            IceWindow.INSTANCE.showWindow();
+        }
+
     }
 
     @SneakyThrows

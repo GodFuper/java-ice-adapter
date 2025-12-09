@@ -2,8 +2,13 @@ package com.faforever.iceadapter.ice;
 
 public interface ModuleBase {
 
-    void start();
+    default void start() {
+    }
 
-    void stop();
+    default void stop() {
+    }
+
+    default void init() {
+    }
 
 }

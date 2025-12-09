@@ -3,16 +3,13 @@ package com.faforever.iceadapter.debug;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.GameSession;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.rpc.RPCService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import kotlin.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.CandidateType;
 
 import java.util.Comparator;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
@@ -119,11 +116,7 @@ public class UIAdapterImpl implements UIAdapter {
 
         info.getConnected().set(String.valueOf(peer.isConnected()));
 
-        StringJoiner pairCandidates = new StringJoiner("\n");
-        for (Pair<CandidateType, CandidateType> pair : peer.getCandidateTypes()) {
-            pairCandidates.add("%s<->%s".formatted(pair.getFirst(), pair.getSecond()));
-        }
-        info.getPairConnection().set(pairCandidates.toString());
+        info.getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         info.getState().set(String.valueOf(peer.getState()));
         info.getAgent().set(peer.getAgentState().map(String::valueOf).orElse("-"));

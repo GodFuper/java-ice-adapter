@@ -33,8 +33,8 @@ class IceAdapterTest {
                 "--gpgnet-port=5000",
                 "--rpc-port=5001",
                 "--lobby-port=5002",
-                "--debug-window=true",
-                "--info-window=true"
+//                "--debug-window=true",
+//                "--info-window=true"
         };
 
         IceAdapter.main(args);

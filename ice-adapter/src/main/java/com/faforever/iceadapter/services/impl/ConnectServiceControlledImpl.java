@@ -3,7 +3,7 @@ package com.faforever.iceadapter.services.impl;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.CandidateUtil;

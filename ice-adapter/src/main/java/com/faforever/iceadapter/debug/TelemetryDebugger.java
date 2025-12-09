@@ -2,9 +2,8 @@ package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.telemetry.*;
-import com.faforever.iceadapter.util.IceUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.util.concurrent.RateLimiter;
@@ -14,7 +13,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Candidate;
 import org.ice4j.ice.CandidatePair;
-import org.ice4j.ice.Component;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.handshake.ServerHandshake;
@@ -215,8 +213,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     @Override
     public void peerStateChanged(Peer peer) {
-        Optional<CandidatePair> pair = IceUtils.getFirstActiveComponent(peer)
-                .map(Component::getSelectedPair);
+        Optional<CandidatePair> pair = peer.getActiveCandidatePair();
         sendMessage(new UpdatePeerState(
                 UUID.randomUUID(),
                 peer.getRemoteId(),

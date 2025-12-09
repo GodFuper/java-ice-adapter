@@ -31,7 +31,8 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:$picocliVersion")
     implementation("info.picocli:picocli:$picocliVersion")
 
-    implementation("org.jitsi:ice4j:3.0-66-g1c60acc")
+//    implementation("org.jitsi:ice4j:3.0-66-g1c60acc")
+    implementation("org.jitsi:ice4j:3.2-12-gc2cbf61")
     implementation("com.github.faforever:JJsonRpc:37669e0fed")
     implementation("com.google.guava:guava:$guavaVersion")
     implementation("org.slf4j:slf4j-api:2.0.13")

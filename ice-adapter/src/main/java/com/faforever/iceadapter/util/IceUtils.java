@@ -1,6 +1,6 @@
 package com.faforever.iceadapter.util;
 
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import lombok.experimental.UtilityClass;
 import org.ice4j.ice.Component;
 import org.ice4j.ice.IceMediaStream;
@@ -31,7 +31,23 @@ public class IceUtils {
                 .findFirst();
     }
 
-    public List<Component> getActiveComponents(IceMediaStream mediaStream) {
+    public Optional<Component> getFirstComponent(IceMediaStream mediaStream) {
+        if (mediaStream == null) {
+            return Optional.empty();
+        }
+
+        return mediaStream.getComponents()
+                .stream()
+                .findFirst();
+    }
+
+
+    public List<Component> getActiveComponents(Peer peer) {
+        if (peer == null) {
+            return List.of();
+        }
+        IceMediaStream mediaStream = peer.getMediaStream();
+
         if (mediaStream == null) {
             return List.of();
         }

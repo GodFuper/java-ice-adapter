@@ -1,18 +1,16 @@
-package com.faforever.iceadapter.ice.modules;
+package com.faforever.iceadapter.ice.peer.modules;
 
-import com.faforever.iceadapter.ice.ConnectivityModule;
-import com.faforever.iceadapter.ice.IcePeerAdapter;
-import com.faforever.iceadapter.ice.Peer;
-import com.faforever.iceadapter.util.ExecutorHolder;
+import com.faforever.iceadapter.ice.ModuleBase;
+import com.faforever.iceadapter.ice.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.LockUtil;
 import com.google.common.primitives.Longs;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -22,15 +20,15 @@ import static com.faforever.iceadapter.debug.Debug.debug;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class PeerConnectivityCheckerModule implements ConnectivityModule {
+public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListener {
 
+    public static final char COMMAND_ECHO = 'e';
     private static final String LOCK_CHECKER_MODULE = "PeerConnectivityCheckerModule";
 
     private static final int ECHO_INTERVAL = 1000;
     private static final int TIMEOUT_BEFORE_LOST_CONNECT = 10000;
-
-    private final IcePeerAdapter icePeerAdapter;
     private final Peer peer;
+    private final IceAsync iceAsync;
 
     @Getter
     private long echosReceived = 0;
@@ -41,38 +39,25 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
     private ScheduledFuture<?> scheduledFuture;
 
     @Override
-    public void onReceivePacket() {
-        peer.setLastPacketReceived(System.currentTimeMillis());
-        debug().peerConnectivityUpdate(peer);
-    }
-
-    private void calculateRtt(long timeSentEcho) {
-        long rttMs = System.currentTimeMillis() - timeSentEcho;
-        int rtt = (int) (rttMs);
-
-        float oldRtt = peer.getRtt();
-        float calcRtt = oldRtt == 0 ? rtt : oldRtt * 0.8f + (float) rtt * 0.2f;
-        peer.setRtt(calcRtt);
+    public void init() {
+        peer.addEventListener(this);
     }
 
     @Override
-    public void onEchoReceived(byte[] data, int length) {
-        if (!peer.isLocalOffer()) {
-            icePeerAdapter.sendPacketToPeer(peer, data, 0, length); // Turn around, send echo back
+    public void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
+        if (data.length == 0) {
             return;
         }
 
-        echosReceived++;
-
-        if (length != 9) {
-            log.trace("Received echo of wrong length, length: {}", length);
-            invalidEchosReceived++;
+        if (data[0] == COMMAND_ECHO) {
+            onEchoReceived(data, length);
         }
+    }
 
-        long sentMs = Longs.fromByteArray(Arrays.copyOfRange(data, 1, length));
-        calculateRtt(sentMs);
-
-        debug().peerConnectivityUpdate(peer);
+    private void onEchoReceived(byte[] data, int length) {
+        if (!peer.isLocalOffer()) {
+            peer.sendToPeer(data, 0, length);// Turn around, send echo back
+        }
     }
 
     @Override
@@ -91,11 +76,8 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
 
             log.debug("Starting connectivity checker for peer");
 
-            peer.setRtt(0.0f);
             peer.setLastPacketReceived(System.currentTimeMillis());
-
-            scheduledFuture = ExecutorHolder.getScheduledExecutor()
-                    .scheduleAtFixedRate(this::checkerThread, 0, ECHO_INTERVAL, TimeUnit.MILLISECONDS);
+            scheduledFuture = iceAsync.scheduleAtFixedRate(peer, this::checkerThread, ECHO_INTERVAL);
         });
     }
 
@@ -131,7 +113,7 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
         // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
         System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, data, 1, 8);
 
-        icePeerAdapter.sendPacketToPeer(peer, data, 0, data.length);
+        peer.sendToPeer(data, 0, data.length);
 
         long lastPacketReceived = peer.getLastPacketReceived();
         long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;
@@ -139,7 +121,7 @@ public class PeerConnectivityCheckerModule implements ConnectivityModule {
         if (sinceLastReal > TIMEOUT_BEFORE_LOST_CONNECT) {
             log.warn("{} No traffic (echo or game) for {} ms (> {} ms timeout). Closing connection.",
                     peer.getPeerIdentifier(), lastPacketReceived, TIMEOUT_BEFORE_LOST_CONNECT);
-            icePeerAdapter.onConnectionLost(peer);
+            peer.lostConnect();
             return;
         }
         debug().peerConnectivityUpdate(peer);

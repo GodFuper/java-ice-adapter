@@ -1,11 +1,14 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.peer;
 
-import com.faforever.iceadapter.ice.modules.EventBusModule;
-import com.faforever.iceadapter.ice.modules.IceModule;
+import com.faforever.iceadapter.ice.IceState;
+import com.faforever.iceadapter.ice.ModuleBase;
+import com.faforever.iceadapter.ice.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
+import com.faforever.iceadapter.ice.peer.modules.PeerConnectivityCheckerModule;
+import com.faforever.iceadapter.ice.peer.modules.UseCustomPairModule;
+import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
-import com.faforever.iceadapter.util.IceUtils;
 import kotlin.Pair;
-import kotlin.Triple;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,10 +17,7 @@ import org.ice4j.ice.*;
 
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,36 +38,42 @@ public class Peer {
     private final String remoteLogin;
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
     private final int preferredPort;
+    private final int lobbyPort;
+    private Integer localPort;
     private boolean allowHost = true;
     private boolean allowReflexive = true;
     private boolean allowRelay = true;
+    private volatile long lastLostConnect = 0;
 
     private volatile float rtt = 0.0f;
     private volatile Long lastPacketReceived;
+    private AtomicInteger echosReceived = new AtomicInteger(0);
+    private AtomicInteger invalidEchosReceived = new AtomicInteger(0);
 
     public volatile boolean closing = false;
 
     private DatagramSocket faSocket;
 
+    private volatile KeepAliveStrategy keepAliveStrategy;
     private volatile Agent agent;
     private volatile IceMediaStream mediaStream;
+    private volatile Component component;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
-    private volatile IceState iceState = IceState.NEW;
+    private volatile IceState iceState = null;
 
     //    private final PeerIceModule ice = new PeerIceModule(this);
 //    private DatagramSocket faSocket; // Socket on which we are listening for FA / sending data to FA
     private final Lock lockSocketSend = new ReentrantLock();
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
-    private final Map<IceModule, ModuleBase> modules = new ConcurrentHashMap<>();
+    private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
 
     // Future handle for the FA listener task so we can cancel it cleanly
     private volatile CompletableFuture<Void> faListenerFuture;
 
-    public void initModules(IceGameSession iceGameSession, IcePeerAdapter icePeerAdapter) {
-        for (IceModule module : IceModule.values()) {
-            modules.putIfAbsent(module, module.getCreateModule()
-                    .apply(new Triple<>(this, iceGameSession, icePeerAdapter)));
+    public void initModules(IceAsync iceAsync) {
+        for (PeerModule module : PeerModule.getSortedModules()) {
+            modules.putIfAbsent(module, module.createModule(new Pair<>(this, iceAsync)));
         }
     }
 
@@ -84,14 +90,15 @@ public class Peer {
     }
 
     public boolean isConnected() {
-        return IceUtils.getFirstActiveComponent(this).isPresent();
+        return component != null;
     }
 
-    public void init() {
-        log.debug(
-                "Peer created: {}, localOffer: {}, preferredPort: {}", getPeerIdentifier(), localOffer, preferredPort);
+    public void startInitPeer() {
+        log.debug("Peer created: {}, localOffer: {}, preferredPort: {}",
+                getPeerIdentifier(),
+                localOffer,
+                preferredPort);
 
-        faSocket = initForwarding(preferredPort);
         setIceState(IceState.NEW);
     }
 
@@ -100,6 +107,12 @@ public class Peer {
         this.iceState = iceState;
         event(bus -> bus.onIceStateChange(this, old, iceState));
         debug().peerStateChanged(this);
+    }
+
+    public void setLastPacketReceived(Long lastPacketReceived) {
+        Long old = this.lastPacketReceived;
+        this.lastPacketReceived = lastPacketReceived;
+        event(bus -> bus.onLastPacketReceived(this, old, lastPacketReceived));
     }
 
     public void setIceStateWithoutTrigger(IceState iceState) {
@@ -117,7 +130,7 @@ public class Peer {
         return locks.computeIfAbsent(lockName, k -> new ReentrantLock());
     }
 
-    public <T extends ModuleBase> Optional<T> getModule(IceModule module, Class<T> type) {
+    public <T extends ModuleBase> Optional<T> getModule(PeerModule module, Class<T> type) {
         ModuleBase foundModule = modules.get(module);
         if (type != null && type.isInstance(foundModule)) {
             return Optional.of(type.cast(foundModule));
@@ -132,11 +145,7 @@ public class Peer {
     }
 
     private Optional<EventBusModule> getEventBus() {
-        return getModule(IceModule.EVENT_BUS, EventBusModule.class);
-    }
-
-    public int getLocalPort() {
-        return faSocket.getLocalPort();
+        return getModule(PeerModule.EVENT_BUS, EventBusModule.class);
     }
 
     public void addEventListener(PeerEventListener listener) {
@@ -214,6 +223,20 @@ public class Peer {
 //        }
 //        log.debug("No longer listening for messages from FA for peer {}", getPeerIdentifier());
 //    }
+    public void setAgent(Agent agent) {
+        this.agent = agent;
+        event(bus -> bus.onAgentChange(this, agent));
+    }
+
+    public void setMediaStream(IceMediaStream mediaStream) {
+        this.mediaStream = mediaStream;
+        event(bus -> bus.onIceMediaStreamChange(this, mediaStream));
+    }
+
+    public void setComponent(Component component) {
+        this.component = component;
+        event(bus -> bus.onIceComponentChange(this, component));
+    }
 
     /**
      * @return %username%(%id%)
@@ -222,12 +245,39 @@ public class Peer {
         return "%s(%d)".formatted(remoteLogin, remoteId);
     }
 
-    public List<Pair<CandidateType, CandidateType>> getCandidateTypes() {
-        return Optional.ofNullable(mediaStream)
-                .map(IceUtils::getActiveComponents)
-                .orElse(List.of())
-                .stream()
+    public CandidatePair getSelectedPair() {
+        Optional<UseCustomPairModule> module = getModule(PeerModule.MULTI_PAIRS, UseCustomPairModule.class);
+
+        if (module.isPresent() && module.get().isRunning()) {
+            return module.get().getSelectedPair();
+        }
+
+        return getActiveComponent()
                 .map(Component::getSelectedPair)
+                .orElse(null);
+    }
+
+    public Optional<Component> getActiveComponent() {
+        return Optional.ofNullable(component);
+    }
+
+    public Optional<CandidatePair> getActiveCandidatePair() {
+        return Optional.ofNullable(component).map(Component::getSelectedPair);
+    }
+
+    public Collection<CandidatePair> getCandidatePairs() {
+        Collection<CandidatePair> pairs = new ArrayList<>();
+        Optional<UseCustomPairModule> module = getModule(PeerModule.MULTI_PAIRS, UseCustomPairModule.class);
+        if (module.isPresent() && module.get().isRunning()) {
+            pairs = module.get().getSuccessPairs();
+        } else {
+            Optional.ofNullable(getSelectedPair()).ifPresent(pairs::add);
+        }
+        return pairs;
+    }
+
+    public List<Pair<CandidateType, CandidateType>> getCandidateTypes() {
+        return getCandidatePairs().stream()
                 .map(pair -> new Pair<>(pair.getLocalCandidate().getType(), pair.getRemoteCandidate().getType()))
                 .toList();
     }
@@ -258,13 +308,29 @@ public class Peer {
     }
 
     public Optional<Long> countEchosReceived() {
-        return getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
-                .map(ConnectivityModule::getEchosReceived);
+        return getModule(PeerModule.CONNECTION_CHECKER_MODULE, PeerConnectivityCheckerModule.class)
+                .map(PeerConnectivityCheckerModule::getEchosReceived);
     }
 
     public Optional<Long> countInvalidEchosReceived() {
-        return getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
-                .map(ConnectivityModule::getInvalidEchosReceived);
+        return getModule(PeerModule.CONNECTION_CHECKER_MODULE, PeerConnectivityCheckerModule.class)
+                .map(PeerConnectivityCheckerModule::getInvalidEchosReceived);
+    }
+
+    public void sendToFaSocket(byte[] data, int offset, int length) {
+        event(bus -> bus.onSendToFaSocket(this, data, offset, length));
+    }
+
+    public void iceDataReceived(byte[] data, int offset, int length) {
+        event(bus -> bus.onIceDataReceived(this, data, offset, length));
+    }
+
+    public void sendToPeer(byte[] data, int offset, int length) {
+        event(bus -> bus.onSendToPeer(this, data, offset, length));
+    }
+
+    public void lostConnect() {
+        event(bus -> bus.onConnectionLost(this));
     }
 
     public void close() {
@@ -275,7 +341,7 @@ public class Peer {
         log.info("Closing peer for player {}", getPeerIdentifier());
 
         closing = true;
-        event(bus -> bus.onClose(this));
+        event(bus -> bus.onClose(this, closing));
         for (ModuleBase module : modules.values()) {
             module.stop();
         }
@@ -284,15 +350,9 @@ public class Peer {
 //            faListenerFuture.cancel(true);
 //        }
 //
-        try {
-            if (faSocket != null && !faSocket.isClosed()) {
-                faSocket.close();
-            }
-        } catch (Exception e) {
-            log.debug("Error closing faSocket for {}", getPeerIdentifier(), e);
-        }
-
         log.info("Peer closed: {}", getPeerIdentifier());
     }
+
+
 }
 

@@ -2,7 +2,7 @@ package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 
 public interface ConnectService {
 

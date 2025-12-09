@@ -4,8 +4,7 @@ import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
-import com.faforever.iceadapter.ice.Peer;
-import com.faforever.iceadapter.util.IceUtils;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.nbarraille.jjsonrpc.JJsonPeer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -25,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Candidate;
 import org.ice4j.ice.CandidatePair;
 import org.ice4j.ice.CandidateType;
-import org.ice4j.ice.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -340,14 +338,12 @@ public class DebugWindow extends Application implements Debugger {
         public void stateChangedUpdate(Peer peer) {
             connected.set(peer.isConnected());
             state.set(peer.getIceState().getMessage());
-            localCandidate.set(IceUtils.getFirstActiveComponent(peer)
-                    .map(Component::getSelectedPair)
+            localCandidate.set(peer.getActiveCandidatePair()
                     .map(CandidatePair::getLocalCandidate)
                     .map(Candidate::getType)
                     .map(CandidateType::toString)
                     .orElse(""));
-            remoteCandidate.set(IceUtils.getFirstActiveComponent(peer)
-                    .map(Component::getSelectedPair)
+            remoteCandidate.set(peer.getActiveCandidatePair()
                     .map(CandidatePair::getRemoteCandidate)
                     .map(Candidate::getType)
                     .map(CandidateType::toString)

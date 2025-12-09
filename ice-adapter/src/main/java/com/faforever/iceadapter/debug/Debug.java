@@ -35,12 +35,11 @@ public class Debug {
                 new TelemetryDebugger(IceAdapter.getTelemetryServer(), IceAdapter.getGameId(), IceAdapter.getId());
         register(telemetryDebugger);
         if (isJavaFxSupported()) {
-            if (Debug.ENABLE_DEBUG_WINDOW) {
-                CompletableFuture.runAsync(IceWindow::launch);
-            }
-            if (Debug.ENABLE_INFO_WINDOW) {
-                CompletableFuture.runAsync(InfoWindow::launch);
-            }
+            CompletableFuture.runAsync(IceWindow::launch);
+
+//            if (Debug.ENABLE_INFO_WINDOW) {
+//                CompletableFuture.runAsync(InfoWindow::launch);
+//            }
         } else {
             log.info("No JavaFX support detected. Running without debug window.");
         }

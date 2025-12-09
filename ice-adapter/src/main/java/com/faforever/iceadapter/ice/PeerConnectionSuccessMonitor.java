@@ -1,15 +1,20 @@
 package com.faforever.iceadapter.ice;
 
+import com.faforever.iceadapter.ice.peer.Peer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.ice4j.ice.Agent;
 import org.ice4j.ice.CandidatePair;
-import org.ice4j.ice.CandidatePairState;
 import org.ice4j.ice.IceMediaStream;
+import org.ice4j.ice.IceProcessingState;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Map;
 import java.util.concurrent.*;
+
+import static org.ice4j.ice.Agent.PROPERTY_ICE_PROCESSING_STATE;
+import static org.ice4j.ice.IceMediaStream.PROPERTY_PAIR_NOMINATED;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -22,12 +27,15 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
     private final Runnable onSuccess;
     private final Runnable onFailure;
 
-    /**
-     * Начинает отслеживание всех пар из указанного Component.
-     */
     public void start(Peer peer) {
         if (peer == null) {
             log.error("Peer is null. Aborting.");
+            onFailure.run();
+            return;
+        }
+        Agent agent = peer.getAgent();
+        if (agent == null) {
+            log.error("Agent is null. Aborting.");
             onFailure.run();
             return;
         }
@@ -40,6 +48,7 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
 
         name = peer.getPeerIdentifier();
 
+        agent.addStateChangeListener(this);
         mediaStream.addPairChangeListener(this);
 
         for (CandidatePair pair : mediaStream.getCheckList()) {
@@ -47,28 +56,40 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         }
     }
 
-    /**
-     * Обработка изменения свойства — например, состояние пары изменилось.
-     */
     @Override
     public void propertyChange(PropertyChangeEvent event) {
-        if (IceMediaStream.PROPERTY_PAIR_STATE_CHANGED.equals(event.getPropertyName())) {
-            CandidatePair pair = (CandidatePair) event.getSource();
-            CandidatePairState newState = (CandidatePairState) event.getNewValue();
 
-            if (CandidatePairState.SUCCEEDED.equals(newState)) {
-                ScheduledFuture<?> future = pendingPairs.remove(pair);
-                if (future != null) {
-                    future.cancel(false);
-                }
+        if (PROPERTY_ICE_PROCESSING_STATE.equals(event.getPropertyName())) {
+            IceProcessingState state = (IceProcessingState) event.getNewValue();
+
+            if (IceProcessingState.FAILED == state) {
+                agentConnectionFailed();
+            }
+        }
+
+        if (PROPERTY_PAIR_NOMINATED.equals(event.getPropertyName())) {
+            CandidatePair pair = (CandidatePair) event.getSource();
+            Boolean isNominated = (Boolean) event.getNewValue();
+            if (isNominated) {
                 onPairSucceeded(pair);
             }
         }
+
+        // SUCCESS PAIR != nominated
+//        if (IceMediaStream.PROPERTY_PAIR_STATE_CHANGED.equals(event.getPropertyName())) {
+//            CandidatePair pair = (CandidatePair) event.getSource();
+//            CandidatePairState newState = (CandidatePairState) event.getNewValue();
+//
+//            if (CandidatePairState.SUCCEEDED.equals(newState)) {
+//                ScheduledFuture<?> future = pendingPairs.remove(pair);
+//                if (future != null) {
+//                    future.cancel(false);
+//                }
+//                onPairSucceeded(pair);
+//            }
+//        }
     }
 
-    /**
-     * Запускает проверку на таймаут для указанной пары.
-     */
     private void scheduleTimeoutCheck(CandidatePair pair) {
         ScheduledFuture<?> future = scheduler.schedule(() -> {
             if (pendingPairs.remove(pair) != null) {
@@ -79,9 +100,6 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         pendingPairs.put(pair, future);
     }
 
-    /**
-     * Вызывается при успешном завершении (SUCCEEDED)
-     */
     private void onPairSucceeded(CandidatePair pair) {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
@@ -89,9 +107,6 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         onSuccess.run();
     }
 
-    /**
-     * Вызывается при таймауте — пара не перешла в SUCCEEDED
-     */
     private void onPairTimeout(CandidatePair pair) {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
@@ -99,9 +114,12 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         onFailure.run();
     }
 
-    /**
-     * Останавливает мониторинг.
-     */
+    private void agentConnectionFailed() {
+        String oldThreadName = Thread.currentThread().getName();
+        Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
+        log.warn("Agent не смог наладить соединение");
+    }
+
     public void shutdown() {
         scheduler.shutdown();
         pendingPairs.values().forEach(f -> f.cancel(true));

@@ -9,8 +9,7 @@ import java.net.SocketException;
 @UtilityClass
 @Slf4j
 public class DatagramSocketUtils {
-    // 64KiB = UDP MTU, in practice due to ethernet frames being <= 1500 B, this is often not used
-    public static final int MAX_SIZE_PACKET = 1200;
+    public static final int MAX_SIZE_PACKET = /* assumed MTU */ 1500 - /* IPv4 header */ 20 - /* UDP header */ 8;
 
     public void resizeBuffer(DatagramSocket socket) {
         try {

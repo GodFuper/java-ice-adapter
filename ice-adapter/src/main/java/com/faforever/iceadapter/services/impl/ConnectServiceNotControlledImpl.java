@@ -3,7 +3,7 @@ package com.faforever.iceadapter.services.impl;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.CandidateUtil;
@@ -18,14 +18,11 @@ import static com.faforever.iceadapter.ice.IceState.*;
 @Slf4j
 public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implements ConnectService {
 
-//    private final Map<Integer, Peer> newAndDisconnectedPeers = new ConcurrentHashMap<>();
-
     public ConnectServiceNotControlledImpl(IceGameSession iceGameSession, IceAsync iceAsync) {
         super(iceGameSession, iceAsync);
     }
 
     void onIceStateNew(Peer peer) {
-//        LockUtil.executeWithLock(lockMessageReceived, () -> newAndDisconnectedPeers.put(peer.getRemoteId(), peer));
     }
 
     void onIceStateGathering(Peer peer) {
@@ -42,7 +39,6 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
 
     @Override
     void onIceStateDisconnected(Peer peer, IceState oldState) {
-//        LockUtil.executeWithLock(lockMessageReceived, () -> newAndDisconnectedPeers.put(peer.getRemoteId(), peer));
         onDisconnected(peer, oldState);
     }
 
@@ -57,7 +53,6 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
 
     void onIceStateConnected(Peer peer) {
         onConnected(peer);
-//        newAndDisconnectedPeers.remove(peer.getRemoteId());
     }
 
     @Override
@@ -113,4 +108,5 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
         peer.setIceStateWithoutTrigger(CHECKING);
         onIceStateChecking(peer);
     }
+
 }

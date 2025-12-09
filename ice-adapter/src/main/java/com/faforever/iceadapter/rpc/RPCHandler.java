@@ -8,8 +8,7 @@ import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.gpgnet.LobbyInitMode;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
-import com.faforever.iceadapter.ice.Peer;
-import com.faforever.iceadapter.util.IceUtils;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import org.ice4j.TransportAddress;
 import org.ice4j.ice.Candidate;
 import org.ice4j.ice.CandidatePair;
 import org.ice4j.ice.CandidateType;
-import org.ice4j.ice.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,8 +118,7 @@ public class RPCHandler {
             try {
                 gameSession.getPeers().values().stream()
                         .map(peer -> {
-                            Optional<CandidatePair> pair = IceUtils.getFirstActiveComponent(peer)
-                                    .map(Component::getSelectedPair);
+                            Optional<CandidatePair> pair = peer.getActiveCandidatePair();
                             IceStatus.IceRelay.IceRelayICEState iceRelayICEState =
                                     new IceStatus.IceRelay.IceRelayICEState(
                                             peer.isLocalOffer(),

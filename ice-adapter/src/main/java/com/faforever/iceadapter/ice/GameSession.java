@@ -2,11 +2,14 @@ package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.IceTrigger;
-import com.faforever.iceadapter.services.MessagesService;
-import com.faforever.iceadapter.services.impl.*;
+import com.faforever.iceadapter.services.impl.ConnectServiceControlledImpl;
+import com.faforever.iceadapter.services.impl.ConnectServiceHandler;
+import com.faforever.iceadapter.services.impl.ConnectServiceNotControlledImpl;
+import com.faforever.iceadapter.services.impl.IceAsyncImpl;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.TrayIcon;
@@ -51,8 +54,6 @@ public class GameSession implements IceGameSession {
     private final ConnectService notControlledConnectService = new ConnectServiceNotControlledImpl(this, iceAsync);
     private final ConnectService connectServiceHandler = new ConnectServiceHandler(controlledConnectService, notControlledConnectService);
     private final IceTrigger iceTrigger = new IceTrigger(iceAsync, connectServiceHandler);
-    private final MessagesService messagesService = new MessageServiceImpl(this, connectServiceHandler);
-    private final IcePeerAdapter icePeerAdapter = new IcePeerAdapterImpl(connectServiceHandler, messagesService);
 
     @Getter
     @Setter
@@ -75,11 +76,11 @@ public class GameSession implements IceGameSession {
             debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
             return peers.get(remotePlayerId).getLocalPort();
         }
-        Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort);
+        Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort());
         peer.setAllows(allowHost, allowReflexive, allowRelay);
-        peer.initModules(this, icePeerAdapter);
+        peer.initModules(iceAsync);
         peer.addEventListener(iceTrigger);
-        peer.init();
+        peer.startInitPeer();
         peers.put(remotePlayerId, peer);
         debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
         return peer.getLocalPort();
@@ -122,7 +123,7 @@ public class GameSession implements IceGameSession {
             boolean isAllowReflexive = allowReflexive != null ? allowReflexive : reconnectPeer.isAllowReflexive();
             boolean isAllowRelay = allowRelay != null ? allowRelay : reconnectPeer.isAllowRelay();
             reconnectPeer.setAllows(isAllowHost, isAllowReflexive, isAllowRelay);
-            iceAsync.runAsync(reconnectPeer, () -> connectServiceHandler.onConnectionLost(reconnectPeer));
+            iceAsync.runAsync(reconnectPeer, reconnectPeer::lostConnect);
         }
     }
 

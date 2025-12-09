@@ -1,7 +1,8 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
-import com.faforever.iceadapter.ice.modules.IceModule;
+import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.*;
 import lombok.Getter;
@@ -318,7 +319,7 @@ public class PeerIceModule {
         rpcService.onConnected(IceAdapter.getId(), peer.getRemoteId(), true);
         setState(CONNECTED);
 
-        peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+        peer.getModule(PeerModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
                 .ifPresent(ConnectivityModule::start);
 
         for (Component component : mediaStream.getComponents()) {
@@ -346,7 +347,7 @@ public class PeerIceModule {
                 listenerThread = null;
             }
 
-            peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+            peer.getModule(PeerModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
                     .ifPresent(ConnectivityModule::stop);
 
             if (connected) {
@@ -449,8 +450,7 @@ public class PeerIceModule {
                 DatagramPacket packet = new DatagramPacket(data, data.length);
                 localComponent.getSocket().receive(packet);
 
-                peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
-                        .ifPresent(ConnectivityModule::onReceivePacket);
+                peer.setLastPacketReceived(System.currentTimeMillis());
                 if (packet.getLength() == 0) {
                     continue;
                 }
@@ -461,7 +461,7 @@ public class PeerIceModule {
                 } else if (data[0] == COMMAND_ECHO) {
                     // Received echo req/res
                     if (peer.isLocalOffer()) {
-                        peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+                        peer.getModule(PeerModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
                                 .ifPresent(module -> module.onEchoReceived(data, packet.getLength()));
                     } else {
                         sendViaIce(data, 0, packet.getLength()); // Turn around, send echo back
@@ -476,7 +476,7 @@ public class PeerIceModule {
             }
         }
 
-        Optional<Component> activeComponent = IceUtils.getFirstActiveComponent(mediaStream);
+        Optional<Component> activeComponent = peer.getActiveComponent();
 
         if (activeComponent.isEmpty()) {
             onConnectionLost();
@@ -495,7 +495,7 @@ public class PeerIceModule {
             agent = null;
         }
 
-        peer.getModule(IceModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
+        peer.getModule(PeerModule.CONNECTION_CHECKER_MODULE, ConnectivityModule.class)
                 .ifPresent(ConnectivityModule::stop);
     }
 
