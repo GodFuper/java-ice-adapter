@@ -12,7 +12,7 @@ import java.io.IOException;
 
 @Slf4j
 @RequiredArgsConstructor
-public class IceSenderModule implements ModuleBase, PeerEventListener {
+public class PeerToPeerModule implements ModuleBase, PeerEventListener {
     private static final String LOCK_MODULE = "IceSenderModule";
 
     private final Peer peer;

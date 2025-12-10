@@ -73,7 +73,7 @@ public class IceListenerModule implements ModuleBase, PeerEventListener {
             return;
         }
 
-        if (data[0] != FAListenerModule.COMMAND_FA && data[0] != ConnectivityModule.COMMAND_ECHO) {
+        if (data[0] != FaToPeerModule.COMMAND_FA && data[0] != ConnectivityModule.COMMAND_ECHO) {
             log.warn("Received invalid packet, first byte: 0x{}, length: {}", data[0], length);
         }
     }

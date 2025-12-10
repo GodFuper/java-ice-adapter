@@ -32,22 +32,22 @@ public enum PeerModule implements Comparator<PeerModule> {
     }),
     FA_SENDER_MODULE(components -> {
         Peer peer = components.getFirst();
-        return new FASenderModule(peer);
+        return new PeerToFaModule(peer);
     }),
     FA_REPEATER_MODULE(components -> {
         Peer peer = components.getFirst();
         IceAsync async = components.getSecond();
-        FAListenerModule module = new FAListenerModule(peer, async);
+        FaToPeerModule module = new FaToPeerModule(peer, async);
         module.start();
         return module;
     }),
-    ICE_TO_FA_SENDER(components -> {
+    CALCULATE_RTT(components -> {
         Peer peer = components.getFirst();
-        return new IceToFASenderModule(peer);
+        return new RttCalculateModule(peer);
     }),
     ICE_TO_ICE_SENDER(components -> {
         Peer peer = components.getFirst();
-        return new IceSenderModule(peer);
+        return new PeerToPeerModule(peer);
     }),
     ICE_LISTENER_MODULE(components -> {
         Peer peer = components.getFirst();

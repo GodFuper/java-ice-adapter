@@ -19,7 +19,7 @@ import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 
 @Slf4j
 @RequiredArgsConstructor
-public class FAListenerModule implements ModuleBase {
+public class FaToPeerModule implements ModuleBase {
     public static final char COMMAND_FA = 'd';
     private static final String LOCK_MODULE = "FAListenerModule";
 

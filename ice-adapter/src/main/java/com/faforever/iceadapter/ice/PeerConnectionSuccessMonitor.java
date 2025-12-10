@@ -62,11 +62,11 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         if (PROPERTY_ICE_PROCESSING_STATE.equals(event.getPropertyName())) {
             IceProcessingState state = (IceProcessingState) event.getNewValue();
 
-            if (IceProcessingState.FAILED == state) {
+            if (state == IceProcessingState.FAILED) {
                 agentConnectionFailed();
             }
         }
-
+//
         if (PROPERTY_PAIR_NOMINATED.equals(event.getPropertyName())) {
             CandidatePair pair = (CandidatePair) event.getSource();
             Boolean isNominated = (Boolean) event.getNewValue();
@@ -117,7 +117,13 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
     private void agentConnectionFailed() {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
-        log.warn("Agent не смог наладить соединение");
+        log.warn("❌ Agent не смог наладить соединение");
+    }
+
+    private void agentConnectionSuccess() {
+        String oldThreadName = Thread.currentThread().getName();
+        Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
+        log.warn("✅ Agent смог наладить соединение");
     }
 
     public void shutdown() {

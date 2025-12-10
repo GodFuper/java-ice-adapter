@@ -15,9 +15,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 
+import static com.faforever.iceadapter.ice.peer.modules.FaToPeerModule.COMMAND_FA;
+
 @Slf4j
 @RequiredArgsConstructor
-public class FASenderModule implements ModuleBase, PeerEventListener {
+public class PeerToFaModule implements ModuleBase, PeerEventListener {
     private static final String LOCALHOST = "127.0.0.1";
     private static final String LOCK_FA_SOCKET = "socket_fa";
     private static final String LOCK_MODULE = "FASocketModule";
@@ -43,6 +45,21 @@ public class FASenderModule implements ModuleBase, PeerEventListener {
 
     @Override
     public void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
+        getSocketAndTrySend(data, offset, length);
+    }
+
+    @Override
+    public void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
+        if (length == 0) {
+            return;
+        }
+
+        if (data[0] == COMMAND_FA) {
+            getSocketAndTrySend(data, offset, length);
+        }
+    }
+
+    private void getSocketAndTrySend(byte[] data, int offset, int length) {
         Optional<FASocketModule> socketModule = peer.getModule(PeerModule.FA_SOCKET_MODULE, FASocketModule.class);
         socketModule.map(FASocketModule::getSocket).ifPresent(socket -> {
             lockAndSend(socket, data, offset, length);

@@ -276,15 +276,17 @@ public class Peer {
         return pairs;
     }
 
-    public List<Pair<CandidateType, CandidateType>> getCandidateTypes() {
+    public List<Pair<String, String>> getCandidateTypes() {
         return getCandidatePairs().stream()
-                .map(pair -> new Pair<>(pair.getLocalCandidate().getType(), pair.getRemoteCandidate().getType()))
+                .map(pair -> new Pair<>("%s-%s".formatted(pair.getLocalCandidate().getTransport(),
+                        pair.getLocalCandidate().getType()),
+                        "%s-%s".formatted(pair.getRemoteCandidate().getType(), pair.getRemoteCandidate().getTransport())))
                 .toList();
     }
 
     public String getStrCandidateTypes(String delimiter) {
         StringJoiner pairCandidates = new StringJoiner(delimiter);
-        for (Pair<CandidateType, CandidateType> pair : getCandidateTypes()) {
+        for (Pair<String, String> pair : getCandidateTypes()) {
             pairCandidates.add("%s<->%s".formatted(pair.getFirst(), pair.getSecond()));
         }
         return pairCandidates.toString();

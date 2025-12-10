@@ -7,12 +7,17 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.*;
+import org.ice4j.ice.Agent;
+import org.ice4j.ice.CandidatePair;
+import org.ice4j.ice.IceMediaStream;
+import org.ice4j.ice.KeepAliveStrategy;
 
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.ice4j.ice.NominationStrategy.NOMINATE_HIGHEST_PRIO;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,13 +34,13 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
 
     @Getter
     @Setter
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     @Override
     public void init() {
         if (enabled) {
             peer.addEventListener(this);
-            peer.setKeepAliveStrategy(KeepAliveStrategy.ALL_SUCCEEDED);
+            peer.setKeepAliveStrategy(KeepAliveStrategy.SELECTED_ONLY);
         }
     }
 
@@ -45,7 +50,7 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
 
     @Override
     public void onAgentChange(Peer peer, Agent agent) {
-        if (peer.isClosing()) {
+        if (peer.isClosing() || !enabled) {
             return;
         }
 
@@ -56,12 +61,13 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
             return;
         }
 
+        agent.setNominationStrategy(NOMINATE_HIGHEST_PRIO);
         agent.setPerformConsentFreshness(true);
     }
 
     @Override
     public void onIceMediaStreamChange(Peer peer, IceMediaStream stream) {
-        if (peer.isClosing()) {
+        if (peer.isClosing() || !enabled) {
             return;
         }
         if (stream == null) {
@@ -73,17 +79,26 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
                 Boolean setNominated = (Boolean) event.getNewValue();
                 if (setNominated == true) {
                     selectedPair = (CandidatePair) event.getSource();
+                    successPairs.add((CandidatePair) event.getSource());
                 }
-            } else if (Objects.equals(IceMediaStream.PROPERTY_PAIR_STATE_CHANGED, event.getPropertyName())) {
+            } else if (Objects.equals(IceMediaStream.PROPERTY_PAIR_VALIDATED, event.getPropertyName())) {
                 CandidatePair pair = (CandidatePair) event.getSource();
-                CandidatePairState newState = (CandidatePairState) event.getNewValue();
+                Boolean isValid = (Boolean) event.getNewValue();
 
-                if (CandidatePairState.SUCCEEDED.equals(newState)) {
-                    successPairs.add(pair);
-                } else {
-                    successPairs.remove(pair);
-                }
+//                if(isValid) {
+//                    successPairs.add(pair);
+//                }
             }
+//            } else if (Objects.equals(IceMediaStream.PROPERTY_PAIR_STATE_CHANGED, event.getPropertyName())) {
+//                CandidatePair pair = (CandidatePair) event.getSource();
+//                CandidatePairState newState = (CandidatePairState) event.getNewValue();
+//
+//                if (CandidatePairState.SUCCEEDED.equals(newState)) {
+//                    successPairs.add(pair);
+//                } else {
+//                    successPairs.remove(pair);
+//                }
+//            }
         });
     }
 
