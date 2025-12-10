@@ -72,6 +72,11 @@ public class CandidateUtil {
         mediaStream.setRemotePassword(remoteCandidatesMessage.password());
         mediaStream.setRemoteUfrag(remoteCandidatesMessage.ufrag());
 
+        //Optimize. Maybe x2 faster
+        if (!agent.isControlling()) {
+            return;
+        }
+
         remoteCandidatesMessage.candidates().stream()
                 .sorted() // just in case some ICE adapter implementation did not sort it yet
                 .forEach(remoteCandidatePacket -> {

@@ -55,8 +55,10 @@ public class IceListenerModule implements ModuleBase, PeerEventListener {
                 if (peer.isClosing()) {
                     return;
                 }
-                log.error("Ice Listener error", e);
-                peer.lostConnect();
+                if (!datagramSocket.isClosed()) {
+                    log.error("Ice Listener error", e);
+                    peer.lostConnect();
+                }
                 break;
             }
         }

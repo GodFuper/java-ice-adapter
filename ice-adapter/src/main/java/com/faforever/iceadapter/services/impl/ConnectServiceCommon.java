@@ -124,7 +124,7 @@ public abstract class ConnectServiceCommon {
         }
 
         if (!success) {
-            connectLost(peer);
+            connectLost(peer, true);
             return;
         }
 
@@ -146,6 +146,7 @@ public abstract class ConnectServiceCommon {
     protected void onDisconnected(Peer peer, IceState oldState) {
         log.info("ICE state disconnected");
 
+        peer.setLastLostConnect(System.currentTimeMillis());
         Component component = peer.getComponent();
         if (component != null) {
             peer.setComponent(null);
@@ -175,14 +176,14 @@ public abstract class ConnectServiceCommon {
         }
     }
 
-    protected void connectLost(Peer peer) {
+    protected void connectLost(Peer peer, boolean force) {
         if (peer.getIceState() == DISCONNECTED) {
             log.warn("Lost connection, albeit already in ice state disconnected");
             return;
         }
         long now = System.currentTimeMillis();
         long lastLostConnect = peer.getLastLostConnect();
-        if (now - lastLostConnect < LOST_CONNECT_DURATION) {
+        if (now - lastLostConnect < LOST_CONNECT_DURATION && !force) {
             log.debug("Skipping the lost connection, since the last connection loss was less than {}ms ago", LOST_CONNECT_DURATION);
             return;
         }
@@ -199,13 +200,14 @@ public abstract class ConnectServiceCommon {
     protected boolean checking(Peer peer) {
         log.debug("Checking ICE for peer");
         CompletableFuture<Boolean> future = new CompletableFuture<>();
+        Agent agent = peer.getAgent();
         PeerConnectionSuccessMonitor monitor = new PeerConnectionSuccessMonitor(TIMEOUT_ON_CHECKING, () -> {
             future.complete(true);
         }, () -> {
             future.complete(false);
         });
         monitor.start(peer);
-        Agent agent = peer.getAgent();
+
         agent.startConnectivityEstablishment();
 
         try {
@@ -221,12 +223,13 @@ public abstract class ConnectServiceCommon {
     protected void onConnected(Peer peer) {
         log.info("ICE state connected");
 
-        log.debug("ICE terminated, connected, candidate pair: {} ", peer.getStrCandidateTypes("|"));
 
         iceGameSession.onConnected(peer, true);
 
         Component component = IceUtils.getFirstComponent(peer.getMediaStream()).orElseThrow();
         peer.setComponent(component);
+
+        log.debug("ICE terminated, connected, candidate pair: {} ", peer.getStrCandidateTypes("|"));
 
         peer.startModules();
     }
@@ -243,7 +246,7 @@ public abstract class ConnectServiceCommon {
                 return;
             }
             if (peer.getIceState() == AWAITING_CANDIDATES) {
-                connectLost(peer);
+                connectLost(peer, true);
             }
         });
     }

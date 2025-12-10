@@ -47,7 +47,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
         if (connected) {
             peer.setIceState(CONNECTED);
         } else {
-            connectLost(peer);
+            connectLost(peer, true);
         }
     }
 
@@ -60,7 +60,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
         if (peer == null) {
             return;
         }
-        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer));
+        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false));
     }
 
     @Override
@@ -86,9 +86,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
             onDisconnected(peer, iceState);
         }
 
-        peer.setIceStateWithoutTrigger(NEW);
         createAgent(peer);
-        peer.setIceStateWithoutTrigger(GATHERING);
         gatherCandidates(peer);
 
         Agent agent = peer.getAgent();
@@ -105,7 +103,6 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
                     peer.isAllowRelay());
         }
 
-        peer.setIceStateWithoutTrigger(CHECKING);
         onIceStateChecking(peer);
     }
 

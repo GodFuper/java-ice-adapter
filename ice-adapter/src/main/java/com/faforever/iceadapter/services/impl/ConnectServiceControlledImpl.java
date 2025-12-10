@@ -53,7 +53,7 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
         if (connected) {
             peer.setIceState(CONNECTED);
         } else {
-            connectLost(peer);
+            connectLost(peer, true);
         }
     }
 
@@ -66,7 +66,7 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
         if (peer == null) {
             return;
         }
-        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer));
+        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false));
     }
 
     private void tryReInitState(Peer peer, IceState oldState) {
