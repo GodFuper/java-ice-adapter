@@ -4,7 +4,6 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +17,6 @@ public class FASocketModule implements ModuleBase {
     private static final String LOCK_MODULE = "FASocketModule";
 
     private final Peer peer;
-    @Getter
-    private DatagramSocket socket;
 
     @Override
     public void start() {
@@ -39,7 +36,6 @@ public class FASocketModule implements ModuleBase {
             }
             DatagramSocket socket = new DatagramSocket(port);
             DatagramSocketUtils.resizeBuffer(socket);
-            peer.setLocalPort(socket.getLocalPort());
             log.debug("Now forwarding data to peer {} on port {}", peer.getPeerIdentifier(), peer.getLocalPort());
             return socket;
         } catch (SocketException e) {
@@ -52,11 +48,13 @@ public class FASocketModule implements ModuleBase {
         if (peer.isClosing()) {
             return;
         }
+        DatagramSocket socket = peer.getFaSocket();
         if (socket == null || socket.isClosed()) {
             log.error("Socket {} is null or closed", peer.getPeerIdentifier());
             try {
                 log.warn("Trying to connect to FA for {}", peer.getPeerIdentifier());
                 socket = initForwarding(peer.getPreferredPort(), peer.getLocalPort());
+                peer.setFaSocket(socket);
             } catch (Exception e) {
                 log.error("Could not connect to FA for {}", peer.getPeerIdentifier(), e);
             }
@@ -64,6 +62,7 @@ public class FASocketModule implements ModuleBase {
     }
 
     private void stopSocket() {
+        DatagramSocket socket = peer.getFaSocket();
         if (peer.isClosing() && socket != null && !socket.isClosed()) {
             socket.close();
             socket = null;

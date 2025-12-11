@@ -3,7 +3,6 @@ package com.faforever.iceadapter.ice.peer.modules;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Optional;
 
 import static com.faforever.iceadapter.ice.peer.modules.FaToPeerModule.COMMAND_FA;
 
@@ -55,15 +53,17 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
         }
 
         if (data[0] == COMMAND_FA) {
-            getSocketAndTrySend(data, offset, length);
+            getSocketAndTrySend(data, 1, length - 1);
         }
     }
 
     private void getSocketAndTrySend(byte[] data, int offset, int length) {
-        Optional<FASocketModule> socketModule = peer.getModule(PeerModule.FA_SOCKET_MODULE, FASocketModule.class);
-        socketModule.map(FASocketModule::getSocket).ifPresent(socket -> {
-            lockAndSend(socket, data, offset, length);
-        });
+        DatagramSocket socket = peer.getFaSocket();
+        if (socket == null) {
+            log.error("Socket is null. Send to FA skipped");
+            return;
+        }
+        lockAndSend(socket, data, offset, length);
     }
 
     private void lockAndSend(DatagramSocket socket, byte[] data, int offset, int length) {

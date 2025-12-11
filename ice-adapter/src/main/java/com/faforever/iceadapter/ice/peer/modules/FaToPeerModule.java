@@ -2,7 +2,6 @@ package com.faforever.iceadapter.ice.peer.modules;
 
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -58,13 +56,14 @@ public class FaToPeerModule implements ModuleBase {
      * This method get's invoked by the thread listening for data from FA
      */
     private void faListener() {
-        Optional<FASocketModule> socketModule = peer.getModule(PeerModule.FA_SOCKET_MODULE, FASocketModule.class);
-        DatagramSocket socket = socketModule.map(FASocketModule::getSocket).orElse(null);
+
         isRunning = true;
         while (!peer.isClosing()) {
+            DatagramSocket socket = peer.getFaSocket();
             if (socket != null) {
                 receiveCatch(socket);
             } else {
+                log.error("Socket is null. Receive from FA skipped");
                 break;
             }
         }

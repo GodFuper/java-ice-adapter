@@ -38,7 +38,7 @@ public class Peer {
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
     private final int preferredPort;
     private final int lobbyPort;
-    private Integer localPort;
+
     private boolean allowHost = true;
     private boolean allowReflexive = true;
     private boolean allowRelay = true;
@@ -51,7 +51,7 @@ public class Peer {
 
     public volatile boolean closing = false;
 
-    private DatagramSocket faSocket;
+    private volatile DatagramSocket faSocket;
 
     private volatile KeepAliveStrategy keepAliveStrategy;
     private volatile Agent agent;
@@ -69,6 +69,10 @@ public class Peer {
 
     // Future handle for the FA listener task so we can cancel it cleanly
     private volatile CompletableFuture<Void> faListenerFuture;
+
+    public Integer getLocalPort() {
+        return faSocket != null ? faSocket.getLocalPort() : 0;
+    }
 
     public void initModules(IceAsync iceAsync) {
         for (PeerModule module : PeerModule.getSortedModules()) {
