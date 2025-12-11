@@ -30,7 +30,7 @@ import static com.faforever.iceadapter.debug.Debug.debug;
 @Slf4j
 public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallbacks {
     public static volatile IceAdapter INSTANCE;
-    private static String VERSION = "DEBUG-SNAPSHOT";
+    private static String VERSION = "SNAPSHOT";
     private static volatile GameSession GAME_SESSION;
     private static final Lock lockGameSession = new ReentrantLock();
 

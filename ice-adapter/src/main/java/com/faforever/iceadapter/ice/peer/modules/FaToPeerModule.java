@@ -3,7 +3,6 @@ package com.faforever.iceadapter.ice.peer.modules;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
-import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 
@@ -22,10 +23,12 @@ import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
 public class FaToPeerModule implements ModuleBase {
     public static final char COMMAND_FA = 'd';
     private static final String LOCK_MODULE = "FAListenerModule";
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     private final Peer peer;
-    private final IceAsync iceAsync;
-    private CompletableFuture<Void> listener;
+    private volatile Future<?> listener;
+
+    private volatile boolean isRunning = false;
 
     @Override
     public void start() {
@@ -40,7 +43,7 @@ public class FaToPeerModule implements ModuleBase {
     private void startListeners() {
         if (listener == null ||
                 listener.isDone()) {
-            listener = iceAsync.runAsync(peer, this::faListener);
+            listener = executor.submit(this::faListener);
         }
     }
 
@@ -56,12 +59,16 @@ public class FaToPeerModule implements ModuleBase {
      */
     private void faListener() {
         Optional<FASocketModule> socketModule = peer.getModule(PeerModule.FA_SOCKET_MODULE, FASocketModule.class);
-
+        DatagramSocket socket = socketModule.map(FASocketModule::getSocket).orElse(null);
+        isRunning = true;
         while (!peer.isClosing()) {
-            socketModule.map(FASocketModule::getSocket)
-                    .ifPresent(this::receiveCatch);
-
+            if (socket != null) {
+                receiveCatch(socket);
+            } else {
+                break;
+            }
         }
+        isRunning = false;
         log.debug("No longer listening for messages from FA for peer");
     }
 

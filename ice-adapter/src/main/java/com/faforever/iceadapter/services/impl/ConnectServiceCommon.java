@@ -12,10 +12,7 @@ import com.faforever.iceadapter.util.IceUtils;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Agent;
-import org.ice4j.ice.Component;
-import org.ice4j.ice.IceMediaStream;
-import org.ice4j.ice.KeepAliveStrategy;
+import org.ice4j.ice.*;
 import org.ice4j.ice.harvest.StunCandidateHarvester;
 import org.ice4j.ice.harvest.TurnCandidateHarvester;
 import org.ice4j.security.LongTermCredential;
@@ -79,6 +76,7 @@ public abstract class ConnectServiceCommon {
         Agent agent = new Agent();
         agent.setControlling(peer.isLocalOffer());
 
+        agent.setNominationStrategy(NominationStrategy.NOMINATE_FIRST_HOST_OR_REFLEXIVE_VALID);
         peer.setAgent(agent);
         peer.setMediaStream(agent.createMediaStream(FAF_MEDIA_STREAM));
     }

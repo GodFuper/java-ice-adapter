@@ -22,7 +22,7 @@ import static com.faforever.iceadapter.ice.peer.modules.FaToPeerModule.COMMAND_F
 public class PeerToFaModule implements ModuleBase, PeerEventListener {
     private static final String LOCALHOST = "127.0.0.1";
     private static final String LOCK_FA_SOCKET = "socket_fa";
-    private static final String LOCK_MODULE = "FASocketModule";
+    private static final String LOCK_MODULE = "PeerToFaModule";
 
     private final Peer peer;
 

@@ -105,7 +105,6 @@ public class WindowController {
             alert.showAndWait().ifPresent(response -> {
                 if (response == ButtonType.OK && adapter != null) {
                     adapter.shutdown();
-//                    Platform.exit();
                 }
             });
         });
@@ -210,12 +209,6 @@ public class WindowController {
                 }
             }
         });
-
-//        // Логи (пример — последние N строк)
-//        Platform.runLater(() -> {
-//            logTextArea.setText(adapter.getLogBuffer());
-//            logTextArea.setScrollTop(Double.MAX_VALUE); // прокрутка вниз
-//        });
     }
 
     private void startPeriodicUpdates() {

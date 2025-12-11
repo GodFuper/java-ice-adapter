@@ -36,8 +36,7 @@ public enum PeerModule implements Comparator<PeerModule> {
     }),
     FA_REPEATER_MODULE(components -> {
         Peer peer = components.getFirst();
-        IceAsync async = components.getSecond();
-        FaToPeerModule module = new FaToPeerModule(peer, async);
+        FaToPeerModule module = new FaToPeerModule(peer);
         module.start();
         return module;
     }),

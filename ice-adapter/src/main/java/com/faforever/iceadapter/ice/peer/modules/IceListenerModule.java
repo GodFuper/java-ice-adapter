@@ -41,6 +41,22 @@ public class IceListenerModule implements ModuleBase, PeerEventListener {
         executor.submit(() -> createListener(component));
     }
 
+    public void stop() {
+        if (running) {
+            log.info("Stopping IceListenerModule");
+            running = false;
+            // Прерываем receive() через закрытие сокета или thread.interrupt()
+            Component component = peer.getComponent(); // предположим, есть такой метод
+            if (component != null) {
+                try {
+                    component.getSocket().close();
+                } catch (Exception e) {
+                    log.debug("Error closing socket during stop", e);
+                }
+            }
+        }
+    }
+
 
     private void createListener(Component component) {
         running = true;
@@ -53,15 +69,16 @@ public class IceListenerModule implements ModuleBase, PeerEventListener {
                 handlerData(peer, packet.getData(), packet.getOffset(), packet.getLength());
             } catch (IOException e) {
                 if (peer.isClosing()) {
-                    return;
+                    break;
                 }
                 if (!datagramSocket.isClosed()) {
                     log.error("Ice Listener error", e);
-                    peer.lostConnect();
                 }
+                peer.lostConnect();
                 break;
             }
         }
+        log.info("Ice Listener closed");
         running = false;
     }
 
@@ -71,11 +88,7 @@ public class IceListenerModule implements ModuleBase, PeerEventListener {
 
         peer.iceDataReceived(data, offset, length);
 
-        if (data.length == 0) {
-            return;
-        }
-
-        if (data[0] != FaToPeerModule.COMMAND_FA && data[0] != ConnectivityModule.COMMAND_ECHO) {
+        if (data.length > 0 && data[0] != FaToPeerModule.COMMAND_FA && data[0] != ConnectivityModule.COMMAND_ECHO) {
             log.warn("Received invalid packet, first byte: 0x{}, length: {}", data[0], length);
         }
     }

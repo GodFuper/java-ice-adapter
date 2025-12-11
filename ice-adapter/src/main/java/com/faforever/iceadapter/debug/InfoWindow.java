@@ -48,12 +48,7 @@ public class InfoWindow {
 
         stage.setScene(scene);
         stage.setTitle("FAF ICE adapter");
-//        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-//            @Override
-//            public void handle(WindowEvent event) {
-//                minimize();
-//            }
-//        });
+        stage.setOnCloseRequest(event -> minimize());
         stage.setOnCloseRequest(Event::consume);
         stage.show();
 
@@ -84,11 +79,6 @@ public class InfoWindow {
         log.info("Launching info window.");
         if (INSTANCE == null) {
             runOnUIThread(() -> new InfoWindow().start(new Stage()));
-//            try {
-//                launch(InfoWindow.class, null);
-//            } catch (IllegalStateException e) {
-//                runOnUIThread(() -> new InfoWindow().start(new Stage()));
-//            }
         } else {
             INSTANCE.showWindow();
         }

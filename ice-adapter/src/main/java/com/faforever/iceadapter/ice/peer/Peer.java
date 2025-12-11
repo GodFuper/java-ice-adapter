@@ -4,7 +4,6 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
-import com.faforever.iceadapter.ice.peer.modules.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.UseCustomPairModule;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
@@ -309,14 +308,12 @@ public class Peer {
         return Optional.ofNullable(getLastPacketReceived());
     }
 
-    public Optional<Long> countEchosReceived() {
-        return getModule(PeerModule.CONNECTION_CHECKER_MODULE, PeerConnectivityCheckerModule.class)
-                .map(PeerConnectivityCheckerModule::getEchosReceived);
+    public Integer countEchosReceived() {
+        return echosReceived.get();
     }
 
-    public Optional<Long> countInvalidEchosReceived() {
-        return getModule(PeerModule.CONNECTION_CHECKER_MODULE, PeerConnectivityCheckerModule.class)
-                .map(PeerConnectivityCheckerModule::getInvalidEchosReceived);
+    public Integer countInvalidEchosReceived() {
+        return invalidEchosReceived.get();
     }
 
     public void sendToFaSocket(byte[] data, int offset, int length) {

@@ -28,6 +28,11 @@ public class RttCalculateModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
+    public void stop() {
+        peer.setRtt(0.0f);
+    }
+
+    @Override
     public void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
         if (data.length == 0) {
             return;

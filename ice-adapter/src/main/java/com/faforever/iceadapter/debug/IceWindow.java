@@ -87,14 +87,5 @@ public class IceWindow extends Application {
     public static void launch() {
         log.info("Launching ice window.");
         launch(IceWindow.class, null);
-        //        if (INSTANCE == null) {
-////            try {
-//                launch(IceWindow.class, null);
-////            } catch (IllegalStateException e) {
-////                runOnUIThread(() -> new IceWindow().start(new Stage()));
-////            }
-//        } else {
-//            INSTANCE.showWindow();
-//        }
     }
 }

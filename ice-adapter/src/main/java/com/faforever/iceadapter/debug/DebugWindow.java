@@ -358,12 +358,8 @@ public class DebugWindow extends Application implements Debugger {
                     .map(last -> System.currentTimeMillis() - last)
                     .orElse(-1L)
                     .intValue());
-            echosReceived.set(peer.countEchosReceived()
-                    .orElse(-1L)
-                    .intValue());
-            invalidEchosReceived.set(peer.countInvalidEchosReceived()
-                    .orElse(-1L)
-                    .intValue());
+            echosReceived.set(peer.countEchosReceived());
+            invalidEchosReceived.set(peer.countInvalidEchosReceived());
         }
 
         @Override

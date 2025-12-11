@@ -6,7 +6,6 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.LockUtil;
 import com.google.common.primitives.Longs;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,12 +29,6 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     private final Peer peer;
     private final IceAsync iceAsync;
 
-    @Getter
-    private long echosReceived = 0;
-
-    @Getter
-    private long invalidEchosReceived = 0;
-
     private ScheduledFuture<?> scheduledFuture;
 
     @Override
@@ -57,6 +50,13 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     private void onEchoReceived(byte[] data, int length) {
         if (!peer.isLocalOffer()) {
             peer.sendToPeer(data, 0, length);// Turn around, send echo back
+        }
+
+        peer.getEchosReceived().incrementAndGet();
+
+        if (length != 9) {
+            log.trace("Received echo of wrong length, length: {}", length);
+            peer.getInvalidEchosReceived().incrementAndGet();
         }
     }
 
