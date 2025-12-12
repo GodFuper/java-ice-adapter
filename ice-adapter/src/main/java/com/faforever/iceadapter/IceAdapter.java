@@ -14,8 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ice4j.StackProperties;
 import picocli.CommandLine;
 
-import java.time.Duration;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -50,13 +49,11 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     }
 
     private void settingIce4j() {
-        Map<String, Object> settings = Map.of(StackProperties.FIRST_CTRAN_RETRANS_AFTER, 1,
-                StackProperties.MAX_CTRAN_RETRANS_TIMER, Duration.ofMinutes(2).toMillis(),
-                StackProperties.KEEP_CRANS_AFTER_A_RESPONSE, Boolean.toString(true));
 
-        settings.forEach((key, value) -> {
-            System.setProperty(key, String.valueOf(value));
-            log.info("Setting Ice4j property {}={}", key, value);
+        List<String> list = List.of(StackProperties.FIRST_CTRAN_RETRANS_AFTER, StackProperties.MAX_CTRAN_RETRANS_TIMER, StackProperties.KEEP_CRANS_AFTER_A_RESPONSE);
+
+        list.forEach(key -> {
+            log.info("Setting Ice4j property {}={}", key, System.getProperty(key));
         });
     }
 

@@ -46,19 +46,18 @@ public class CandidateUtil {
             boolean allowRelay) {
         final List<CandidatePacket> candidatePackets = new ArrayList<>();
 
-        for (LocalCandidate localCandidate : component.getLocalCandidates()) {
-            //Optimize. Maybe x2 faster
-            if (agent.isControlling()) {
-                break;
+        if (!agent.isControlling()) {
+            List<CandidatePacket> prePackets = component.getLocalCandidates()
+                    .stream()
+                    .map(candidate -> createCandidatePacket(agent, candidate))
+                    .toList();
+            for (CandidatePacket packet : prePackets) {
+                if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, packet.type())) {
+                    candidatePackets.add(packet);
+                }
             }
-
-            CandidatePacket packet = createCandidatePacket(agent, localCandidate);
-            if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, localCandidate.getType())) {
-                candidatePackets.add(packet);
-            }
+            Collections.sort(candidatePackets);
         }
-
-        Collections.sort(candidatePackets);
 
         return new CandidatesMessage(srcId, destId, agent.getLocalPassword(), agent.getLocalUfrag(), candidatePackets);
     }
