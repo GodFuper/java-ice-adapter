@@ -6,16 +6,13 @@ import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.ice.peer.modules.UseCustomPairModule;
 import com.faforever.iceadapter.services.IceAsync;
-import com.faforever.iceadapter.util.DatagramSocketUtils;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.*;
 
 import java.net.DatagramSocket;
-import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -159,73 +156,6 @@ public class Peer {
         getEventBus().ifPresent(bus -> bus.unregister(listener));
     }
 
-    /**
-     * Starts waiting for data from FA
-     */
-    @SneakyThrows(SocketException.class)
-    private DatagramSocket initForwarding(int port) {
-        try {
-            DatagramSocket socket = new DatagramSocket(port);
-            DatagramSocketUtils.resizeBuffer(socket);
-            log.debug("Now forwarding data to peer {}", getPeerIdentifier());
-            return socket;
-        } catch (SocketException e) {
-            log.error("Could not create socket for peer: {}", getPeerIdentifier(), e);
-            throw e;
-        }
-    }
-
-    /**
-     * This method get's invoked by the thread listening for data from FA
-     */
-//    private void faListener() {
-//        byte[] data = new byte[MAX_SIZE_PACKET];
-//        while (!closing) {
-//            try {
-//                DatagramPacket packet = new DatagramPacket(data, data.length);
-//                faSocket.receive(packet);
-//
-//                // Defensive copy of payload to avoid races with the receive buffer
-//                byte[] copy = new byte[packet.getLength()];
-//                System.arraycopy(packet.getData(), packet.getOffset(), copy, 0, packet.getLength());
-//
-//                // Forward to ICE - this method will drop packets if ICE isn't ready
-//                ice.onFaDataReceived(copy);
-//            } catch (SocketException se) {
-//                // socket closed or network error
-//                if (closing) {
-//                    log.debug("FA listener shutting down for peer {}: {}", getPeerIdentifier(), se.toString());
-//                } else {
-//                    log.warn("SocketException in FA listener for peer {}: {}", getPeerIdentifier(), se.toString());
-//                    // Try to trigger ICE reconnect safely
-//                    try {
-//                        ice.onConnectionLost();
-//                    } catch (Exception ex) {
-//                        log.debug("Error while requesting ICE reconnect after socket exception", ex);
-//                    }
-//                }
-//                break;
-//            } catch (IOException e) {
-//                if (closing) {
-//                    log.debug(
-//                            "Ignoring error while receiving packet because the connection was closed as peer {}",
-//                            getPeerIdentifier());
-//                } else {
-//                    log.debug(
-//                            "Error while reading from local FA as peer (probably disconnecting from peer) {}",
-//                            getPeerIdentifier(),
-//                            e);
-//                    try {
-//                        ice.onConnectionLost();
-//                    } catch (Exception ex) {
-//                        log.debug("Error while requesting ICE reconnect after IO error", ex);
-//                    }
-//                }
-//                break;
-//            }
-//        }
-//        log.debug("No longer listening for messages from FA for peer {}", getPeerIdentifier());
-//    }
     public void setAgent(Agent agent) {
         this.agent = agent;
         event(bus -> bus.onAgentChange(this, agent));
@@ -280,11 +210,13 @@ public class Peer {
     }
 
     public List<Pair<String, String>> getCandidateTypes() {
-        return getCandidatePairs().stream()
-                .map(pair -> new Pair<>("%s-%s".formatted(pair.getLocalCandidate().getTransport(),
-                        pair.getLocalCandidate().getType()),
-                        "%s-%s".formatted(pair.getRemoteCandidate().getType(), pair.getRemoteCandidate().getTransport())))
-                .toList();
+        List<Pair<String, String>> candidates = new ArrayList<>();
+        for (CandidatePair pair : getCandidatePairs()) {
+            candidates.add(new Pair<>(String.valueOf(pair.getLocalCandidate().getType()), String.valueOf(pair.getRemoteCandidate().getType())));
+            candidates.add(new Pair<>(String.valueOf(pair.getLocalCandidate().getTransport()), String.valueOf(pair.getRemoteCandidate().getTransport())));
+        }
+
+        return candidates;
     }
 
     public String getStrCandidateTypes(String delimiter) {
@@ -349,10 +281,6 @@ public class Peer {
             module.stop();
         }
 
-//        if (faListenerFuture != null) {
-//            faListenerFuture.cancel(true);
-//        }
-//
         log.info("Peer closed: {}", getPeerIdentifier());
     }
 

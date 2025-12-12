@@ -18,32 +18,33 @@ import static org.ice4j.ice.IceMediaStream.PROPERTY_PAIR_NOMINATED;
 
 @Slf4j
 @RequiredArgsConstructor
-public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
+public class PeerConnectionSuccessMonitor implements PropertyChangeListener, AgentSuccessMonitor {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Map<CandidatePair, ScheduledFuture<?>> pendingPairs = new ConcurrentHashMap<>();
-
+    private CompletableFuture<Boolean> future;
     private String name = "";
     private final long timeoutMs;
-    private final Runnable onSuccess;
-    private final Runnable onFailure;
+    private final Peer peer;
 
-    public void start(Peer peer) {
+    @Override
+    public CompletableFuture<Boolean> start() {
+        future = new CompletableFuture<>();
         if (peer == null) {
             log.error("Peer is null. Aborting.");
-            onFailure.run();
-            return;
+            future.complete(false);
+            return future;
         }
         Agent agent = peer.getAgent();
         if (agent == null) {
             log.error("Agent is null. Aborting.");
-            onFailure.run();
-            return;
+            future.complete(false);
+            return future;
         }
         IceMediaStream mediaStream = peer.getMediaStream();
         if (mediaStream == null) {
             log.error("Media stream is null. Aborting.");
-            onFailure.run();
-            return;
+            future.complete(false);
+            return future;
         }
 
         name = peer.getPeerIdentifier();
@@ -54,6 +55,7 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         for (CandidatePair pair : mediaStream.getCheckList()) {
             scheduleTimeoutCheck(pair);
         }
+        return future;
     }
 
     @Override
@@ -61,6 +63,13 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
 
         if (PROPERTY_ICE_PROCESSING_STATE.equals(event.getPropertyName())) {
             IceProcessingState state = (IceProcessingState) event.getNewValue();
+
+//            if(state.isEstablished()) {
+//
+//                IceUtils.getFirstComponent(peer.getMediaStream())
+//                        .map(Component::getSelectedPair)
+//                        .ifPresent(this::onPairSucceeded);
+//            }
 
             if (state == IceProcessingState.FAILED) {
                 agentConnectionFailed();
@@ -104,26 +113,28 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
         log.info("✅ Успех: Пара достигла SUCCEEDED: {}", pair);
-        onSuccess.run();
+        future.complete(true);
     }
 
     private void onPairTimeout(CandidatePair pair) {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
         log.info("❌ Таймаут: Пара не достигла SUCCEEDED за {} мс: {}", timeoutMs, pair);
-        onFailure.run();
+        future.complete(true);
     }
 
     private void agentConnectionFailed() {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
         log.warn("❌ Agent не смог наладить соединение");
+        future.complete(false);
     }
 
     private void agentConnectionSuccess() {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
         log.warn("✅ Agent смог наладить соединение");
+        future.complete(true);
     }
 
     public void shutdown() {

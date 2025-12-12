@@ -14,6 +14,28 @@ public class CandidateUtil {
 
     public static int candidateIDFactory = 0;
 
+    private static CandidatePacket createCandidatePacket(Agent agent, LocalCandidate localCandidate) {
+        String relAddr = null;
+        int relPort = 0;
+
+        if (localCandidate.getRelatedAddress() != null) {
+            relAddr = localCandidate.getRelatedAddress().getHostAddress();
+            relPort = localCandidate.getRelatedAddress().getPort();
+        }
+
+        return new CandidatePacket(
+                localCandidate.getFoundation(),
+                localCandidate.getTransportAddress().getTransport().toString(),
+                localCandidate.getPriority(),
+                localCandidate.getTransportAddress().getHostAddress(),
+                localCandidate.getTransportAddress().getPort(),
+                localCandidate.getType(),
+                agent.getGeneration(),
+                String.valueOf(candidateIDFactory++),
+                relAddr,
+                relPort);
+    }
+
     public static CandidatesMessage packCandidates(
             int srcId,
             int destId,
@@ -25,33 +47,14 @@ public class CandidateUtil {
         final List<CandidatePacket> candidatePackets = new ArrayList<>();
 
         for (LocalCandidate localCandidate : component.getLocalCandidates()) {
-            String relAddr = null;
-            int relPort = 0;
-
             //Optimize. Maybe x2 faster
             if (agent.isControlling()) {
                 break;
             }
 
-            if (localCandidate.getRelatedAddress() != null) {
-                relAddr = localCandidate.getRelatedAddress().getHostAddress();
-                relPort = localCandidate.getRelatedAddress().getPort();
-            }
-
-            CandidatePacket candidatePacket = new CandidatePacket(
-                    localCandidate.getFoundation(),
-                    localCandidate.getTransportAddress().getTransport().toString(),
-                    localCandidate.getPriority(),
-                    localCandidate.getTransportAddress().getHostAddress(),
-                    localCandidate.getTransportAddress().getPort(),
-                    localCandidate.getType(),
-                    agent.getGeneration(),
-                    String.valueOf(candidateIDFactory++),
-                    relAddr,
-                    relPort);
-
+            CandidatePacket packet = createCandidatePacket(agent, localCandidate);
             if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, localCandidate.getType())) {
-                candidatePackets.add(candidatePacket);
+                candidatePackets.add(packet);
             }
         }
 
@@ -102,8 +105,7 @@ public class CandidateUtil {
                         RemoteCandidate remoteCandidate = new RemoteCandidate(
                                 mainAddress,
                                 component,
-                                remoteCandidatePacket
-                                        .type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
+                                remoteCandidatePacket.type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
                                 remoteCandidatePacket.foundation(),
                                 remoteCandidatePacket.priority(),
                                 relatedCandidate);
@@ -115,13 +117,15 @@ public class CandidateUtil {
                 });
     }
 
-    private static boolean isAllowedCandidate(
-            boolean allowHost, boolean allowReflexive, boolean allowRelay, CandidateType candidateType) {
+    private static boolean isAllowedCandidate(boolean allowHost,
+                                              boolean allowReflexive,
+                                              boolean allowRelay,
+                                              CandidateType candidateType) {
         // Candidate types LOCAL and STUN can never occur as they are deprecated and not used
         boolean isAllowedHostCandidate = allowHost && candidateType == CandidateType.HOST_CANDIDATE;
         boolean isAllowedReflexiveCandidate = allowReflexive
                 && (candidateType == CandidateType.SERVER_REFLEXIVE_CANDIDATE
-                        || candidateType == CandidateType.PEER_REFLEXIVE_CANDIDATE);
+                || candidateType == CandidateType.PEER_REFLEXIVE_CANDIDATE);
         boolean isAllowedRelayCandidate = allowRelay && candidateType == CandidateType.RELAYED_CANDIDATE;
 
         return isAllowedHostCandidate || isAllowedReflexiveCandidate || isAllowedRelayCandidate;

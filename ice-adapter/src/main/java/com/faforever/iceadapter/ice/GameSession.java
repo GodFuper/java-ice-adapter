@@ -40,7 +40,7 @@ public class GameSession implements IceGameSession {
             new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
             new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
 
-    private static final List<IceServer> iceServers = new ArrayList<>();
+    private static final List<IceServer> iceServers = createIceServers();
 
     public static List<IceServer> getAllServers() {
         return iceServers;
@@ -173,18 +173,28 @@ public class GameSession implements IceGameSession {
         return allIceServers;
     }
 
+
+    public static List<IceServer> createIceServers() {
+        List<IceServer> iceServers = new ArrayList<>();
+        addDefaultIceServers(iceServers);
+        return iceServers;
+    }
+
+    public static void addDefaultIceServers(List<IceServer> iceServers) {
+        PUBLIC_STUN_SERVERS.forEach(stunServer -> {
+            var iceServer = new IceServer();
+            iceServer.getStunAddresses().add(stunServer);
+            iceServers.add(iceServer);
+        });
+    }
+
     /**
      * Set ice servers (to be used for harvesting candidates)
      * Called by the client via jsonRPC
      */
     public static void setIceServers(List<Map<String, Object>> iceServersData) {
         iceServers.clear();
-
-        PUBLIC_STUN_SERVERS.forEach(stunServer -> {
-            var iceServer = new IceServer();
-            iceServer.getStunAddresses().add(stunServer);
-            iceServers.add(iceServer);
-        });
+        addDefaultIceServers(iceServers);
 
         if (iceServersData.isEmpty()) {
             return;

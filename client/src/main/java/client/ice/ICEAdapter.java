@@ -214,6 +214,7 @@ public class ICEAdapter {
 			String command[] = new String[]{
 //					(System.getProperty("os.name").contains("Windows") ? "faf-ice-adapter.exe" : "./faf-ice-adapter"),
 					"java",
+//					"-Djava.net.preferIPv4Stack=true",
                     "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5004",
                     "-jar",
                     "faf-ice-adapter.jar",
@@ -233,6 +234,7 @@ public class ICEAdapter {
                 command = new String[]{
 //					(System.getProperty("os.name").contains("Windows") ? "faf-ice-adapter.exe" : "./faf-ice-adapter"),
                         "java",
+//						"-Djava.net.preferIPv4Stack=true",
                         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
                         "-jar",
                         "faf-ice-adapter.jar",

@@ -1,9 +1,6 @@
 package com.faforever.iceadapter.services.impl;
 
-import com.faforever.iceadapter.ice.CandidatesMessage;
-import com.faforever.iceadapter.ice.IceGameSession;
-import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.PeerConnectionSuccessMonitor;
+import com.faforever.iceadapter.ice.*;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.CandidateUtil;
@@ -78,7 +75,6 @@ public abstract class ConnectServiceCommon {
         log.info("Creating agent");
         Agent agent = new Agent();
         agent.setControlling(peer.isLocalOffer());
-
         peer.setAgent(agent);
         peer.setMediaStream(agent.createMediaStream(FAF_MEDIA_STREAM));
     }
@@ -199,15 +195,9 @@ public abstract class ConnectServiceCommon {
 
     protected boolean checking(Peer peer) {
         log.debug("Checking ICE for peer");
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
         Agent agent = peer.getAgent();
-        PeerConnectionSuccessMonitor monitor = new PeerConnectionSuccessMonitor(TIMEOUT_ON_CHECKING, () -> {
-            future.complete(true);
-        }, () -> {
-            future.complete(false);
-        });
-        monitor.start(peer);
-
+        AgentSuccessMonitor monitor = new PeerConnectionSuccessMonitor(TIMEOUT_ON_CHECKING, peer);
+        CompletableFuture<Boolean> future = monitor.start();
         agent.startConnectivityEstablishment();
 
         try {
