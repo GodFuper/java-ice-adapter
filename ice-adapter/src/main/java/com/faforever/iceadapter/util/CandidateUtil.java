@@ -46,18 +46,16 @@ public class CandidateUtil {
             boolean allowRelay) {
         final List<CandidatePacket> candidatePackets = new ArrayList<>();
 
-        if (true) {
-            List<CandidatePacket> prePackets = component.getLocalCandidates()
-                    .stream()
-                    .map(candidate -> createCandidatePacket(agent, candidate))
-                    .toList();
-            for (CandidatePacket packet : prePackets) {
-                if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, packet.type())) {
-                    candidatePackets.add(packet);
-                }
+        List<CandidatePacket> prePackets = component.getLocalCandidates()
+                .stream()
+                .map(candidate -> createCandidatePacket(agent, candidate))
+                .toList();
+        for (CandidatePacket packet : prePackets) {
+            if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, packet.type())) {
+                candidatePackets.add(packet);
             }
-            Collections.sort(candidatePackets);
         }
+        Collections.sort(candidatePackets);
 
         return new CandidatesMessage(srcId, destId, agent.getLocalPassword(), agent.getLocalUfrag(), candidatePackets);
     }
@@ -74,11 +72,6 @@ public class CandidateUtil {
         String ufrag = remoteCandidatesMessage.ufrag();
         mediaStream.setRemotePassword(remoteCandidatesMessage.password());
         mediaStream.setRemoteUfrag(ufrag);
-
-        //Optimize. Maybe x2 faster
-//        if (!agent.isControlling()) {
-//            return;
-//        }
 
         remoteCandidatesMessage.candidates().stream()
                 .sorted() // just in case some ICE adapter implementation did not sort it yet
