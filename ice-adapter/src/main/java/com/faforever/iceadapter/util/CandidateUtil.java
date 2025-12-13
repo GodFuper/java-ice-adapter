@@ -18,10 +18,10 @@ public class CandidateUtil {
         String relAddr = null;
         int relPort = 0;
 
-        if (localCandidate.getRelatedAddress() != null) {
-            relAddr = localCandidate.getRelatedAddress().getHostAddress();
-            relPort = localCandidate.getRelatedAddress().getPort();
-        }
+//        if (localCandidate.getRelatedAddress() != null) {
+//            relAddr = localCandidate.getRelatedAddress().getHostAddress();
+//            relPort = localCandidate.getRelatedAddress().getPort();
+//        }
 
         return new CandidatePacket(
                 localCandidate.getFoundation(),
@@ -76,9 +76,9 @@ public class CandidateUtil {
         mediaStream.setRemoteUfrag(ufrag);
 
         //Optimize. Maybe x2 faster
-        if (!agent.isControlling()) {
-            return;
-        }
+//        if (!agent.isControlling()) {
+//            return;
+//        }
 
         remoteCandidatesMessage.candidates().stream()
                 .sorted() // just in case some ICE adapter implementation did not sort it yet
