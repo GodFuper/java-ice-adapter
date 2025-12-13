@@ -18,10 +18,10 @@ public class CandidateUtil {
         String relAddr = null;
         int relPort = 0;
 
-//        if (localCandidate.getRelatedAddress() != null) {
-//            relAddr = localCandidate.getRelatedAddress().getHostAddress();
-//            relPort = localCandidate.getRelatedAddress().getPort();
-//        }
+        if (localCandidate.getRelatedAddress() != null) {
+            relAddr = localCandidate.getRelatedAddress().getHostAddress();
+            relPort = localCandidate.getRelatedAddress().getPort();
+        }
 
         return new CandidatePacket(
                 localCandidate.getFoundation(),
@@ -46,7 +46,7 @@ public class CandidateUtil {
             boolean allowRelay) {
         final List<CandidatePacket> candidatePackets = new ArrayList<>();
 
-        if (!agent.isControlling()) {
+        if (true) {
             List<CandidatePacket> prePackets = component.getLocalCandidates()
                     .stream()
                     .map(candidate -> createCandidatePacket(agent, candidate))
