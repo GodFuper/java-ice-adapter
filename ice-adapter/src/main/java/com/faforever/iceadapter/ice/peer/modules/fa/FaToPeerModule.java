@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules;
+package com.faforever.iceadapter.ice.peer.modules.fa;
 
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
@@ -103,9 +103,15 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     private void receive(DatagramSocket socket) throws IOException {
+        if (!peer.isConnected()) {
+            return;
+        }
         byte[] data = new byte[MAX_SIZE_PACKET];
         DatagramPacket packet = new DatagramPacket(data, data.length);
         socket.receive(packet);
+        if (packet.getLength() == 0) {
+            return;
+        }
         // Defensive copy of payload to avoid races with the receive buffer
         byte[] copy = new byte[packet.getLength()];
         System.arraycopy(packet.getData(), packet.getOffset(), copy, 0, packet.getLength());

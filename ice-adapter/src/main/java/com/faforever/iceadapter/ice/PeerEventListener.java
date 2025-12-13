@@ -21,13 +21,13 @@ public interface PeerEventListener {
     default void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
     }
 
+    default void onChangeEcho(Peer peer, long lastEcho) {
+    }
+
     default void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
     }
 
     default void onSendToPeer(Peer peer, byte[] data, int offset, int length) {
-    }
-
-    default void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
     }
 
     default void onConnectionLost(Peer peer) {

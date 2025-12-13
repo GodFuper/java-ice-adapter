@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules;
+package com.faforever.iceadapter.ice.peer.modules.other;
 
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
@@ -65,7 +65,7 @@ public class FASocketModule implements ModuleBase {
         DatagramSocket socket = peer.getFaSocket();
         if (peer.isClosing() && socket != null && !socket.isClosed()) {
             socket.close();
-            socket = null;
+            peer.setFaSocket(null);
         }
     }
 

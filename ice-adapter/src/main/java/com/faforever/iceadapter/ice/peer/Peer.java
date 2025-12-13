@@ -4,7 +4,7 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
-import com.faforever.iceadapter.ice.peer.modules.UseCustomPairModule;
+import com.faforever.iceadapter.ice.peer.modules.other.UseCustomPairModule;
 import com.faforever.iceadapter.services.IceAsync;
 import kotlin.Pair;
 import lombok.Data;
@@ -58,9 +58,6 @@ public class Peer {
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
 
-    //    private final PeerIceModule ice = new PeerIceModule(this);
-//    private DatagramSocket faSocket; // Socket on which we are listening for FA / sending data to FA
-    private final Lock lockSocketSend = new ReentrantLock();
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
     private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
 
@@ -90,7 +87,7 @@ public class Peer {
     }
 
     public boolean isConnected() {
-        return component != null;
+        return iceState == IceState.CONNECTED && component != null;
     }
 
     public void startInitPeer() {
@@ -256,16 +253,16 @@ public class Peer {
         event(bus -> bus.onSendToFaSocket(this, data, offset, length));
     }
 
-    public void iceDataReceived(byte[] data, int offset, int length) {
-        event(bus -> bus.onIceDataReceived(this, data, offset, length));
-    }
-
     public void sendToPeer(byte[] data, int offset, int length) {
         event(bus -> bus.onSendToPeer(this, data, offset, length));
     }
 
     public void lostConnect() {
         event(bus -> bus.onConnectionLost(this));
+    }
+
+    public void setLastEcho(long lastEcho) {
+        event(bus -> bus.onChangeEcho(this, lastEcho));
     }
 
     public void close() {

@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules;
+package com.faforever.iceadapter.ice.peer.modules.other;
 
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;

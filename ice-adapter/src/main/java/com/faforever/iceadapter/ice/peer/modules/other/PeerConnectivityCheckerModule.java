@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules;
+package com.faforever.iceadapter.ice.peer.modules.other;
 
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
@@ -37,27 +37,8 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     }
 
     @Override
-    public void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
-        if (data.length == 0) {
-            return;
-        }
+    public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
 
-        if (data[0] == COMMAND_ECHO) {
-            onEchoReceived(data, length);
-        }
-    }
-
-    private void onEchoReceived(byte[] data, int length) {
-        if (!peer.isLocalOffer()) {
-            peer.sendToPeer(data, 0, length);// Turn around, send echo back
-        }
-
-        peer.getEchosReceived().incrementAndGet();
-
-        if (length != 9) {
-            log.trace("Received echo of wrong length, length: {}", length);
-            peer.getInvalidEchosReceived().incrementAndGet();
-        }
     }
 
     @Override
@@ -65,6 +46,7 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         if (!peer.isLocalOffer()) {
             return;
         }
+        peer.setLastPacketReceived(System.currentTimeMillis());
         LockUtil.executeWithLock(peer.getLock(LOCK_CHECKER_MODULE), () -> {
             if (peer.isClosing()) {
                 return;
@@ -73,10 +55,9 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
                 return;
             }
 
-
             log.debug("Starting connectivity checker for peer");
 
-            peer.setLastPacketReceived(System.currentTimeMillis());
+
             scheduledFuture = iceAsync.scheduleAtFixedRate(peer, this::checkerThread, ECHO_INTERVAL);
         });
     }
@@ -104,6 +85,9 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     }
 
     private void checkerThread() {
+        if (!peer.isConnected()) {
+            return;
+        }
         Thread.currentThread().setName(getThreadName());
         log.trace("Running connectivity checker");
 

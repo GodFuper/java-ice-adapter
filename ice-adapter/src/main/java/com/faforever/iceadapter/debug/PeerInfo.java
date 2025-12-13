@@ -6,8 +6,10 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import javafx.beans.property.*;
 import lombok.Data;
 import org.ice4j.ice.Agent;
+import org.ice4j.ice.CandidatePair;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 
 @Data
 public class PeerInfo implements PeerEventListener {
@@ -54,7 +56,7 @@ public class PeerInfo implements PeerEventListener {
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         getState().set(String.valueOf(peer.getState()));
-        getAgent().set(peer.getAgentState().map(String::valueOf).orElse("-"));
+        getAgent().set(mapToStrForAgent(peer));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         getRtt().set(peer.getAverageRtt()
@@ -68,6 +70,19 @@ public class PeerInfo implements PeerEventListener {
         getAllowHost().set(peer.isAllowHost());
         getAllowReflexive().set(peer.isAllowReflexive());
         getAllowRelay().set(peer.isAllowRelay());
+    }
+
+    private String mapToStrForAgent(Peer peer) {
+        StringJoiner joiner = new StringJoiner("\n");
+        joiner.setEmptyValue("-");
+        peer.getAgentState()
+                .map(String::valueOf)
+                .ifPresent(joiner::add);
+        peer.getActiveCandidatePair()
+                .map(CandidatePair::getState)
+                .map(String::valueOf)
+                .ifPresent(joiner::add);
+        return joiner.toString();
     }
 
     @Override

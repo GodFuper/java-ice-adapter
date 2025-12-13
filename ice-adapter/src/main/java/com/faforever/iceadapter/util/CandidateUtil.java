@@ -71,8 +71,9 @@ public class CandidateUtil {
             boolean allowReflexive,
             boolean allowRelay) {
         // Set candidates
+        String ufrag = remoteCandidatesMessage.ufrag();
         mediaStream.setRemotePassword(remoteCandidatesMessage.password());
-        mediaStream.setRemoteUfrag(remoteCandidatesMessage.ufrag());
+        mediaStream.setRemoteUfrag(ufrag);
 
         //Optimize. Maybe x2 faster
         if (!agent.isControlling()) {
@@ -107,7 +108,8 @@ public class CandidateUtil {
                                 remoteCandidatePacket.type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
                                 remoteCandidatePacket.foundation(),
                                 remoteCandidatePacket.priority(),
-                                relatedCandidate);
+                                relatedCandidate,
+                                ufrag);
 
                         if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, remoteCandidate.getType())) {
                             component.addRemoteCandidate(remoteCandidate);

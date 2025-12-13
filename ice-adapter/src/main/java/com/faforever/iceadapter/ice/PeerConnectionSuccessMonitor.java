@@ -1,12 +1,10 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.util.IceUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Agent;
-import org.ice4j.ice.CandidatePair;
-import org.ice4j.ice.IceMediaStream;
-import org.ice4j.ice.IceProcessingState;
+import org.ice4j.ice.*;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -14,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 import static org.ice4j.ice.Agent.PROPERTY_ICE_PROCESSING_STATE;
-import static org.ice4j.ice.IceMediaStream.PROPERTY_PAIR_NOMINATED;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -64,25 +61,25 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
         if (PROPERTY_ICE_PROCESSING_STATE.equals(event.getPropertyName())) {
             IceProcessingState state = (IceProcessingState) event.getNewValue();
 
-//            if(state.isEstablished()) {
-//
-//                IceUtils.getFirstComponent(peer.getMediaStream())
-//                        .map(Component::getSelectedPair)
-//                        .ifPresent(this::onPairSucceeded);
-//            }
+            if (state.isEstablished()) {
+
+                IceUtils.getFirstComponent(peer.getMediaStream())
+                        .map(Component::getSelectedPair)
+                        .ifPresent(this::onPairSucceeded);
+            }
 
             if (state == IceProcessingState.FAILED) {
                 agentConnectionFailed();
             }
         }
 //
-        if (PROPERTY_PAIR_NOMINATED.equals(event.getPropertyName())) {
-            CandidatePair pair = (CandidatePair) event.getSource();
-            Boolean isNominated = (Boolean) event.getNewValue();
-            if (isNominated) {
-                onPairSucceeded(pair);
-            }
-        }
+//        if (PROPERTY_PAIR_NOMINATED.equals(event.getPropertyName())) {
+//            CandidatePair pair = (CandidatePair) event.getSource();
+//            Boolean isNominated = (Boolean) event.getNewValue();
+//            if (isNominated) {
+//                onPairSucceeded(pair);
+//            }
+//        }
 
         // SUCCESS PAIR != nominated
 //        if (IceMediaStream.PROPERTY_PAIR_STATE_CHANGED.equals(event.getPropertyName())) {

@@ -55,6 +55,12 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
                 () -> l.onIceComponentChange(peer, component)));
     }
 
+    @Override
+    public void onChangeEcho(Peer peer, long echo) {
+        listeners.forEach(l -> safeAsyncCall(l, "onChangeEcho",
+                () -> l.onChangeEcho(peer, echo)));
+    }
+
     public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
         log.trace("Peer {} change lastPacketReceived {} -> {}", peer.getPeerIdentifier(), lastTimestamp, timestamp);
         listeners.forEach(l -> safeAsyncCall(l, "onLastPacketReceived",
@@ -76,13 +82,6 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
-        log.trace("Peer {} onIceDataReceived data with length {}", peer.getPeerIdentifier(), length);
-        listeners.forEach(l -> safeAsyncCall(l, "onIceDataReceived",
-                () -> l.onIceDataReceived(peer, data, offset, length)));
-    }
-
-    @Override
     public void onConnectionLost(Peer peer) {
         log.info("Peer onConnectionLost: {}", peer.getPeerIdentifier());
         listeners.forEach(l -> safeAsyncCall(l, "onConnectionLost", () -> l.onConnectionLost(peer)));
@@ -92,11 +91,6 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     public void onClose(Peer peer, boolean hasClosed) {
         log.info("Peer closed: {}", peer.getPeerIdentifier());
         listeners.forEach(l -> safeAsyncCall(l, "onClose", () -> l.onClose(peer, hasClosed)));
-    }
-
-    @Override
-    public void start() {
-
     }
 
     private void safeAsyncCall(PeerEventListener listener, String methodName, Runnable call) {

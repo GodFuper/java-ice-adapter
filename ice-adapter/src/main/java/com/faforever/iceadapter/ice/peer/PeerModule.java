@@ -1,7 +1,15 @@
 package com.faforever.iceadapter.ice.peer;
 
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.peer.modules.*;
+import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
+import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
+import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
+import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
+import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
+import com.faforever.iceadapter.ice.peer.modules.other.UseCustomPairModule;
 import com.faforever.iceadapter.services.IceAsync;
 import kotlin.Pair;
 import lombok.Getter;
@@ -46,11 +54,11 @@ public enum PeerModule implements Comparator<PeerModule> {
     }),
     ICE_TO_ICE_SENDER(components -> {
         Peer peer = components.getFirst();
-        return new PeerToPeerModule(peer);
+        return new PeerToPeerSenderModule(peer);
     }),
     ICE_LISTENER_MODULE(components -> {
         Peer peer = components.getFirst();
-        return new IceListenerModule(peer);
+        return new PeerToPeerListenerModule(peer);
     }),
     CONNECTION_CHECKER_MODULE(components -> {
         Peer peer = components.getFirst();

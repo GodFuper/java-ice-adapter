@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules;
+package com.faforever.iceadapter.ice.peer.modules.fa;
 
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
@@ -12,8 +12,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
-import static com.faforever.iceadapter.ice.peer.modules.FaToPeerModule.COMMAND_FA;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -44,17 +42,6 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
     @Override
     public void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
         getSocketAndTrySend(data, offset, length);
-    }
-
-    @Override
-    public void onIceDataReceived(Peer peer, byte[] data, int offset, int length) {
-        if (length == 0) {
-            return;
-        }
-
-        if (data[0] == COMMAND_FA) {
-            getSocketAndTrySend(data, 1, length - 1);
-        }
     }
 
     private void getSocketAndTrySend(byte[] data, int offset, int length) {
@@ -90,7 +77,6 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
             }
         }
     }
-
 
     private void checkSocket() {
         running = true;
