@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.debug;
 
+import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import javafx.collections.ObservableList;
 
 /**
@@ -34,7 +35,11 @@ public interface UIAdapter {
 
     String getLogBuffer();
 
-    void reconnect(PeerInfo peer, boolean allowHost, boolean allowReflexive, boolean allowRelay);
+    void reconnect(PeerInfo peer);
+
+    void setRulesConnection(PeerInfo peer, boolean allowHost, boolean allowReflexive, boolean allowRelay);
+
+    void setStrategy(PeerInfo peer, IceAgentStrategy newStrategy);
 
     void shutdown();
 }

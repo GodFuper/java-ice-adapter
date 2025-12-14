@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.debug;
 
+import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -38,8 +39,6 @@ public class WindowController {
     @FXML
     private TableColumn<PeerInfo, String> loginColumn;
     @FXML
-    private TableColumn<PeerInfo, String> connectedColumn;
-    @FXML
     private TableColumn<PeerInfo, String> pairConColumn;
     @FXML
     private TableColumn<PeerInfo, String> stateColumn;
@@ -73,6 +72,8 @@ public class WindowController {
     private CheckBox reflexiveCheckBox;
     @FXML
     private CheckBox relayCheckBox;
+    @FXML
+    private ComboBox<IceAgentStrategy> connectionModeComboBox;
 
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
@@ -113,7 +114,6 @@ public class WindowController {
     private void setupPeerTable() {
         idColumn.setCellValueFactory(cellData -> cellData.getValue().getId().asObject());
         loginColumn.setCellValueFactory(cellData -> cellData.getValue().getLogin());
-        connectedColumn.setCellValueFactory(cellData -> cellData.getValue().getConnected());
 
         pairConColumn.setCellValueFactory(cellData -> cellData.getValue().getPairConnection());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
@@ -123,11 +123,11 @@ public class WindowController {
         lastColumn.setCellValueFactory(cellData -> cellData.getValue().getLastRecv());
         echosRcvColumn.setCellValueFactory(cellData -> cellData.getValue().getEchosReceived());
 
-        hostColumn.setCellValueFactory(param -> param.getValue().getAllowHost());
+        hostColumn.setCellValueFactory(param -> param.getValue().getAdditionalInfo().getAllowHost());
         hostColumn.setCellFactory(CheckBoxTableCell.forTableColumn(hostColumn));
-        reflexiveColumn.setCellValueFactory(peer -> peer.getValue().getAllowReflexive());
+        reflexiveColumn.setCellValueFactory(peer -> peer.getValue().getAdditionalInfo().getAllowReflexive());
         reflexiveColumn.setCellFactory(CheckBoxTableCell.forTableColumn(reflexiveColumn));
-        relayColumn.setCellValueFactory(peer -> peer.getValue().getAllowRelay());
+        relayColumn.setCellValueFactory(peer -> peer.getValue().getAdditionalInfo().getAllowRelay());
         relayColumn.setCellFactory(CheckBoxTableCell.forTableColumn(relayColumn));
     }
 
@@ -159,18 +159,42 @@ public class WindowController {
 
         // обновить заголовок или действия
         peerActionTitle.setText(peer.getLogin().get());
-        hostCheckBox.setSelected(peer.getAllowHost().get());
-        reflexiveCheckBox.setSelected(peer.getAllowReflexive().get());
-        relayCheckBox.setSelected(peer.getAllowRelay().get());
+        hostCheckBox.setSelected(peer.getAdditionalInfo().getAllowHost().get());
+        reflexiveCheckBox.setSelected(peer.getAdditionalInfo().getAllowReflexive().get());
+        relayCheckBox.setSelected(peer.getAdditionalInfo().getAllowRelay().get());
 
-        // действия
+
+        connectionModeComboBox.getItems().setAll(IceAgentStrategy.values());
+        connectionModeComboBox.setValue(peer.getAdditionalInfo().getAgentStrategy());
+
+
+        addListenerForCheckBox(peer, hostCheckBox);
+        addListenerForCheckBox(peer, reflexiveCheckBox);
+        addListenerForCheckBox(peer, relayCheckBox);
+
+        connectionModeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!Objects.equals(oldValue, newValue)) {
+                adapter.setStrategy(peer, newValue);
+            }
+        });
+
         reconnectPeerButton.setOnAction(e -> {
-            adapter.reconnect(peer, hostCheckBox.isSelected(), reflexiveCheckBox.isSelected(), relayCheckBox.isSelected());
+            adapter.reconnect(peer);
+        });
+    }
+
+    private void addListenerForCheckBox(PeerInfo peer, CheckBox checkBox) {
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (!Objects.equals(oldValue, newValue)) {
+                adapter.setRulesConnection(peer, hostCheckBox.isSelected(), reflexiveCheckBox.isSelected(), relayCheckBox.isSelected());
+            }
         });
     }
 
     private void updateAllInfo() {
-        if (adapter == null) return;
+        if (adapter == null) {
+            return;
+        }
 
         // Пример обновления меток
         versionLabel.setText("Version: %s".formatted(adapter.getVersion()));

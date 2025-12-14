@@ -4,7 +4,6 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
-import com.faforever.iceadapter.ice.peer.modules.other.UseCustomPairModule;
 import com.faforever.iceadapter.services.IceAsync;
 import kotlin.Pair;
 import lombok.Data;
@@ -14,7 +13,6 @@ import org.ice4j.ice.*;
 
 import java.net.DatagramSocket;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -36,12 +34,15 @@ public class Peer {
     private final int preferredPort;
     private final int lobbyPort;
 
+    private String peerIdentifier;
+
     private boolean allowHost = true;
     private boolean allowReflexive = true;
     private boolean allowRelay = true;
     private volatile long lastLostConnect = 0;
 
     private volatile float rtt = 0.0f;
+    private volatile Long lastEcho;
     private volatile Long lastPacketReceived;
     private AtomicInteger echosReceived = new AtomicInteger(0);
     private AtomicInteger invalidEchosReceived = new AtomicInteger(0);
@@ -54,6 +55,7 @@ public class Peer {
     private volatile Agent agent;
     private volatile IceMediaStream mediaStream;
     private volatile Component component;
+    private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
@@ -61,11 +63,12 @@ public class Peer {
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
     private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
 
-    // Future handle for the FA listener task so we can cancel it cleanly
-    private volatile CompletableFuture<Void> faListenerFuture;
-
     public Integer getLocalPort() {
         return faSocket != null ? faSocket.getLocalPort() : 0;
+    }
+
+    public void init() {
+        peerIdentifier = "%s(%d)".formatted(remoteLogin, remoteId);
     }
 
     public void initModules(IceAsync iceAsync) {
@@ -168,20 +171,7 @@ public class Peer {
         event(bus -> bus.onIceComponentChange(this, component));
     }
 
-    /**
-     * @return %username%(%id%)
-     */
-    public String getPeerIdentifier() {
-        return "%s(%d)".formatted(remoteLogin, remoteId);
-    }
-
     public CandidatePair getSelectedPair() {
-        Optional<UseCustomPairModule> module = getModule(PeerModule.MULTI_PAIRS, UseCustomPairModule.class);
-
-        if (module.isPresent() && module.get().isRunning()) {
-            return module.get().getSelectedPair();
-        }
-
         return getActiveComponent()
                 .map(Component::getSelectedPair)
                 .orElse(null);
@@ -197,12 +187,7 @@ public class Peer {
 
     public Collection<CandidatePair> getCandidatePairs() {
         Collection<CandidatePair> pairs = new ArrayList<>();
-        Optional<UseCustomPairModule> module = getModule(PeerModule.MULTI_PAIRS, UseCustomPairModule.class);
-        if (module.isPresent() && module.get().isRunning()) {
-            pairs = module.get().getSuccessPairs();
-        } else {
-            Optional.ofNullable(getSelectedPair()).ifPresent(pairs::add);
-        }
+        Optional.ofNullable(getSelectedPair()).ifPresent(pairs::add);
         return pairs;
     }
 
@@ -261,8 +246,14 @@ public class Peer {
         event(bus -> bus.onConnectionLost(this));
     }
 
-    public void setLastEcho(long lastEcho) {
-        event(bus -> bus.onChangeEcho(this, lastEcho));
+    public void reconnect() {
+        lostConnect();
+    }
+
+    public void setLastEcho(long echo) {
+        Long lastEcho = this.lastEcho;
+        this.lastEcho = echo;
+        event(bus -> bus.onChangeEcho(this, lastEcho, echo));
     }
 
     public void close() {

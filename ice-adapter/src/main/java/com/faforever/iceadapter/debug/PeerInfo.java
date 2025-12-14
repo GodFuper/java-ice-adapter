@@ -2,6 +2,7 @@ package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
 import javafx.beans.property.*;
 import lombok.Data;
@@ -25,14 +26,21 @@ public class PeerInfo implements PeerEventListener {
     private final StringProperty rtt = new SimpleStringProperty();
     private final StringProperty lastRecv = new SimpleStringProperty();
     private final StringProperty echosReceived = new SimpleStringProperty();
-    private final BooleanProperty allowHost = new SimpleBooleanProperty();
-    private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
-    private final BooleanProperty allowRelay = new SimpleBooleanProperty();
+    private final AdditionalInfo additionalInfo = new AdditionalInfo();
+
+    @Data
+    public static class AdditionalInfo {
+        private final BooleanProperty allowHost = new SimpleBooleanProperty();
+        private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
+        private final BooleanProperty allowRelay = new SimpleBooleanProperty();
+        private IceAgentStrategy agentStrategy;
+    }
 
     // Конструктор
     public PeerInfo(int id, String login) {
         this.id.set(id);
         this.login.set(login);
+
     }
 
     @Override
@@ -53,10 +61,12 @@ public class PeerInfo implements PeerEventListener {
     public void update(Peer peer) {
         getConnected().set(String.valueOf(peer.isConnected()));
 
-        getPairConnection().set(peer.getStrCandidateTypes("\n"));
+        getPairConnection().set(strForPair(peer));
 
         getState().set(String.valueOf(peer.getState()));
-        getAgent().set(mapToStrForAgent(peer));
+        getAgent().set(peer.getAgentState()
+                .map(String::valueOf)
+                .orElse("-"));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         getRtt().set(peer.getAverageRtt()
@@ -67,17 +77,17 @@ public class PeerInfo implements PeerEventListener {
                 .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
                 .orElse("never"));
         getEchosReceived().set("%s/%s".formatted(String.valueOf(peer.countEchosReceived()), String.valueOf(peer.countInvalidEchosReceived())));
-        getAllowHost().set(peer.isAllowHost());
-        getAllowReflexive().set(peer.isAllowReflexive());
-        getAllowRelay().set(peer.isAllowRelay());
+
+        getAdditionalInfo().getAllowHost().set(peer.isAllowHost());
+        getAdditionalInfo().getAllowReflexive().set(peer.isAllowReflexive());
+        getAdditionalInfo().getAllowRelay().set(peer.isAllowRelay());
+        getAdditionalInfo().setAgentStrategy(peer.getAgentStrategy());
     }
 
-    private String mapToStrForAgent(Peer peer) {
+    private String strForPair(Peer peer) {
         StringJoiner joiner = new StringJoiner("\n");
         joiner.setEmptyValue("-");
-        peer.getAgentState()
-                .map(String::valueOf)
-                .ifPresent(joiner::add);
+        joiner.add(peer.getStrCandidateTypes(" | "));
         peer.getActiveCandidatePair()
                 .map(CandidatePair::getState)
                 .map(String::valueOf)
@@ -96,4 +106,5 @@ public class PeerInfo implements PeerEventListener {
     public int hashCode() {
         return Objects.hashCode(id.get());
     }
+
 }

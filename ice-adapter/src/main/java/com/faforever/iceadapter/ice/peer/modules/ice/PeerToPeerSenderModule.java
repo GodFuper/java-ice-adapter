@@ -53,7 +53,12 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data, int offset, int length) {
-        lockAndSend(component, data, offset, length);
+        Component currentComponent = LockUtil.executeWithLock(lockComponent, () -> this.component);
+        if (currentComponent == null) {
+            log.warn("Cannot send: component is null");
+            return;
+        }
+        lockAndSend(currentComponent, data, offset, length);
     }
 
     private void lockAndSend(Component component, byte[] data, int offset, int length) {
@@ -62,10 +67,6 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     private void send(Component component, byte[] data, int offset, int length) {
         if (peer.isClosing()) {
-            return;
-        }
-        if (component == null) {
-            log.error("component is null. Send is skipped");
             return;
         }
         try {

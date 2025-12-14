@@ -4,10 +4,13 @@ import com.faforever.iceadapter.ice.peer.Peer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface IceGameSession {
 
     Map<Integer, Peer> getPeers();
+
+    Optional<Peer> getPeer(int peerId);
 
     List<IceServer> getFilteredIceServers();
 

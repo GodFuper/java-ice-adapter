@@ -445,7 +445,7 @@ public class PeerIceModule {
         Component localComponent = component;
 
         byte[] data = new byte[MAX_SIZE_PACKET];
-        while (!IceAdapter.getGameSession().isGameEnded()) {
+        while (!IceAdapter.getGameSessionSafe().isGameEnded()) {
             try {
                 DatagramPacket packet = new DatagramPacket(data, data.length);
                 localComponent.getSocket().receive(packet);

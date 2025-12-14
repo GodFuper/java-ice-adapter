@@ -77,6 +77,7 @@ public class GameSession implements IceGameSession {
             return peers.get(remotePlayerId).getLocalPort();
         }
         Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort());
+        peer.init();
         peer.setAllows(allowHost, allowReflexive, allowRelay);
         peer.initModules(iceAsync);
         peer.addEventListener(iceTrigger);
@@ -139,6 +140,11 @@ public class GameSession implements IceGameSession {
 
     public List<IceServer> getIceServers() {
         return iceServers;
+    }
+
+    @Override
+    public Optional<Peer> getPeer(int peerId) {
+        return Optional.ofNullable(peers.get(peerId));
     }
 
     public List<IceServer> getFilteredIceServers() {
@@ -219,7 +225,7 @@ public class GameSession implements IceGameSession {
 
     @Override
     public int getLobbyPort() {
-        return GPGNetServer.getLobbyPort();
+        return GPGNetServer.getStaticLobbyPort();
     }
 
     @Override

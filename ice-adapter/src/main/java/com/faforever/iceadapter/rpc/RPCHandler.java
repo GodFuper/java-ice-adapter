@@ -109,7 +109,7 @@ public class RPCHandler {
     @SneakyThrows
     public String status() {
         IceStatus.IceGPGNetState gpgpnet = new IceStatus.IceGPGNetState(
-                gpgNetServer.getGpgNetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameState().orElse(GameState.NONE).getName(), "-");
+                gpgNetServer.getStaticGpgNetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameState().orElse(GameState.NONE).getName(), "-");
 
         List<IceStatus.IceRelay> relays = new ArrayList<>();
         GameSession gameSession = IceAdapter.getGameSessionSafe();
@@ -162,10 +162,10 @@ public class RPCHandler {
                         .mapToInt(s -> s.getTurnAddresses().size()
                                 + s.getStunAddresses().size())
                         .sum(),
-                gpgNetServer.getLobbyPort(),
+                gpgNetServer.getStaticLobbyPort(),
                 gpgNetServer.getLobbyInitMode().getName(),
                 new IceStatus.IceOptions(
-                        IceAdapter.getId(), IceAdapter.getLogin(), rpcPort, gpgNetServer.getGpgNetPort()),
+                        IceAdapter.getId(), IceAdapter.getLogin(), rpcPort, gpgNetServer.getStaticGpgNetPort()),
                 gpgpnet,
                 relays.toArray(new IceStatus.IceRelay[relays.size()]));
 

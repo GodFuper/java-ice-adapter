@@ -7,6 +7,7 @@ import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
+import com.faforever.iceadapter.ice.peer.modules.other.ChangeIceStrategyModule;
 import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.other.UseCustomPairModule;
@@ -34,10 +35,6 @@ public enum PeerModule implements Comparator<PeerModule> {
         module.start();
         return module;
     }),
-    MULTI_PAIRS(components -> {
-        Peer peer = components.getFirst();
-        return new UseCustomPairModule(peer);
-    }),
     FA_SENDER_MODULE(components -> {
         Peer peer = components.getFirst();
         return new PeerToFaModule(peer);
@@ -64,6 +61,14 @@ public enum PeerModule implements Comparator<PeerModule> {
         Peer peer = components.getFirst();
         IceAsync async = components.getSecond();
         return new PeerConnectivityCheckerModule(peer, async);
+    }),
+    MULTI_PAIRS(components -> {
+        Peer peer = components.getFirst();
+        return new UseCustomPairModule(peer);
+    }),
+    CHANGE_AGENT_STRATEGY(components -> {
+        Peer peer = components.getFirst();
+        return new ChangeIceStrategyModule(peer);
     });
 
     @Getter

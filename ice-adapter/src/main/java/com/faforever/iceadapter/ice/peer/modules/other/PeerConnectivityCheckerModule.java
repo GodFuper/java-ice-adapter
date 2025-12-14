@@ -37,11 +37,6 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     }
 
     @Override
-    public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
-
-    }
-
-    @Override
     public void start() {
         if (!peer.isLocalOffer()) {
             return;
@@ -62,7 +57,8 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         });
     }
 
-    private boolean isRunning() {
+    @Override
+    public Boolean isRunning() {
         return scheduledFuture != null && !scheduledFuture.isDone();
     }
 

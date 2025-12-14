@@ -75,6 +75,7 @@ public abstract class ConnectServiceCommon {
         log.info("Creating agent");
         Agent agent = new Agent();
         agent.setControlling(peer.isLocalOffer());
+        agent.setPerformConsentFreshness(true);
         peer.setAgent(agent);
         peer.setMediaStream(agent.createMediaStream(FAF_MEDIA_STREAM));
     }

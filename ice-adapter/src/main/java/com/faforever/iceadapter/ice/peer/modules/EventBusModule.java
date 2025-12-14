@@ -56,9 +56,9 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onChangeEcho(Peer peer, long echo) {
+    public void onChangeEcho(Peer peer, Long lastEcho, long echo) {
         listeners.forEach(l -> safeAsyncCall(l, "onChangeEcho",
-                () -> l.onChangeEcho(peer, echo)));
+                () -> l.onChangeEcho(peer, lastEcho, echo)));
     }
 
     public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
@@ -94,15 +94,14 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     private void safeAsyncCall(PeerEventListener listener, String methodName, Runnable call) {
-        iceAsync.runAsync(methodName, peer, call);
+        asyncVirtual(methodName, peer, call);
     }
 
-    private void safeCall(PeerEventListener listener, String methodName, Runnable call) {
-        try {
-            call.run();
-        } catch (Exception e) {
-            log.error("Exception in EventListener {} during {}", listener.getClass().getSimpleName(), methodName, e);
-        }
+    private void asyncVirtual(String methodName, Peer peer, Runnable call) {
+
+        Thread.ofVirtual()
+                .name(methodName + "|" + peer.getPeerIdentifier())
+                .start(call);
     }
 
     @Override

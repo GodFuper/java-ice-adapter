@@ -47,16 +47,14 @@
                         <columns>
                             <TableColumn fx:id="idColumn" text="id"/>
                             <TableColumn fx:id="loginColumn" text="login"/>
-                            <TableColumn fx:id="connectedColumn" text="connected"/>
-
                             <TableColumn fx:id="hostColumn" text="host"/>
                             <TableColumn fx:id="reflexiveColumn" text="reflexive"/>
                             <TableColumn fx:id="relayColumn" text="relay"/>
-                            <TableColumn fx:id="pairConColumn" text="pair"/>
                             <TableColumn fx:id="stateColumn" text="state"/>
+                            <TableColumn fx:id="pairConColumn" text="pair"/>
                             <TableColumn fx:id="agentStateColumn" text="agent"/>
                             <TableColumn fx:id="offerColumn" text="localOffer"/>
-                            <TableColumn fx:id="rttColumn" text="average rtt"/>
+                            <TableColumn fx:id="rttColumn" text="rtt"/>
                             <TableColumn fx:id="lastColumn" text="last recv"/>
                             <TableColumn fx:id="echosRcvColumn" text="echos s/f"/>
                         </columns>
@@ -89,6 +87,10 @@
                         <CheckBox fx:id="hostCheckBox" text="Host"/>
                         <CheckBox fx:id="reflexiveCheckBox" text="Reflexive"/>
                         <CheckBox fx:id="relayCheckBox" text="Relay"/>
+
+                        <ComboBox fx:id="connectionModeComboBox"
+                                  prefWidth="Infinity"
+                                  HBox.hgrow="ALWAYS"/>
                     </VBox>
 
                 </VBox>

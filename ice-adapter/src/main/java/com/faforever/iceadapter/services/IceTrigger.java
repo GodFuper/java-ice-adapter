@@ -9,17 +9,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class IceTrigger implements PeerEventListener {
-
     private final IceAsync iceAsync;
     private final ConnectService connectService;
 
     @Override
     public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
-        connectService.onChangeIceState(peer, oldState, newState);
+        iceAsync.runAsync("onIceStateChange", peer, () -> connectService.onChangeIceState(peer, oldState, newState));
     }
 
     @Override
     public void onConnectionLost(Peer peer) {
-        connectService.onConnectionLost(peer);
+        iceAsync.runAsync("onConnectionLost", peer, () -> connectService.onConnectionLost(peer));
     }
 }

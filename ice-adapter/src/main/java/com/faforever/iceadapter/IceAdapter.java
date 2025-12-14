@@ -7,17 +7,15 @@ import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.PeerIceModule;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.ExecutorHolder;
-import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.TrayIcon;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.StackProperties;
 import picocli.CommandLine;
 
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -30,8 +28,6 @@ import static com.faforever.iceadapter.debug.Debug.debug;
 public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallbacks {
     public static volatile IceAdapter INSTANCE;
     private static String VERSION = "SNAPSHOT";
-    private static volatile GameSession GAME_SESSION;
-    private static final Lock lockGameSession = new ReentrantLock();
 
     @CommandLine.ArgGroup(exclusive = false)
     private IceOptions iceOptions;
@@ -40,6 +36,9 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     private GPGNetServer gpgNetServer;
     @Getter
     private RPCService rpcService;
+    @Getter
+    @Setter
+    private GameSession gameSession;
 
     private final ExecutorService executor = ExecutorHolder.getExecutor();
 
@@ -78,7 +77,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         gpgNetServer = new GPGNetServer(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort());
         rpcService = new RPCService(iceOptions.getRpcPort());
-        gpgNetServer.init(rpcService);
+        gpgNetServer.init(this, rpcService);
         rpcService.init(gpgNetServer, this);
 
         PeerIceModule.setRpcService(rpcService);
@@ -90,37 +89,27 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     @Override
     public void onHostGame(String mapName) {
         log.info("onHostGame");
-        createGameSession();
+
         // query session in a thread-safe manner
-        GameSession gs = getGameSessionSafe();
-        if (gs != null) {
-            sendToGpgNet("HostGame", mapName);
-        } else {
-            log.warn("onHostGame: failed to create game session");
-        }
+        GameSession gs = createGameSession();
+        sendToGpgNet("HostGame", mapName);
     }
 
     @Override
     public void onJoinGame(String remotePlayerLogin, int remotePlayerId) {
         log.info("onJoinGame {} {}", remotePlayerId, remotePlayerLogin);
-        createGameSession();
-        GameSession gs = getGameSessionSafe();
-        if (gs != null) {
+        GameSession gs = createGameSession();
+        boolean allowHost = true;
+        boolean allowReflexive = true;
+        boolean allowRelay = true;
 
-            boolean allowHost = true;
-            boolean allowReflexive = true;
-            boolean allowRelay = true;
-
-            if (iceOptions.isForceRelay()) {
-                allowHost = false;
-                allowReflexive = false;
-            }
-
-            int port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, false, 0, allowHost, allowReflexive, allowRelay);
-            sendToGpgNet("JoinGame", "127.0.0.1:" + port, remotePlayerLogin, remotePlayerId);
-        } else {
-            log.warn("onJoinGame: GAME_SESSION was null after createGameSession");
+        if (iceOptions.isForceRelay()) {
+            allowHost = false;
+            allowReflexive = false;
         }
+
+        int port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, false, 0, allowHost, allowReflexive, allowRelay);
+        sendToGpgNet("JoinGame", "127.0.0.1:" + port, remotePlayerLogin, remotePlayerId);
     }
 
     @Override
@@ -135,15 +124,10 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         log.info("onConnectToPeer {} {}, offer: {}", remotePlayerId, remotePlayerLogin, offer);
 
-        GameSession gs = getGameSessionSafe();
+        GameSession gs = getGameSession();
         if (gs == null) {
             log.warn("onConnectToPeer: no active GAME_SESSION, creating one");
-            createGameSession();
-            gs = getGameSessionSafe();
-            if (gs == null) {
-                log.error("onConnectToPeer: failed to create GAME_SESSION, aborting");
-                return;
-            }
+            gs = createGameSession();
         }
 
         int port;
@@ -178,48 +162,35 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         sendToGpgNet("DisconnectFromPeer", remotePlayerId);
     }
 
-    public void reconnectToPeer(int remotePlayerId, boolean allowHost, boolean allowReflexive, boolean allowRelay) {
-        log.info("reconnectToPeer {} allowHost={} allowReflexive={} allowRelay={}", remotePlayerId, allowHost, allowReflexive, allowRelay);
-        GameSession gs = getGameSessionSafe();
+    private synchronized GameSession createGameSession() {
+        GameSession gs = gameSession;
         if (gs != null) {
-            gs.reconnectToPeer(remotePlayerId, allowHost, allowReflexive, allowRelay);
-        } else {
-            log.warn("reconnectToPeer: GAME_SESSION is null");
-        }
-    }
-
-    private static void createGameSession() {
-        LockUtil.executeWithLock(lockGameSession, () -> {
-            if (GAME_SESSION != null) {
-                try {
-                    GAME_SESSION.close();
-                } catch (Exception e) {
-                    log.warn("Error closing previous GAME_SESSION", e);
-                }
-                GAME_SESSION = null;
+            try {
+                gs.close();
+            } catch (Exception e) {
+                log.warn("Error closing previous GAME_SESSION", e);
             }
-
-            GAME_SESSION = new GameSession();
-        });
+        }
+        GameSession gameSession = new GameSession();
+        setGameSession(gameSession);
+        return gameSession;
     }
 
     /**
      * Triggered by losing gpgnet connection to FA.
      * Closes the active Game/ICE session
      */
-    public static void onFAShutdown() {
-        LockUtil.executeWithLock(lockGameSession, () -> {
-            if (GAME_SESSION != null) {
-                log.info("FA SHUTDOWN, closing everything");
-                try {
-                    GAME_SESSION.close();
-                } catch (Exception e) {
-                    log.warn("Error while closing GAME_SESSION during onFAShutdown", e);
-                }
-                GAME_SESSION = null;
-                // Do not put code outside of this if clause, else it will be executed multiple times
+    public synchronized void onFAShutdown() {
+        GameSession gs = gameSession;
+        if (gs != null) {
+            log.info("FA SHUTDOWN, closing everything");
+            try {
+                gs.close();
+            } catch (Exception e) {
+                log.warn("Error while closing GAME_SESSION during onFAShutdown", e);
             }
-        });
+            gameSession = null;
+        }
     }
 
     @Override
@@ -240,7 +211,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         log.info("close() - stopping the adapter. Status: {}", status);
 
-        onFAShutdown(); // will close gameSession aswell
+        instance.onFAShutdown(); // will close gameSession aswell
 
         try {
             instance.gpgNetServer.close();
@@ -322,16 +293,12 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         return instance != null ? instance.executor : Executors.newSingleThreadExecutor();
     }
 
-    public static GameSession getGameSession() {
-        return GAME_SESSION;
-    }
-
     public static GameSession getGameSessionSafe() {
-        // quick non-blocking read followed by a locked check to avoid races
-        if (GAME_SESSION == null) return null;
-        final GameSession[] holder = new GameSession[1];
-        LockUtil.executeWithLock(lockGameSession, () -> holder[0] = GAME_SESSION);
-        return holder[0];
+        IceAdapter instance = INSTANCE;
+        if (instance == null) {
+            return null;
+        }
+        return instance.gameSession;
     }
 
     private void determineVersion() {

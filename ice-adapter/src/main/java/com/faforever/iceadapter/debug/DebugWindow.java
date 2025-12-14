@@ -110,8 +110,8 @@ public class DebugWindow extends Application implements Debugger {
             controller.versionLabel.setText("Version: %s".formatted(IceAdapter.getVersion()));
             controller.userLabel.setText("User: %s(%d)".formatted(IceAdapter.getLogin(), IceAdapter.getId()));
             controller.rpcPortLabel.setText("RPC_PORT: %d".formatted(Debug.RPC_PORT));
-            controller.gpgnetPortLabel.setText("GPGNET_PORT: %d".formatted(GPGNetServer.getGpgNetPort()));
-            controller.lobbyPortLabel.setText("LOBBY_PORT: %d".formatted(GPGNetServer.getLobbyPort()));
+            controller.gpgnetPortLabel.setText("GPGNET_PORT: %d".formatted(GPGNetServer.getStaticGpgNetPort()));
+            controller.lobbyPortLabel.setText("LOBBY_PORT: %d".formatted(GPGNetServer.getStaticLobbyPort()));
         });
     }
 
@@ -119,7 +119,7 @@ public class DebugWindow extends Application implements Debugger {
         runOnUIThread(() -> {
             synchronized (peers) {
                 peers.clear();
-                for (Peer peer : IceAdapter.getGameSession().getPeers().values()) {
+                for (Peer peer : IceAdapter.getGameSessionSafe().getPeers().values()) {
                     DebugPeer p = new DebugPeer(peer);
                     p.stateChangedUpdate(peer);
                     p.connectivityUpdate(peer);

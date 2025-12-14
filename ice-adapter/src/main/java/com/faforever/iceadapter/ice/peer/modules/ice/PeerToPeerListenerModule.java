@@ -15,8 +15,6 @@ import org.ice4j.socket.MultiplexingDatagramSocket;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 
 import static com.faforever.iceadapter.ice.ConnectivityModule.COMMAND_ECHO;
@@ -24,11 +22,9 @@ import static com.faforever.iceadapter.ice.ConnectivityModule.COMMAND_ECHO;
 @Slf4j
 @RequiredArgsConstructor
 public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
-    private static final String LOCK_MODULE = "IceListenerModule";
     private static final String LOCK_SOCKET = "PeerToPeerSocket";
 
     private final Peer peer;
-    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private volatile boolean running = false;
     private Lock lockSocket;
 
@@ -47,7 +43,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         }
 
         log.info("Create ice listener");
-        executor.submit(() -> LockUtil.executeWithLock(lockSocket, () -> createListener(component)));
+        Thread.ofVirtual().start(() -> LockUtil.executeWithLock(lockSocket, () -> createListener(component)));
     }
 
     public void stop() {
@@ -79,7 +75,12 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 if (packet.getLength() == 0) {
                     return;
                 }
-                handlerData(peer, packet.getData(), packet.getOffset(), packet.getLength());
+
+                // We copy the buffer so that we can reuse it next time.
+                byte[] dataCopy = new byte[packet.getLength()];
+                System.arraycopy(packet.getData(), packet.getOffset(), dataCopy, 0, packet.getLength());
+
+                Thread.ofVirtual().start(() -> handlerData(peer, dataCopy, 0, dataCopy.length));
             } catch (IOException e) {
                 if (peer.isClosing()) {
                     break;

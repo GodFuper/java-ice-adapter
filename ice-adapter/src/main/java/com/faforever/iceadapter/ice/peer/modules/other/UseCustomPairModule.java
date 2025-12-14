@@ -30,9 +30,8 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
     @Getter
     private final Set<CandidatePair> successPairs = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    private boolean isRunning = false;
+    private boolean running = false;
 
-    @Getter
     @Setter
     private boolean enabled = false;
 
@@ -44,8 +43,8 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
         }
     }
 
-    public boolean isRunning() {
-        return isRunning && enabled;
+    public Boolean isRunning() {
+        return running;
     }
 
     @Override
@@ -55,7 +54,7 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
         }
 
         if (agent == null) {
-            isRunning = false;
+            running = false;
             selectedPair = null;
             successPairs.clear();
             return;
@@ -73,7 +72,7 @@ public class UseCustomPairModule implements ModuleBase, PeerEventListener {
         if (stream == null) {
             return;
         }
-        isRunning = true;
+        running = true;
         stream.addPairChangeListener(event -> {
             if (Objects.equals(IceMediaStream.PROPERTY_PAIR_NOMINATED, event.getPropertyName())) {
                 Boolean setNominated = (Boolean) event.getNewValue();

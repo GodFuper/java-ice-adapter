@@ -11,4 +11,12 @@ public interface ModuleBase {
     default void init() {
     }
 
+    default Boolean isRunning() {
+        return null;
+    }
+
+    default Boolean isEnabled() {
+        return null;
+    }
+
 }

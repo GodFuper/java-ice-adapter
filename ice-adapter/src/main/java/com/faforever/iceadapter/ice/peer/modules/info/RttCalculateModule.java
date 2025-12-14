@@ -23,23 +23,10 @@ public class RttCalculateModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void stop() {
-        peer.setRtt(0.0f);
-    }
-
-    @Override
-    public void onChangeEcho(Peer peer, long echo) {
+    public void onChangeEcho(Peer peer, Long lastEcho, long echo) {
         if (peer.isLocalOffer()) {
             calculateRttWhenAgentControlling(echo);
-        } else {
-            calculateRttWhenAgentNotControlling(echo);
         }
-    }
-
-    private void calculateRttWhenAgentNotControlling(long echo) {
-        long rttMs = System.currentTimeMillis() - echo;
-        int rtt = 2 * (int) (rttMs);
-        calculateRtt(rtt);
     }
 
     private void calculateRttWhenAgentControlling(long echo) {

@@ -16,7 +16,7 @@ public class IceAsyncImpl implements IceAsync {
 
     @Override
     public CompletableFuture<Void> runAsync(String methodName, Peer peer, Runnable runnable) {
-        return CompletableFuture.runAsync(() -> doBeforeRun(peer, runnable), executorService);
+        return CompletableFuture.runAsync(() -> doBeforeRun(methodName, peer, runnable), executorService);
     }
 
     @Override
@@ -36,8 +36,7 @@ public class IceAsyncImpl implements IceAsync {
     }
 
     private void doBeforeRun(String methodName, Peer peer, Runnable runnable) {
-        String threadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(createNameForThread(threadName, methodName, getNameForThread(peer)));
+        Thread.currentThread().setName(createNameForThread(methodName, getNameForThread(peer)));
         runnable.run();
     }
 

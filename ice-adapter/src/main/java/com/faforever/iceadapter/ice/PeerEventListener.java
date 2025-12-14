@@ -21,7 +21,7 @@ public interface PeerEventListener {
     default void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
     }
 
-    default void onChangeEcho(Peer peer, long lastEcho) {
+    default void onChangeEcho(Peer peer, Long lastEcho, long echo) {
     }
 
     default void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {

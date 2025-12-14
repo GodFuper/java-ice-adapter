@@ -34,8 +34,11 @@ public class GPGNetServer implements AutoCloseable {
 
     private final Lock lockSocket = new ReentrantLock();
 
+    @Getter
     private final int gpgNetPort;
+    @Getter
     private final int lobbyPort;
+    private IceAdapter iceAdapter;
     private RPCService rpcService;
     private ServerSocket serverSocket;
 
@@ -70,11 +73,11 @@ public class GPGNetServer implements AutoCloseable {
         return INSTANCE != null ? INSTANCE.lobbyInitMode : LobbyInitMode.NORMAL;
     }
 
-    public static int getGpgNetPort() {
+    public static int getStaticGpgNetPort() {
         return INSTANCE != null ? INSTANCE.gpgNetPort : 0;
     }
 
-    public static int getLobbyPort() {
+    public static int getStaticLobbyPort() {
         return INSTANCE != null ? INSTANCE.lobbyPort : 0;
     }
 
@@ -88,10 +91,12 @@ public class GPGNetServer implements AutoCloseable {
         log.debug("Dropping GPGNet message because no client ready: {} {}", header, formatArgs(args));
     }
 
-    public void init(RPCService rpcService) {
+    public void init(IceAdapter iceAdapter,
+                     RPCService rpcService) {
         synchronized (INSTANCE_LOCK) {
             INSTANCE = this;
         }
+        this.iceAdapter = iceAdapter;
         this.rpcService = rpcService;
 
         try {
@@ -150,7 +155,7 @@ public class GPGNetServer implements AutoCloseable {
                         sendGpgnetMessage(
                                 "CreateLobby",
                                 lobbyInitMode.getId(),
-                                GPGNetServer.getLobbyPort(),
+                                GPGNetServer.getStaticLobbyPort(),
                                 IceAdapter.getLogin(),
                                 IceAdapter.getId(),
                                 1);
@@ -161,7 +166,7 @@ public class GPGNetServer implements AutoCloseable {
                     debug().gameStateChanged();
                 }
                 case "GameEnded" -> {
-                    GameSession gs = IceAdapter.getGameSession();
+                    GameSession gs = IceAdapter.getGameSessionSafe();
                     if (gs != null) {
                         gs.setGameEnded(true);
                         log.info("GameEnded received, stopping reconnects...");
@@ -248,7 +253,7 @@ public class GPGNetServer implements AutoCloseable {
 
         // perform the potentially blocking and cross-module shutdown outside of the lock to avoid deadlocks
         if (currentClient.get() != null) {
-            IceAdapter.onFAShutdown();
+            iceAdapter.onFAShutdown();
             debug().gpgnetConnectedDisconnected();
         }
     }
