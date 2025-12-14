@@ -12,6 +12,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.locks.Lock;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -21,12 +22,14 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
     private static final String LOCK_MODULE = "PeerToFaModule";
 
     private final Peer peer;
+    private Lock lock;
 
     private boolean running = false;
 
     @Override
     public void init() {
         peer.addEventListener(this);
+        lock = peer.getLock(LOCK_FA_SOCKET);
     }
 
     @Override
@@ -50,11 +53,7 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
             log.error("Socket is null. Send to FA skipped");
             return;
         }
-        lockAndSend(socket, data, offset, length);
-    }
-
-    private void lockAndSend(DatagramSocket socket, byte[] data, int offset, int length) {
-        LockUtil.executeWithLock(peer.getLock(LOCK_FA_SOCKET), () -> send(socket, data, offset, length));
+        send(socket, data, offset, length);
     }
 
     private void send(DatagramSocket socket, byte[] data, int offset, int length) {

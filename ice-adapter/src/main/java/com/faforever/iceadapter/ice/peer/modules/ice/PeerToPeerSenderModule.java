@@ -23,13 +23,11 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     private Component component;
     private Lock lockComponent;
-    private Lock lockSocket;
 
     @Override
     public void init() {
         peer.addEventListener(this);
         lockComponent = peer.getLock(LOCK_COMPONENT);
-        lockSocket = peer.getLock(LOCK_SOCKET);
     }
 
     @Override
@@ -58,11 +56,7 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
             log.warn("Cannot send: component is null");
             return;
         }
-        lockAndSend(currentComponent, data, offset, length);
-    }
-
-    private void lockAndSend(Component component, byte[] data, int offset, int length) {
-        LockUtil.executeWithLock(lockSocket, () -> send(component, data, offset, length));
+        send(currentComponent, data, offset, length);
     }
 
     private void send(Component component, byte[] data, int offset, int length) {
