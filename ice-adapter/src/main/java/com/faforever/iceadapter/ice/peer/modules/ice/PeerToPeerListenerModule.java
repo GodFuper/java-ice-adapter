@@ -109,11 +109,12 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 peer.setLastEcho(Longs.fromByteArray(Arrays.copyOfRange(data, 1, length)));
                 peer.getEchosReceived().incrementAndGet();
             } else {
-                peer.getInvalidEchosReceived().incrementAndGet();
+                peer.getInvalidPacket().incrementAndGet();
                 log.error("Invalid Echo received. length={}", length);
             }
 
         } else {
+            peer.getInvalidPacket().incrementAndGet();
             log.warn("{} Received invalid packet, first byte: 0x{}, length: {}", peer.getPeerIdentifier(), data[0], length);
         }
     }

@@ -45,7 +45,7 @@ public class Peer {
     private volatile Long lastEcho;
     private volatile Long lastPacketReceived;
     private AtomicInteger echosReceived = new AtomicInteger(0);
-    private AtomicInteger invalidEchosReceived = new AtomicInteger(0);
+    private AtomicInteger invalidPacket = new AtomicInteger(0);
 
     public volatile boolean closing = false;
 
@@ -231,7 +231,7 @@ public class Peer {
     }
 
     public Integer countInvalidEchosReceived() {
-        return invalidEchosReceived.get();
+        return invalidPacket.get();
     }
 
     public void sendToFaSocket(byte[] data, int offset, int length) {
