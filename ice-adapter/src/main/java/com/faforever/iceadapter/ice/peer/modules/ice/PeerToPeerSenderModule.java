@@ -65,7 +65,7 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
         }
         try {
             component.send(data, offset, length);
-            log.info("Send to {} {} {}", peer.getPeerIdentifier(), offset, length);
+            log.trace("Send to {} {} {}", peer.getPeerIdentifier(), offset, length);
         } catch (IOException e) {
             if (!peer.isClosing()) {
                 log.error("Send failed", e);

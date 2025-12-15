@@ -71,7 +71,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
             try {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 datagramSocket.receive(packet);
-                log.info("Receive from {} {}", peer.getPeerIdentifier(), packet.getLength());
+                log.trace("Receive from {} {}", peer.getPeerIdentifier(), packet.getLength());
                 if (packet.getLength() == 0) {
                     return;
                 }
