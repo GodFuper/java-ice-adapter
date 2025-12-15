@@ -98,9 +98,9 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
                     agent,
                     component,
                     mediaStream,
-                    peer.isAllowHost(),
-                    peer.isAllowReflexive(),
-                    peer.isAllowRelay());
+                    true,
+                    true,
+                    true);
         }
 
         onIceStateChecking(peer);

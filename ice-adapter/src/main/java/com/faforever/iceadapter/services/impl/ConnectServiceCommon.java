@@ -131,9 +131,9 @@ public abstract class ConnectServiceCommon {
                     peer.getRemoteId(),
                     agent,
                     component,
-                    true,
-                    true,
-                    true);
+                    peer.isAllowHost(),
+                    peer.isAllowReflexive(),
+                    peer.isAllowRelay());
             log.debug("Sending own candidates, offered candidates: {}", candidatesMessage.toStrCandidates());
 
             iceGameSession.sendToRpc(candidatesMessage);

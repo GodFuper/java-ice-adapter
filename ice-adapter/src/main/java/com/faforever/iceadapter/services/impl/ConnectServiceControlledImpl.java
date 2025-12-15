@@ -105,9 +105,9 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
                     agent,
                     component,
                     mediaStream,
-                    peer.isAllowHost(),
-                    peer.isAllowReflexive(),
-                    peer.isAllowRelay());
+                    true,
+                    true,
+                    true);
         }
 
         peer.setIceState(CHECKING);
