@@ -99,7 +99,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     public void onJoinGame(String remotePlayerLogin, int remotePlayerId) {
         log.info("onJoinGame {} {}", remotePlayerId, remotePlayerLogin);
         GameSession gs = createGameSession();
-        boolean allowHost = false;
+        boolean allowHost = true;
         boolean allowReflexive = true;
         boolean allowRelay = true;
 
@@ -131,7 +131,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         }
 
         int port;
-        boolean allowHost = false;
+        boolean allowHost = true;
         boolean allowReflexive = true;
         boolean allowRelay = true;
 

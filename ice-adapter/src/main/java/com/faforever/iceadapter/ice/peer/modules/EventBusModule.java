@@ -98,7 +98,6 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     private void asyncVirtual(String methodName, Peer peer, Runnable call) {
-
         Thread.ofVirtual()
                 .name(methodName + "|" + peer.getPeerIdentifier())
                 .start(call);

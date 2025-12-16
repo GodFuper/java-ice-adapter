@@ -34,7 +34,6 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         lockSocket = peer.getLock(LOCK_SOCKET);
     }
 
-
     @Override
     public void onIceComponentChange(Peer peer, Component component) {
         if (component == null) {
@@ -43,7 +42,11 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         }
 
         log.info("Create ice listener");
-        Thread.ofVirtual().start(() -> LockUtil.executeWithLock(lockSocket, () -> createListener(component)));
+        Thread.ofVirtual().name(threadComponentListenerName()).start(() -> LockUtil.executeWithLock(lockSocket, () -> createListener(component)));
+    }
+
+    private String threadComponentListenerName() {
+        return "ComponentListener-%s".formatted(peer.getPeerIdentifier());
     }
 
     public void stop() {
@@ -80,7 +83,9 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 byte[] dataCopy = new byte[packet.getLength()];
                 System.arraycopy(packet.getData(), packet.getOffset(), dataCopy, 0, packet.getLength());
 
-                Thread.ofVirtual().start(() -> handlerData(peer, dataCopy, 0, dataCopy.length));
+                Thread.ofVirtual()
+                        .name(threadComponentListenerName())
+                        .start(() -> handlerData(peer, dataCopy, 0, dataCopy.length));
             } catch (IOException e) {
                 if (peer.isClosing()) {
                     break;
@@ -99,6 +104,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
     private void handlerData(Peer peer, byte[] data, int offset, int length) {
         peer.setLastPacketReceived(System.currentTimeMillis());
 
+
         if (data[0] == FaToPeerModule.COMMAND_FA) {
             peer.sendToFaSocket(data, 1, length - 1);
         } else if (data[0] == COMMAND_ECHO) {
@@ -113,9 +119,16 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 log.error("Invalid Echo received. length={}", length);
             }
 
+        } else if (DatagramSocketUtils.isStunPacket(data, length)) {
+            int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
+            log.debug("STUN-like packet received, type: 0x{}, length: {}", String.format("%04X", type), length);
         } else {
             peer.getInvalidPacket().incrementAndGet();
-            log.warn("{} Received invalid packet, first byte: 0x{}, length: {}", peer.getPeerIdentifier(), data[0], length);
+            log.warn("Received invalid packet, first byte: 0x{}, length: {}, data (hex): {}",
+                    String.format("%02X", data[0]),
+                    length,
+                    DatagramSocketUtils.bytesToHex(Arrays.copyOf(data, Math.min(length, 16)))
+            );
         }
     }
 

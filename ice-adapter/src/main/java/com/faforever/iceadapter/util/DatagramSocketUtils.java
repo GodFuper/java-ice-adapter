@@ -22,4 +22,23 @@ public class DatagramSocketUtils {
         }
     }
 
+    public boolean isStunPacket(byte[] data, int length) {
+        if (length < 2) return false;
+        int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
+        return (type == 0x0000) || // Maybe keep-alive/misfire
+                (type == 0x0001) || // Binding Request
+                (type == 0x0101) || // Binding Response
+                (type == 0x0115) || // Shared Secret Request
+                (type == 0x0116) || // Shared Secret Response
+                (type == 0x0002);   // Binding Indication
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X ", b));
+        }
+        return sb.toString().trim();
+    }
+
 }
