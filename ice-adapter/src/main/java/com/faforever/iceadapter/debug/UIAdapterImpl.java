@@ -3,6 +3,7 @@ package com.faforever.iceadapter.debug;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
+import com.faforever.iceadapter.ice.OneIceServer;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
@@ -124,6 +125,16 @@ public class UIAdapterImpl implements UIAdapter {
                         .map(this::toPeerInfo)
                         .collect(Collectors.toList())
         );
+    }
+
+    @Override
+    public ObservableList<OneIceServerWrapper> getIceServersList() {
+        List<OneIceServer> servers = getGameSession().map(IceGameSession::getIceServers)
+                .orElse(Collections.emptyList());
+
+        return FXCollections.observableArrayList(servers.stream()
+                .map(OneIceServerWrapper::new)
+                .toList());
     }
 
     private PeerInfo toPeerInfo(Peer peer) {

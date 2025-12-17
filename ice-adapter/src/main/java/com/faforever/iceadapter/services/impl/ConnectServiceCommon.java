@@ -18,6 +18,7 @@ import org.ice4j.ice.harvest.StunCandidateHarvester;
 import org.ice4j.ice.harvest.TurnCandidateHarvester;
 import org.ice4j.security.LongTermCredential;
 
+import java.util.List;
 import java.util.concurrent.*;
 
 import static com.faforever.iceadapter.ice.IceState.*;
@@ -87,20 +88,27 @@ public abstract class ConnectServiceCommon {
         Agent agent = peer.getAgent();
         IceMediaStream mediaStream = peer.getMediaStream();
 
+        List<OneIceServer> servers = iceGameSession.getIceServers();
         // For STUN all servers are relevant (latency is not an issue)
-        iceGameSession.getIceServers().stream()
-                .flatMap(s -> s.getStunAddresses().stream())
+        servers.stream()
+                .filter(OneIceServer::isStun)
+                .filter(OneIceServer::isEnabled)
+                .map(OneIceServer::getAddress)
                 .forEach(address -> {
                     log.info("Add STUN harvester for {}", address.getHostName());
                     agent.addCandidateHarvester(new StunCandidateHarvester(address));
                 });
 
         // TURN is latency sensitive
-        iceGameSession.getFilteredIceServers().forEach(iceServer -> iceServer.getTurnAddresses().forEach(address -> {
-            var harvester = new TurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
-            log.info("Add TURN harvester for {}", address.getHostName());
-            agent.addCandidateHarvester(harvester);
-        }));
+        servers.stream()
+                .filter(OneIceServer::isTurn)
+                .filter(OneIceServer::isEnabled)
+                .forEach(iceServer -> {
+                    var address = iceServer.getAddress();
+                    var harvester = new TurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
+                    log.info("Add TURN harvester for {}", address.getHostName());
+                    agent.addCandidateHarvester(harvester);
+                });
 
         CompletableFuture<Void> gatheringFuture = iceAsync.runAsync(peer, () -> createComponent(peer, agent, mediaStream));
 

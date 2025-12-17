@@ -60,13 +60,6 @@ public class IceWindow extends Application {
         }
 
         log.info("Created debug window.");
-
-        if (Debug.ENABLE_INFO_WINDOW) {
-            CompletableFuture.runAsync(
-                    () -> runOnUIThread(InfoWindow::launch),
-                    CompletableFuture.delayedExecutor(
-                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
-        }
     }
 
     public void showWindow() {

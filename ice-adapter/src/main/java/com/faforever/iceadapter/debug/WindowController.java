@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -80,6 +81,11 @@ public class WindowController {
     private ScheduledExecutorService updateScheduler;
 
     private PeerInfo selectedPeer;
+
+    public void openSettingsStunAndTurn() {
+        CompletableFuture.runAsync(
+                () -> runOnUIThread(IceServerTableView::launch));
+    }
 
     public void initialize() {
         setupButtonActions();
@@ -257,5 +263,13 @@ public class WindowController {
         Stage stage = (Stage) root.getScene().getWindow();
         stage.close();
         dispose();
+    }
+
+    private static void runOnUIThread(Runnable runnable) {
+        if (Platform.isFxApplicationThread()) {
+            runnable.run();
+        } else {
+            Platform.runLater(runnable);
+        }
     }
 }

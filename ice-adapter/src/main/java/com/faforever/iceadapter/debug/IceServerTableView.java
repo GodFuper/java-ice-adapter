@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.debug;
 
+import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.LogoUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -8,61 +9,58 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-
 import static javafx.application.Application.STYLESHEET_MODENA;
 import static javafx.application.Application.setUserAgentStylesheet;
 
 @Slf4j
-public class InfoWindow {
+public class IceServerTableView {
 
-    public static InfoWindow INSTANCE;
+    public static IceServerTableView INSTANCE;
+
+    private IceServerController controller;
 
     private Stage stage;
     private Parent root;
-    private Scene scene;
-    private InfoWindowController controller;
 
-    private static final int WIDTH = 533;
-    private static final int HEIGHT = 330;
-
-    public void start(Stage stage) {
+    public void start(Stage primaryStage) {
         INSTANCE = this;
-        this.stage = stage;
+        this.stage = primaryStage;
         LogoUtils.getLogoFx().ifPresent(logo -> {
             stage.getIcons().add(logo);
         });
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/infoWindow.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/IceServerTable.fxml"));
             root = loader.load();
             controller = loader.getController();
-        } catch (IOException e) {
-            log.error("Could not load debugger window fxml", e);
+            controller.setAdapter(new UIAdapterImpl(IceAdapter.INSTANCE));
+            controller.initialize();
+        } catch (Exception e) {
+            log.error("Failed to load FXML", e);
+            return;
         }
-
 
         setUserAgentStylesheet(STYLESHEET_MODENA);
 
-        scene = new Scene(root, WIDTH, HEIGHT);
-
-        stage.setScene(scene);
-        stage.setTitle("FAF ICE adapter");
-        stage.setOnCloseRequest(event -> minimize());
-        stage.show();
-
-        log.info("Created info window.");
+        Scene scene = new Scene(root);
+        primaryStage.setTitle("ICE Server Manager");
+        primaryStage.setScene(scene);
+        primaryStage.setOnCloseRequest(event -> minimize());
+        primaryStage.show();
     }
 
-    public void minimize() {
-        Platform.setImplicitExit(false);
-        runOnUIThread(this.stage::hide);
-    }
+    // Wrapper class to make OneIceServer JavaFX-property friendly
+
 
     public void showWindow() {
         runOnUIThread(() -> {
             this.stage.show();
             Platform.setImplicitExit(true);
         });
+    }
+
+    public void minimize() {
+        Platform.setImplicitExit(false);
+        runOnUIThread(this.stage::hide);
     }
 
     private static void runOnUIThread(Runnable runnable) {
@@ -74,9 +72,9 @@ public class InfoWindow {
     }
 
     public static void launch() {
-        log.info("Launching info window.");
+        log.info("Launching IceServerTableApp window.");
         if (INSTANCE == null) {
-            runOnUIThread(() -> new InfoWindow().start(new Stage()));
+            runOnUIThread(() -> new IceServerTableView().start(new Stage()));
         } else {
             INSTANCE.showWindow();
         }

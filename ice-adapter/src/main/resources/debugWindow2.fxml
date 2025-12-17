@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import java.net.URL?>
-<AnchorPane fx:id="root" prefHeight="700.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.121"
+<AnchorPane fx:id="root" prefHeight="700.0" xmlns="http://javafx.com/javafx/8.0.121"
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.faforever.iceadapter.debug.WindowController">
     <children>
 
@@ -13,6 +13,7 @@
             <HBox spacing="10">
                 <Button fx:id="killAdapterButton" text="CLOSE ADAPTER. This will disconnect you from the game!"
                         HBox.hgrow="ALWAYS"/>
+                <Button text="STUN/TURN" HBox.hgrow="ALWAYS" onAction="#openSettingsStunAndTurn"/>
             </HBox>
 
             <HBox spacing="25">
@@ -51,7 +52,7 @@
                             <TableColumn fx:id="reflexiveColumn" text="reflexive"/>
                             <TableColumn fx:id="relayColumn" text="relay"/>
                             <TableColumn fx:id="stateColumn" text="state"/>
-                            <TableColumn fx:id="pairConColumn" text="pair"/>
+                            <TableColumn fx:id="pairConColumn" text="pair" prefWidth="100"/>
                             <TableColumn fx:id="agentStateColumn" text="agent"/>
                             <TableColumn fx:id="offerColumn" text="localOffer"/>
                             <TableColumn fx:id="rttColumn" text="rtt"/>

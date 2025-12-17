@@ -1,9 +1,11 @@
 package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.IceAdapter;
+import javafx.application.Platform;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class Debug {
@@ -37,9 +39,14 @@ public class Debug {
         if (isJavaFxSupported()) {
             CompletableFuture.runAsync(IceWindow::launch);
 
-//            if (Debug.ENABLE_INFO_WINDOW) {
-//                CompletableFuture.runAsync(InfoWindow::launch);
-//            }
+            if (Debug.ENABLE_INFO_WINDOW) {
+                CompletableFuture.runAsync(
+                        () -> runOnUIThread(InfoWindow::launch),
+                        CompletableFuture.delayedExecutor(
+                                Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
+            }
+
+
         } else {
             log.info("No JavaFX support detected. Running without debug window.");
         }
@@ -54,6 +61,14 @@ public class Debug {
 
     public static Debugger debug() {
         return debugFacade;
+    }
+
+    private static void runOnUIThread(Runnable runnable) {
+        if (Platform.isFxApplicationThread()) {
+            runnable.run();
+        } else {
+            Platform.runLater(runnable);
+        }
     }
 
     public static boolean isJavaFxSupported() {

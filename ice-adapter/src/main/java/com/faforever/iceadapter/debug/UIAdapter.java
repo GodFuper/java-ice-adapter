@@ -85,6 +85,16 @@ public interface UIAdapter {
     ObservableList<PeerInfo> getPeerInfoList();
 
     /**
+     * Returns an observable list of ICE server configurations used by the adapter.
+     * This list includes STUN, TURN, and other relay servers employed in the ICE negotiation process.
+     * The list can be bound directly to UI components (e.g., tables or dropdowns) to display or modify
+     * active ICE server settings in real time.
+     *
+     * @return observable list of {@link OneIceServerWrapper} objects representing ICE server configurations
+     */
+    ObservableList<OneIceServerWrapper> getIceServersList();
+
+    /**
      * Requests reconnection to the specified peer.
      * @param peer the peer to reconnect to
      */

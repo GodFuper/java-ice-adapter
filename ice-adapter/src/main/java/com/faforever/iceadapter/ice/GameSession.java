@@ -41,9 +41,9 @@ public class GameSession implements IceGameSession {
             new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
             new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
 
-    private static final List<IceServer> iceServers = createIceServers();
+    private static final List<OneIceServer> iceServers = createIceServers();
 
-    public static List<IceServer> getAllServers() {
+    public static List<OneIceServer> getAllServers() {
         return iceServers;
     }
 
@@ -122,7 +122,7 @@ public class GameSession implements IceGameSession {
     }
 
 
-    public List<IceServer> getIceServers() {
+    public List<OneIceServer> getIceServers() {
         return iceServers;
     }
 
@@ -131,50 +131,42 @@ public class GameSession implements IceGameSession {
         return Optional.ofNullable(peers.get(peerId));
     }
 
-    public List<IceServer> getFilteredIceServers() {
-        List<IceServer> allIceServers = iceServers;
+    public List<OneIceServer> getFilteredTurnIceServers() {
+        List<OneIceServer> allIceServers = iceServers;
         if (IceAdapter.getPingCount() <= 0 || allIceServers.isEmpty()) {
             return allIceServers;
         }
 
         // Try servers with acceptable latency
-        List<IceServer> viableIceServers = allIceServers.stream()
-                .filter(IceServer::hasAcceptableLatency)
+        List<OneIceServer> viableIceServers = allIceServers.stream()
+                .filter(OneIceServer::isTurn)
+                .filter(server -> server.hasAcceptableLatency(IceAdapter.getAcceptableLatency()))
                 .collect(Collectors.toList());
         if (!viableIceServers.isEmpty()) {
             log.info("Using all viable ice servers: {}",
                     viableIceServers.stream()
-                            .map(it -> "["
-                                    + it.getTurnAddresses().stream()
-                                    .map(TransportAddress::toString)
-                                    .collect(Collectors.joining(", "))
-                                    + "]")
-                            .collect(Collectors.joining(", ")));
+                            .map(OneIceServer::getAddress)
+                            .collect(Collectors.toSet()));
             return viableIceServers;
         }
 
         log.info("Using all ice servers: {}",
                 allIceServers.stream()
-                        .map(it -> "["
-                                + it.getTurnAddresses().stream()
-                                .map(TransportAddress::toString)
-                                .collect(Collectors.joining(", "))
-                                + "]")
-                        .collect(Collectors.joining(", ")));
+                        .map(OneIceServer::getAddress)
+                        .collect(Collectors.toSet()));
         return allIceServers;
     }
 
 
-    public static List<IceServer> createIceServers() {
-        List<IceServer> iceServers = new ArrayList<>();
+    public static List<OneIceServer> createIceServers() {
+        List<OneIceServer> iceServers = new ArrayList<>();
         addDefaultIceServers(iceServers);
         return iceServers;
     }
 
-    public static void addDefaultIceServers(List<IceServer> iceServers) {
+    public static void addDefaultIceServers(List<OneIceServer> iceServers) {
         PUBLIC_STUN_SERVERS.forEach(stunServer -> {
-            var iceServer = new IceServer();
-            iceServer.getStunAddresses().add(stunServer);
+            var iceServer = new OneIceServer(OneIceServer.TypeServer.STUN, stunServer);
             iceServers.add(iceServer);
         });
     }
@@ -191,17 +183,12 @@ public class GameSession implements IceGameSession {
             return;
         }
 
-        Pair<List<IceServer>, Set<CoturnServer>> pair = IceServer.mapperFromMap(iceServersData);
+        Pair<List<OneIceServer>, Set<CoturnServer>> pair = OneIceServer.mapperFromMap(iceServersData);
 
         iceServers.addAll(pair.getFirst());
         debug().updateCoturnList(pair.getSecond());
 
-        log.info(
-                "Ice Servers set, total addresses: {}",
-                iceServers.stream()
-                        .mapToInt(iceServer -> iceServer.getStunAddresses().size()
-                                + iceServer.getTurnAddresses().size())
-                        .sum());
+        log.info("Ice Servers set, total addresses: {}", iceServers.size());
     }
 
     public void onIceMessageReceived(Peer peer, CandidatesMessage message) {

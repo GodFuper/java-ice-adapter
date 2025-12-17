@@ -158,10 +158,7 @@ public class RPCHandler {
 
         IceStatus status = new IceStatus(
                 IceAdapter.getVersion(),
-                GameSession.getAllServers().stream()
-                        .mapToInt(s -> s.getTurnAddresses().size()
-                                + s.getStunAddresses().size())
-                        .sum(),
+                GameSession.getAllServers().size(),
                 gpgNetServer.getStaticLobbyPort(),
                 gpgNetServer.getLobbyInitMode().getName(),
                 new IceStatus.IceOptions(
