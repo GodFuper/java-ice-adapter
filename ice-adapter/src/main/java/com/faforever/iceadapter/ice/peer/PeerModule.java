@@ -7,7 +7,10 @@ import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
-import com.faforever.iceadapter.ice.peer.modules.other.*;
+import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
+import com.faforever.iceadapter.ice.peer.modules.other.ChangeIceStrategyModule;
+import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
+import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.services.IceAsync;
 import kotlin.Pair;
 import lombok.Getter;
@@ -58,10 +61,6 @@ public enum PeerModule implements Comparator<PeerModule> {
         Peer peer = components.getFirst();
         IceAsync async = components.getSecond();
         return new PeerConnectivityCheckerModule(peer, async);
-    }),
-    MULTI_PAIRS(components -> {
-        Peer peer = components.getFirst();
-        return new UseCustomPairModule(peer);
     }),
     AUTO_SETTING_ALLOW_CANDIDATE(components -> {
         Peer peer = components.getFirst();

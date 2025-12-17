@@ -48,8 +48,6 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
             id = 0;
         }
         AllowCombination combination = combinations.get(id);
-        peer.setAllows(combination.isAllowHost(),
-                combination.isAllowReflexive(),
-                combination.isAllowRelay());
+        peer.setCombination(combination);
     }
 }

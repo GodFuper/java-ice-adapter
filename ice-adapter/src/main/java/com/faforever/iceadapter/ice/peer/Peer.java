@@ -3,8 +3,10 @@ package com.faforever.iceadapter.ice.peer;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.util.CandidateUtil;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +38,6 @@ public class Peer {
 
     private String peerIdentifier;
 
-    private boolean allowHost = true;
-    private boolean allowReflexive = true;
-    private boolean allowRelay = true;
     private volatile long lastLostConnect = 0;
 
     private volatile float rtt = 0.0f;
@@ -56,6 +55,7 @@ public class Peer {
     private volatile IceMediaStream mediaStream;
     private volatile Component component;
     private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
+    private AllowCombination combination = AllowCombination.ALL;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
@@ -120,12 +120,6 @@ public class Peer {
         debug().peerStateChanged(this);
     }
 
-    public void setAllows(boolean allowHost, boolean allowReflexive, boolean allowRelay) {
-        this.allowHost = allowHost;
-        this.allowReflexive = allowReflexive;
-        this.allowRelay = allowRelay;
-    }
-
     public Lock getLock(String lockName) {
         return locks.computeIfAbsent(lockName, k -> new ReentrantLock());
     }
@@ -177,6 +171,10 @@ public class Peer {
                 .orElse(null);
     }
 
+    public String getFullInfoSelectedPair() {
+        return CandidateUtil.infoCandidate(getSelectedPair());
+    }
+
     public Optional<Component> getActiveComponent() {
         return Optional.ofNullable(component);
     }
@@ -195,7 +193,6 @@ public class Peer {
         List<Pair<String, String>> candidates = new ArrayList<>();
         for (CandidatePair pair : getCandidatePairs()) {
             candidates.add(new Pair<>(String.valueOf(pair.getLocalCandidate().getType()), String.valueOf(pair.getRemoteCandidate().getType())));
-            candidates.add(new Pair<>(String.valueOf(pair.getLocalCandidate().getTransport()), String.valueOf(pair.getRemoteCandidate().getTransport())));
         }
 
         return candidates;

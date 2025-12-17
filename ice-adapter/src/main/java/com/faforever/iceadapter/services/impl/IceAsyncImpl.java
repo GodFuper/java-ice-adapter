@@ -1,6 +1,5 @@
 package com.faforever.iceadapter.services.impl;
 
-import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.IceAsync;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,7 @@ public class IceAsyncImpl implements IceAsync {
     @Override
     public CompletableFuture<Void> runAsyncDelay(Peer peer, Runnable runnable, int delayMs) {
         return CompletableFuture.runAsync(() -> doBeforeRun(peer, runnable),
-                CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, IceAdapter.getExecutor()));
+                CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, executorService));
     }
 
     @Override

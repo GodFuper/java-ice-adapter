@@ -32,7 +32,7 @@ public class Debug {
 
     public static void init() {
         telemetryDebugger =
-                new TelemetryDebugger(IceAdapter.getTelemetryServer(), IceAdapter.getGameId(), IceAdapter.getId());
+                new TelemetryDebugger(IceAdapter.INSTANCE.getGpgNetServer(), IceAdapter.getTelemetryServer(), IceAdapter.getGameId(), IceAdapter.getId());
         register(telemetryDebugger);
         if (isJavaFxSupported()) {
             CompletableFuture.runAsync(IceWindow::launch);

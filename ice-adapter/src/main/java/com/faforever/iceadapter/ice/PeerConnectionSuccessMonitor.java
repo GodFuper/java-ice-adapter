@@ -72,28 +72,6 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
                 agentConnectionFailed();
             }
         }
-//
-//        if (PROPERTY_PAIR_NOMINATED.equals(event.getPropertyName())) {
-//            CandidatePair pair = (CandidatePair) event.getSource();
-//            Boolean isNominated = (Boolean) event.getNewValue();
-//            if (isNominated) {
-//                onPairSucceeded(pair);
-//            }
-//        }
-
-        // SUCCESS PAIR != nominated
-//        if (IceMediaStream.PROPERTY_PAIR_STATE_CHANGED.equals(event.getPropertyName())) {
-//            CandidatePair pair = (CandidatePair) event.getSource();
-//            CandidatePairState newState = (CandidatePairState) event.getNewValue();
-//
-//            if (CandidatePairState.SUCCEEDED.equals(newState)) {
-//                ScheduledFuture<?> future = pendingPairs.remove(pair);
-//                if (future != null) {
-//                    future.cancel(false);
-//                }
-//                onPairSucceeded(pair);
-//            }
-//        }
     }
 
     private void scheduleTimeoutCheck(CandidatePair pair) {
@@ -109,29 +87,22 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
     private void onPairSucceeded(CandidatePair pair) {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
-        log.info("✅ Успех: Пара достигла SUCCEEDED: {}", pair);
+        log.debug("✅ Successful: Pair is SUCCEEDED: {}", pair);
         future.complete(true);
     }
 
     private void onPairTimeout(CandidatePair pair) {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
-        log.info("❌ Таймаут: Пара не достигла SUCCEEDED за {} мс: {}", timeoutMs, pair);
+        log.info("❌ Timeout: Pair not state SUCCEEDED by {} ms: {}", timeoutMs, pair);
         future.complete(true);
     }
 
     private void agentConnectionFailed() {
         String oldThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
-        log.warn("❌ Agent не смог наладить соединение");
+        log.warn("❌ Agent state failed");
         future.complete(false);
-    }
-
-    private void agentConnectionSuccess() {
-        String oldThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
-        log.warn("✅ Agent смог наладить соединение");
-        future.complete(true);
     }
 
     public void shutdown() {

@@ -5,6 +5,7 @@ import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -85,7 +86,6 @@ public class UIAdapterImpl implements UIAdapter {
 
     @Override
     public String getGpgNetClientStatus() {
-        // Состояние подключения к FA
         GPGNetServer server = iceAdapter.getGpgNetServer();
         return server != null && server.isConnected() ? "Connected" : "Disconnected";
     }
@@ -139,12 +139,6 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public String getLogBuffer() {
-//        return Debug.getLogBuffer(); // Предполагается, что Debug сохраняет логи
-        return "";
-    }
-
-    @Override
     public void reconnect(PeerInfo peer) {
         if (peer == null) {
             return;
@@ -156,19 +150,19 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public void setRulesConnection(PeerInfo peer, boolean allowHost, boolean allowReflexive, boolean allowRelay) {
-        if (peer == null) {
+    public void setAllowCombination(PeerInfo peer, AllowCombination combination) {
+        if (peer == null || combination == null) {
             return;
         }
         int id = peer.getId().get();
         getGameSession()
                 .flatMap(session -> session.getPeer(id))
-                .ifPresent(p -> p.setAllows(allowHost, allowReflexive, allowRelay));
+                .ifPresent(p -> p.setCombination(combination));
     }
 
     @Override
     public void setStrategy(PeerInfo peer, IceAgentStrategy newStrategy) {
-        if (peer == null) {
+        if (peer == null || newStrategy == null) {
             return;
         }
         int id = peer.getId().get();

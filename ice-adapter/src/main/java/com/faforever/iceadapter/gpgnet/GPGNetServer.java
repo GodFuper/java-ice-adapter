@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,8 +46,7 @@ public class GPGNetServer implements AutoCloseable {
     // single reference to current client (atomic for safe reads)
     private final AtomicReference<GPGNetClient> currentClient = new AtomicReference<>();
 
-    // Executor to run accept loop and client listener tasks (reuse IceAdapter executor)
-    private final ExecutorService executor = (ExecutorService) IceAdapter.getExecutor();
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     @Setter
     private volatile LobbyInitMode lobbyInitMode = LobbyInitMode.NORMAL;
@@ -299,12 +299,12 @@ public class GPGNetServer implements AutoCloseable {
         log.info("Accept loop terminating");
     }
 
-    public static boolean isConnected() {
-        return INSTANCE != null && INSTANCE.currentClient.get() != null;
+    public boolean isConnected() {
+        return currentClient.get() != null;
     }
 
-    public static boolean isServerRunning() {
-        return INSTANCE != null && INSTANCE.serverSocket != null && !INSTANCE.serverSocket.isClosed();
+    public boolean isServerRunning() {
+        return serverSocket != null && !serverSocket.isClosed();
     }
 
     public static Optional<GameState> getGameState() {
@@ -319,6 +319,8 @@ public class GPGNetServer implements AutoCloseable {
     @Override
     public void close() {
         log.info("Stopping GPGNetServer");
+
+        executor.shutdown();
 
         // stop accept loop by closing server socket
         try {

@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -10,6 +11,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -67,13 +69,12 @@ public class WindowController {
     @FXML
     private Button reconnectPeerButton;
     @FXML
-    private CheckBox hostCheckBox;
-    @FXML
-    private CheckBox reflexiveCheckBox;
-    @FXML
-    private CheckBox relayCheckBox;
+    private ComboBox<AllowCombination> allowCombinationComboBox;
     @FXML
     private ComboBox<IceAgentStrategy> connectionModeComboBox;
+
+    @FXML
+    private TextArea pairCandidateInfoArea;
 
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
@@ -159,18 +160,18 @@ public class WindowController {
 
         // обновить заголовок или действия
         peerActionTitle.setText(peer.getLogin().get());
-        hostCheckBox.setSelected(peer.getAdditionalInfo().getAllowHost().get());
-        reflexiveCheckBox.setSelected(peer.getAdditionalInfo().getAllowReflexive().get());
-        relayCheckBox.setSelected(peer.getAdditionalInfo().getAllowRelay().get());
 
+        allowCombinationComboBox.getItems().setAll(AllowCombination.values());
+        allowCombinationComboBox.setValue(peer.getAdditionalInfo().getCombination());
 
         connectionModeComboBox.getItems().setAll(IceAgentStrategy.values());
         connectionModeComboBox.setValue(peer.getAdditionalInfo().getAgentStrategy());
 
-
-        addListenerForCheckBox(peer, hostCheckBox);
-        addListenerForCheckBox(peer, reflexiveCheckBox);
-        addListenerForCheckBox(peer, relayCheckBox);
+        allowCombinationComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!Objects.equals(oldValue, newValue)) {
+                adapter.setAllowCombination(peer, newValue);
+            }
+        });
 
         connectionModeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!Objects.equals(oldValue, newValue)) {
@@ -181,14 +182,17 @@ public class WindowController {
         reconnectPeerButton.setOnAction(e -> {
             adapter.reconnect(peer);
         });
+
+        updatePairCandidateInfo(peer.getAdditionalInfo().getGetFullCandidateInfo().get());
     }
 
-    private void addListenerForCheckBox(PeerInfo peer, CheckBox checkBox) {
-        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (!Objects.equals(oldValue, newValue)) {
-                adapter.setRulesConnection(peer, hostCheckBox.isSelected(), reflexiveCheckBox.isSelected(), relayCheckBox.isSelected());
-            }
-        });
+    private void updatePairCandidateInfo(String info) {
+        if (StringUtils.isEmpty(info)) {
+            pairCandidateInfoArea.setText("No candidate information available.");
+        } else {
+            pairCandidateInfoArea.setText(info);
+        }
+        pairCandidateInfoArea.setScrollTop(0); // Прокрутка наверх
     }
 
     private void updateAllInfo() {

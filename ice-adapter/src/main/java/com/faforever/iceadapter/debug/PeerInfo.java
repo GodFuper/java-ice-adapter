@@ -4,13 +4,13 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.beans.property.*;
 import lombok.Data;
 import org.ice4j.ice.Agent;
-import org.ice4j.ice.CandidatePair;
 
 import java.util.Objects;
-import java.util.StringJoiner;
+import java.util.function.Supplier;
 
 @Data
 public class PeerInfo implements PeerEventListener {
@@ -33,7 +33,9 @@ public class PeerInfo implements PeerEventListener {
         private final BooleanProperty allowHost = new SimpleBooleanProperty();
         private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
         private final BooleanProperty allowRelay = new SimpleBooleanProperty();
+        private AllowCombination combination;
         private IceAgentStrategy agentStrategy;
+        private Supplier<String> getFullCandidateInfo;
     }
 
     // Конструктор
@@ -61,7 +63,7 @@ public class PeerInfo implements PeerEventListener {
     public void update(Peer peer) {
         getConnected().set(String.valueOf(peer.isConnected()));
 
-        getPairConnection().set(strForPair(peer));
+        getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         getState().set(String.valueOf(peer.getState()));
         getAgent().set(peer.getAgentState()
@@ -78,21 +80,14 @@ public class PeerInfo implements PeerEventListener {
                 .orElse("never"));
         getEchosReceived().set("%s/%s".formatted(String.valueOf(peer.countEchosReceived()), String.valueOf(peer.countInvalidEchosReceived())));
 
-        getAdditionalInfo().getAllowHost().set(peer.isAllowHost());
-        getAdditionalInfo().getAllowReflexive().set(peer.isAllowReflexive());
-        getAdditionalInfo().getAllowRelay().set(peer.isAllowRelay());
+        AllowCombination combination = peer.getCombination();
+        getAdditionalInfo().getAllowHost().set(combination.isAllowHost());
+        getAdditionalInfo().getAllowReflexive().set(combination.isAllowReflexive());
+        getAdditionalInfo().getAllowRelay().set(combination.isAllowRelay());
         getAdditionalInfo().setAgentStrategy(peer.getAgentStrategy());
-    }
+        getAdditionalInfo().setCombination(combination);
 
-    private String strForPair(Peer peer) {
-        StringJoiner joiner = new StringJoiner("\n");
-        joiner.setEmptyValue("-");
-        joiner.add(peer.getStrCandidateTypes(" | "));
-        peer.getActiveCandidatePair()
-                .map(CandidatePair::getState)
-                .map(String::valueOf)
-                .ifPresent(joiner::add);
-        return joiner.toString();
+        getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);
     }
 
     @Override

@@ -84,15 +84,23 @@
                     <Label text="Actions for peer:" style="-fx-font-weight: bold;"/>
 
                     <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
-                        <CheckBox fx:id="hostCheckBox" text="Host"/>
-                        <CheckBox fx:id="reflexiveCheckBox" text="Reflexive"/>
-                        <CheckBox fx:id="relayCheckBox" text="Relay"/>
+                        <ComboBox fx:id="allowCombinationComboBox"
+                                  prefWidth="Infinity"
+                                  HBox.hgrow="ALWAYS"/>
 
                         <ComboBox fx:id="connectionModeComboBox"
                                   prefWidth="Infinity"
                                   HBox.hgrow="ALWAYS"/>
                     </VBox>
 
+                    <VBox spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
+                        <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
+                        <TextArea fx:id="pairCandidateInfoArea"
+                                  wrapText="true"
+                                  editable="false"
+                                  VBox.vgrow="ALWAYS"
+                                  prefHeight="150"/>
+                    </VBox>
                 </VBox>
 
             </HBox>

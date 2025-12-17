@@ -111,6 +111,47 @@ public class CandidateUtil {
                 });
     }
 
+    public static String infoCandidate(CandidatePair pair) {
+        if (pair == null) {
+            return null;
+        }
+        return """
+                Local Candidate:
+                  Type: %s
+                  Transport: %s
+                  Address: %s:%d
+                  Priority: %d
+                  Foundation: %s
+                
+                Remote Candidate:
+                  Type: %s
+                  Transport: %s
+                  Address: %s:%d
+                  Priority: %d
+                  Foundation: %s
+                
+                Priority: %d
+                Nominated: %s
+                State: %s
+                """.formatted(
+                pair.getLocalCandidate().getType(),
+                pair.getLocalCandidate().getTransport(),
+                pair.getLocalCandidate().getTransportAddress().getHostAddress(),
+                pair.getLocalCandidate().getTransportAddress().getPort(),
+                pair.getLocalCandidate().getPriority(),
+                pair.getLocalCandidate().getFoundation(),
+                pair.getRemoteCandidate().getType(),
+                pair.getLocalCandidate().getTransport(),
+                pair.getRemoteCandidate().getTransportAddress().getHostAddress(),
+                pair.getRemoteCandidate().getTransportAddress().getPort(),
+                pair.getRemoteCandidate().getPriority(),
+                pair.getRemoteCandidate().getFoundation(),
+                pair.getPriority(),
+                pair.isNominated(),
+                pair.getState()
+        );
+    }
+
     private static boolean isAllowedCandidate(boolean allowHost,
                                               boolean allowReflexive,
                                               boolean allowRelay,

@@ -34,6 +34,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     private static final Duration RECONNECT_BASE_DELAY = Duration.ofSeconds(1);
     private static final Duration MAX_RECONNECT_DELAY = Duration.ofSeconds(30);
 
+    private final GPGNetServer gpgNetServer;
     private final URI websocketUri;
     private volatile WebSocketClient websocketClient;
     private final ObjectMapper objectMapper;
@@ -46,7 +47,8 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     private volatile boolean shouldRun = true;
     private int reconnectAttempt = 0;
 
-    public TelemetryDebugger(String telemetryServer, int gameId, int playerId) {
+    public TelemetryDebugger(GPGNetServer gpgNetServer, String telemetryServer, int gameId, int playerId) {
+        this.gpgNetServer = gpgNetServer;
         websocketUri = URI.create("%s/adapter/v1/game/%d/player/%d".formatted(telemetryServer, gameId, playerId));
         log.info(
                 "Open the telemetry ui via {}/app.html?gameId={}&playerId={}",
@@ -189,7 +191,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     @Override
     public void gpgnetConnectedDisconnected() {
         sendMessage(new UpdateGpgnetState(
-                UUID.randomUUID(), GPGNetServer.isConnected() ? "GAME_CONNECTED" : "WAITING_FOR_GAME"));
+                UUID.randomUUID(), gpgNetServer.isConnected() ? "GAME_CONNECTED" : "WAITING_FOR_GAME"));
     }
 
     @Override

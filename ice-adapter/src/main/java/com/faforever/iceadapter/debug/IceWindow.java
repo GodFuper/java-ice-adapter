@@ -56,7 +56,7 @@ public class IceWindow extends Application {
             CompletableFuture.runAsync(
                     () -> runOnUIThread(stage::show),
                     CompletableFuture.delayedExecutor(
-                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS, IceAdapter.getExecutor()));
+                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
         }
 
         log.info("Created debug window.");
@@ -65,7 +65,7 @@ public class IceWindow extends Application {
             CompletableFuture.runAsync(
                     () -> runOnUIThread(InfoWindow::launch),
                     CompletableFuture.delayedExecutor(
-                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS, IceAdapter.getExecutor()));
+                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
         }
     }
 

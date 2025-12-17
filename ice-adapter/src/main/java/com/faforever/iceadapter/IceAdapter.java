@@ -4,9 +4,8 @@ import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.GameSession;
-import com.faforever.iceadapter.ice.PeerIceModule;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
-import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.TrayIcon;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +14,7 @@ import org.ice4j.StackProperties;
 import picocli.CommandLine;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -39,9 +38,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     @Getter
     @Setter
     private GameSession gameSession;
-
-    private final ExecutorService executor = ExecutorHolder.getExecutor();
-
 
     public static void main(String[] args) {
         new CommandLine(new IceAdapter()).setUnmatchedArgumentsAllowed(true).execute(args);
@@ -68,6 +64,11 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         determineVersion();
         log.info("Version: {}", VERSION);
 
+        gpgNetServer = new GPGNetServer(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort());
+        rpcService = new RPCService(iceOptions.getRpcPort());
+        gpgNetServer.init(this, rpcService);
+        rpcService.init(gpgNetServer, this);
+
         Debug.DELAY_UI_MS = iceOptions.getDelayUi();
         Debug.ENABLE_DEBUG_WINDOW = iceOptions.isDebugWindow();
         Debug.ENABLE_INFO_WINDOW = iceOptions.isInfoWindow();
@@ -75,12 +76,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         TrayIcon.create();
 
-        gpgNetServer = new GPGNetServer(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort());
-        rpcService = new RPCService(iceOptions.getRpcPort());
-        gpgNetServer.init(this, rpcService);
-        rpcService.init(gpgNetServer, this);
 
-        PeerIceModule.setRpcService(rpcService);
 
         debug().startupComplete();
         settingIce4j();
@@ -99,16 +95,10 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     public void onJoinGame(String remotePlayerLogin, int remotePlayerId) {
         log.info("onJoinGame {} {}", remotePlayerId, remotePlayerLogin);
         GameSession gs = createGameSession();
-        boolean allowHost = true;
-        boolean allowReflexive = true;
-        boolean allowRelay = true;
 
-        if (iceOptions.isForceRelay()) {
-            allowHost = false;
-            allowReflexive = false;
-        }
+        AllowCombination combination = iceOptions.isForceRelay() ? AllowCombination.RELAY : AllowCombination.ALL;
 
-        int port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, false, 0, allowHost, allowReflexive, allowRelay);
+        int port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, false, 0, combination);
         sendToGpgNet("JoinGame", "127.0.0.1:" + port, remotePlayerLogin, remotePlayerId);
     }
 
@@ -131,16 +121,10 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         }
 
         int port;
-        boolean allowHost = true;
-        boolean allowReflexive = true;
-        boolean allowRelay = true;
+        AllowCombination combination = iceOptions.isForceRelay() ? AllowCombination.RELAY : AllowCombination.ALL;
 
-        if (iceOptions.isForceRelay()) {
-            allowHost = false;
-            allowReflexive = false;
-        }
         try {
-            port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, offer, 0, allowHost, allowReflexive, allowRelay);
+            port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, offer, 0, combination);
         } catch (RuntimeException e) {
             log.error("connectToPeer failed for {} {}: {}", remotePlayerId, remotePlayerLogin, e.toString());
             return;
@@ -227,21 +211,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         Debug.close();
         TrayIcon.close();
 
-        // Shutdown the executor gracefully. Don't schedule shutdownNow on the same executor.
-        instance.executor.shutdown();
-        try {
-            if (!instance.executor.awaitTermination(500, TimeUnit.MILLISECONDS)) {
-                log.info("Executor did not terminate in 500ms, requesting shutdownNow");
-                instance.executor.shutdownNow();
-                // give a short grace before exit
-                instance.executor.awaitTermination(250, TimeUnit.MILLISECONDS);
-            }
-        } catch (InterruptedException e) {
-            log.warn("Interrupted while waiting for executor termination", e);
-            instance.executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-
         System.exit(status);
     }
 
@@ -286,11 +255,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     public static double getAcceptableLatency() {
         IceAdapter instance = INSTANCE;
         return instance != null && instance.iceOptions != null ? instance.iceOptions.getAcceptableLatency() : Double.MAX_VALUE;
-    }
-
-    public static Executor getExecutor() {
-        IceAdapter instance = INSTANCE;
-        return instance != null ? instance.executor : Executors.newSingleThreadExecutor();
     }
 
     public static GameSession getGameSessionSafe() {

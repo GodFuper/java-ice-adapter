@@ -23,7 +23,9 @@ public class DatagramSocketUtils {
     }
 
     public boolean isStunPacket(byte[] data, int length) {
-        if (length < 2) return false;
+        if (length < 2) {
+            return false;
+        }
         int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
         return (type == 0x0000) || // Maybe keep-alive/misfire
                 (type == 0x0001) || // Binding Request

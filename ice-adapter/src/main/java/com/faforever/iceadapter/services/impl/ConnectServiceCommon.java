@@ -2,6 +2,7 @@ package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.ice.*;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
@@ -125,15 +126,16 @@ public abstract class ConnectServiceCommon {
             return;
         }
 
+        AllowCombination combination = peer.getCombination();
         for (Component component : mediaStream.getComponents()) {
             CandidatesMessage candidatesMessage = CandidateUtil.packCandidates(
                     iceGameSession.getMyId(),
                     peer.getRemoteId(),
                     agent,
                     component,
-                    peer.isAllowHost(),
-                    peer.isAllowReflexive(),
-                    peer.isAllowRelay());
+                    combination.isAllowHost(),
+                    combination.isAllowReflexive(),
+                    combination.isAllowRelay());
             log.debug("Sending own candidates, offered candidates: {}", candidatesMessage.toStrCandidates());
 
             iceGameSession.sendToRpc(candidatesMessage);
@@ -213,7 +215,6 @@ public abstract class ConnectServiceCommon {
 
     protected void onConnected(Peer peer) {
         log.info("ICE state connected");
-
 
         iceGameSession.onConnected(peer, true);
 

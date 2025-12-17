@@ -3,6 +3,7 @@ package com.faforever.iceadapter.ice;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.IceTrigger;
@@ -68,9 +69,7 @@ public class GameSession implements IceGameSession {
                              int remotePlayerId,
                              boolean offer,
                              int preferredPort,
-                             boolean allowHost,
-                             boolean allowReflexive,
-                             boolean allowRelay) {
+                             AllowCombination combination) {
         if (peers.containsKey(remotePlayerId)) {
             reCreatePeer(remotePlayerId);
             debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
@@ -78,7 +77,7 @@ public class GameSession implements IceGameSession {
         }
         Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort());
         peer.init();
-        peer.setAllows(allowHost, allowReflexive, allowRelay);
+        peer.setCombination(combination);
         peer.initModules(iceAsync);
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();
@@ -93,13 +92,10 @@ public class GameSession implements IceGameSession {
             String remotePlayerLogin = reconnectPeer.getRemoteLogin();
             boolean offer = reconnectPeer.isLocalOffer();
             int port = reconnectPeer.getLocalPort();
-            boolean isAllowHost = reconnectPeer.isAllowHost();
-            boolean isAllowReflexive = reconnectPeer.isAllowReflexive();
-            boolean isAllowRelay = reconnectPeer.isAllowRelay();
-            reconnectPeer.setAllows(isAllowHost, isAllowReflexive, isAllowRelay);
+            AllowCombination combination = reconnectPeer.getCombination();
 
             disconnectFromPeer(remotePlayerId);
-            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, isAllowHost, isAllowReflexive, isAllowRelay);
+            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, combination);
         }
     }
 
@@ -114,18 +110,6 @@ public class GameSession implements IceGameSession {
         }
         // TODO: still testing connectivity and reporting disconnect via rpc, why???
         // TODO: still attempting to ICE
-    }
-
-    public void reconnectToPeer(Integer remotePlayerId, Boolean allowHost, Boolean allowReflexive, Boolean allowRelay) {
-        Peer reconnectPeer = peers.get(remotePlayerId);
-        if (Objects.nonNull(reconnectPeer)) {
-
-            boolean isAllowHost = allowHost != null ? allowHost : reconnectPeer.isAllowHost();
-            boolean isAllowReflexive = allowReflexive != null ? allowReflexive : reconnectPeer.isAllowReflexive();
-            boolean isAllowRelay = allowRelay != null ? allowRelay : reconnectPeer.isAllowRelay();
-            reconnectPeer.setAllows(isAllowHost, isAllowReflexive, isAllowRelay);
-            iceAsync.runAsync(reconnectPeer, reconnectPeer::lostConnect);
-        }
     }
 
     /**
@@ -154,8 +138,9 @@ public class GameSession implements IceGameSession {
         }
 
         // Try servers with acceptable latency
-        List<IceServer> viableIceServers =
-                allIceServers.stream().filter(IceServer::hasAcceptableLatency).collect(Collectors.toList());
+        List<IceServer> viableIceServers = allIceServers.stream()
+                .filter(IceServer::hasAcceptableLatency)
+                .collect(Collectors.toList());
         if (!viableIceServers.isEmpty()) {
             log.info("Using all viable ice servers: {}",
                     viableIceServers.stream()

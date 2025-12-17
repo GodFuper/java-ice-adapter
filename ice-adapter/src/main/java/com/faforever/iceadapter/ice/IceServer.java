@@ -2,10 +2,7 @@ package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.telemetry.CoturnServer;
-import com.faforever.iceadapter.util.PingWrapper;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.faforever.iceadapter.util.PingUtil;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +19,7 @@ import java.util.regex.Pattern;
 public class IceServer {
     private static final String STUN = "stun";
     private static final String TURN = "turn";
+    private static final String TURNS = "turns";
 
     private List<TransportAddress> stunAddresses = new ArrayList<>();
     private List<TransportAddress> turnAddresses = new ArrayList<>();
@@ -30,7 +28,7 @@ public class IceServer {
     private CompletableFuture<OptionalDouble> roundTripTime = CompletableFuture.completedFuture(OptionalDouble.empty());
 
     public static final Pattern urlPattern = Pattern.compile(
-            "(?<protocol>stun|turn):(?<host>(\\w|\\.)+)(:(?<port>\\d+))?(\\?transport=(?<transport>(tcp|udp)))?");
+            "(?<protocol>stun|turn|turns):(?<host>(\\w|\\.)+)(:(?<port>\\d+))?(\\?transport=(?<transport>(tcp|udp)))?");
 
     public boolean hasAcceptableLatency() {
         OptionalDouble rtt = this.getRoundTripTime().join();
@@ -39,16 +37,6 @@ public class IceServer {
 
     public static Pair<List<IceServer>, Set<CoturnServer>> mapperFromMap(List<Map<String, Object>> iceServersData) {
         List<IceServer> iceServers = new ArrayList<>();
-        // For caching RTT to a given host (the same host can appear in multiple urls)
-        LoadingCache<String, CompletableFuture<OptionalDouble>> hostRTTCache = CacheBuilder.newBuilder()
-                .build(new CacheLoader<>() {
-                    @Override
-                    public CompletableFuture<OptionalDouble> load(String host) {
-                        return PingWrapper.getLatency(host, IceAdapter.getPingCount())
-                                .thenApply(OptionalDouble::of)
-                                .exceptionally(ex -> OptionalDouble.empty());
-                    }
-                });
 
         Set<CoturnServer> coturnServers = new HashSet<>();
 
@@ -97,12 +85,12 @@ public class IceServer {
                             TransportAddress address = new TransportAddress(host, port, transport);
                             switch (uri.getScheme()) {
                                 case STUN -> iceServer.getStunAddresses().add(address);
-                                case TURN -> iceServer.getTurnAddresses().add(address);
+                                case TURNS, TURN -> iceServer.getTurnAddresses().add(address);
                                 default -> log.warn("Invalid ICE server protocol: {}", uri);
                             }
 
                             if (IceAdapter.getPingCount() > 0) {
-                                iceServer.setRoundTripTime(hostRTTCache.getUnchecked(host));
+                                iceServer.setRoundTripTime(PingUtil.getLatency(host));
                             }
 
                             coturnServers.add(new CoturnServer("n/a", host, port, null));
