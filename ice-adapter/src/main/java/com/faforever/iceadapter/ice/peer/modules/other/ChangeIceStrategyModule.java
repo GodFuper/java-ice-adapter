@@ -1,8 +1,8 @@
 package com.faforever.iceadapter.ice.peer.modules.other;
 
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +13,6 @@ import org.ice4j.ice.Agent;
 public class ChangeIceStrategyModule implements ModuleBase, PeerEventListener {
 
     private final Peer peer;
-
-    private boolean running = false;
 
     @Setter
     private boolean enabled = true;
@@ -37,10 +35,8 @@ public class ChangeIceStrategyModule implements ModuleBase, PeerEventListener {
         }
 
         if (agent == null) {
-            running = false;
             return;
         }
-        running = true;
         agent.setNominationStrategy(peer.getAgentStrategy().getStrategy());
     }
 

@@ -5,6 +5,7 @@ import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.PingUtil;
 import kotlin.Pair;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.Transport;
 import org.ice4j.TransportAddress;
@@ -16,23 +17,57 @@ import java.util.regex.Pattern;
 
 @Data
 @Slf4j
+@RequiredArgsConstructor
 public class IceServer {
+    private static final List<TransportAddress> PUBLIC_STUN_SERVERS = List.of(
+            new TransportAddress("stun.cloudflare.com", 3478, Transport.UDP),
+            new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
+            new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
+
     private static final String STUN = "stun";
     private static final String TURN = "turn";
     private static final String TURNS = "turns";
 
-    private List<TransportAddress> stunAddresses = new ArrayList<>();
-    private List<TransportAddress> turnAddresses = new ArrayList<>();
+    private final TypeServer type;
+    private final TransportAddress address;
     private String turnUsername = "";
     private String turnCredential = "";
+    private boolean enabled = true;
     private CompletableFuture<OptionalDouble> roundTripTime = CompletableFuture.completedFuture(OptionalDouble.empty());
 
     public static final Pattern urlPattern = Pattern.compile(
             "(?<protocol>stun|turn|turns):(?<host>(\\w|\\.)+)(:(?<port>\\d+))?(\\?transport=(?<transport>(tcp|udp)))?");
 
-    public boolean hasAcceptableLatency() {
-        OptionalDouble rtt = this.getRoundTripTime().join();
-        return rtt.isEmpty() || rtt.getAsDouble() < IceAdapter.getAcceptableLatency();
+    public boolean hasAcceptableLatency(double latency) {
+        OptionalDouble rtt = roundTripTime.join();
+        return rtt.isEmpty() || rtt.getAsDouble() < latency;
+    }
+
+    public String strTripTime() {
+        try {
+            OptionalDouble rtt = roundTripTime.join();
+            if (rtt.isPresent()) {
+                return "%dms".formatted(Math.round(rtt.getAsDouble()));
+            }
+
+            return "-";
+        } catch (Exception e) {
+            return "Error";
+        }
+    }
+
+    public boolean isStun() {
+        return type == TypeServer.STUN;
+    }
+
+    public boolean isTurn() {
+        return type == TypeServer.TURN;
+    }
+
+    public static List<IceServer> createPublicServers() {
+        return PUBLIC_STUN_SERVERS.stream()
+                .map(stunServer -> new IceServer(TypeServer.STUN, stunServer))
+                .toList();
     }
 
     public static Pair<List<IceServer>, Set<CoturnServer>> mapperFromMap(List<Map<String, Object>> iceServersData) {
@@ -41,14 +76,7 @@ public class IceServer {
         Set<CoturnServer> coturnServers = new HashSet<>();
 
         for (Map<String, Object> iceServerData : iceServersData) {
-            IceServer iceServer = new IceServer();
 
-            if (iceServerData.containsKey("username")) {
-                iceServer.setTurnUsername((String) iceServerData.get("username"));
-            }
-            if (iceServerData.containsKey("credential")) {
-                iceServer.setTurnCredential((String) iceServerData.get("credential"));
-            }
 
             if (iceServerData.containsKey("urls")) {
                 List<String> urls;
@@ -83,23 +111,36 @@ public class IceServer {
                                     .orElse(Transport.UDP);
 
                             TransportAddress address = new TransportAddress(host, port, transport);
+                            TypeServer type = TypeServer.TURN;
                             switch (uri.getScheme()) {
-                                case STUN -> iceServer.getStunAddresses().add(address);
-                                case TURNS, TURN -> iceServer.getTurnAddresses().add(address);
+                                case STUN -> type = TypeServer.STUN;
+                                case TURNS, TURN -> type = TypeServer.TURN;
                                 default -> log.warn("Invalid ICE server protocol: {}", uri);
                             }
-
+                            IceServer iceServer = new IceServer(type, address);
+                            if (iceServerData.containsKey("username")) {
+                                iceServer.setTurnUsername((String) iceServerData.get("username"));
+                            }
+                            if (iceServerData.containsKey("credential")) {
+                                iceServer.setTurnCredential((String) iceServerData.get("credential"));
+                            }
                             if (IceAdapter.getPingCount() > 0) {
                                 iceServer.setRoundTripTime(PingUtil.getLatency(host));
                             }
+                            iceServers.add(iceServer);
 
                             coturnServers.add(new CoturnServer("n/a", host, port, null));
                         });
             }
 
-            iceServers.add(iceServer);
+
         }
 
         return new Pair<>(iceServers, coturnServers);
+    }
+
+    public enum TypeServer {
+        STUN,
+        TURN;
     }
 }

@@ -1,9 +1,11 @@
 package com.faforever.iceadapter.ice;
 
-import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.IceTrigger;
@@ -16,15 +18,12 @@ import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.TrayIcon;
 import kotlin.Pair;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.Transport;
-import org.ice4j.TransportAddress;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -33,32 +32,37 @@ import static com.faforever.iceadapter.debug.Debug.debug;
  * Is created by a JoinGame or HostGame event (via RPC), is destroyed by a gpgnet connection breakdown
  */
 @Slf4j
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class GameSession implements IceGameSession {
 
-    private static final List<TransportAddress> PUBLIC_STUN_SERVERS = List.of(
-            new TransportAddress("stun.cloudflare.com", 3478, Transport.UDP),
-            new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
-            new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
+    private static final List<IceServer> iceServers = createIceServers();
 
-    private static final List<OneIceServer> iceServers = createIceServers();
-
-    public static List<OneIceServer> getAllServers() {
+    public static List<IceServer> getAllServers() {
         return iceServers;
     }
 
     @Getter
     private final Map<Integer, Peer> peers = new ConcurrentHashMap<>();
 
+    private final RPCService rpcService;
+    private final IceOptions options;
+
     private final IceAsync iceAsync = new IceAsyncImpl(ExecutorHolder.getExecutor(), ExecutorHolder.getScheduledExecutor());
     private final ConnectService controlledConnectService = new ConnectServiceControlledImpl(this, iceAsync);
     private final ConnectService notControlledConnectService = new ConnectServiceNotControlledImpl(this, iceAsync);
     private final ConnectService connectServiceHandler = new ConnectServiceHandler(controlledConnectService, notControlledConnectService);
     private final IceTrigger iceTrigger = new IceTrigger(iceAsync, connectServiceHandler);
+    private final IceServerChecker iceServerChecker;
 
     @Getter
     @Setter
     private volatile boolean gameEnded = false;
+
+    public GameSession(RPCService rpcService, IceOptions options) {
+        this.rpcService = rpcService;
+        this.options = options;
+        iceServerChecker = new IceServerChecker(options, this);
+    }
 
     /**
      * Initiates a connection to a peer (ICE)
@@ -75,10 +79,10 @@ public class GameSession implements IceGameSession {
             debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
             return peers.get(remotePlayerId).getLocalPort();
         }
-        Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort());
+        Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort(), getDisabledModules());
         peer.init();
         peer.setCombination(combination);
-        peer.initModules(iceAsync);
+        peer.initModules();
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();
         peers.put(remotePlayerId, peer);
@@ -119,10 +123,11 @@ public class GameSession implements IceGameSession {
         log.info("Closing gameSession");
         peers.values().forEach(Peer::close);
         peers.clear();
+        iceServerChecker.stop();
     }
 
 
-    public List<OneIceServer> getIceServers() {
+    public List<IceServer> getIceServers() {
         return iceServers;
     }
 
@@ -131,51 +136,32 @@ public class GameSession implements IceGameSession {
         return Optional.ofNullable(peers.get(peerId));
     }
 
-    public List<OneIceServer> getFilteredTurnIceServers() {
-        List<OneIceServer> allIceServers = iceServers;
-        if (IceAdapter.getPingCount() <= 0 || allIceServers.isEmpty()) {
-            return allIceServers;
+    private Set<PeerModule> getDisabledModules() {
+        Set<PeerModule> disabledModules = new HashSet<>();
+        if (!options.isManualStrategyConnection()) {
+            disabledModules.add(PeerModule.CHANGE_AGENT_STRATEGY);
         }
-
-        // Try servers with acceptable latency
-        List<OneIceServer> viableIceServers = allIceServers.stream()
-                .filter(OneIceServer::isTurn)
-                .filter(server -> server.hasAcceptableLatency(IceAdapter.getAcceptableLatency()))
-                .collect(Collectors.toList());
-        if (!viableIceServers.isEmpty()) {
-            log.info("Using all viable ice servers: {}",
-                    viableIceServers.stream()
-                            .map(OneIceServer::getAddress)
-                            .collect(Collectors.toSet()));
-            return viableIceServers;
+        if (options.isForceRelay() || options.isManualCombinationConnection()) {
+            disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
         }
-
-        log.info("Using all ice servers: {}",
-                allIceServers.stream()
-                        .map(OneIceServer::getAddress)
-                        .collect(Collectors.toSet()));
-        return allIceServers;
+        return disabledModules;
     }
 
-
-    public static List<OneIceServer> createIceServers() {
-        List<OneIceServer> iceServers = new ArrayList<>();
+    public static List<IceServer> createIceServers() {
+        List<IceServer> iceServers = new ArrayList<>();
         addDefaultIceServers(iceServers);
         return iceServers;
     }
 
-    public static void addDefaultIceServers(List<OneIceServer> iceServers) {
-        PUBLIC_STUN_SERVERS.forEach(stunServer -> {
-            var iceServer = new OneIceServer(OneIceServer.TypeServer.STUN, stunServer);
-            iceServers.add(iceServer);
-        });
+    public static void addDefaultIceServers(List<IceServer> iceServers) {
+        iceServers.addAll(IceServer.createPublicServers());
     }
 
     /**
      * Set ice servers (to be used for harvesting candidates)
      * Called by the client via jsonRPC
      */
-    public static void setIceServers(List<Map<String, Object>> iceServersData) {
+    public void setIceServers(List<Map<String, Object>> iceServersData) {
         iceServers.clear();
         addDefaultIceServers(iceServers);
 
@@ -183,16 +169,17 @@ public class GameSession implements IceGameSession {
             return;
         }
 
-        Pair<List<OneIceServer>, Set<CoturnServer>> pair = OneIceServer.mapperFromMap(iceServersData);
+        Pair<List<IceServer>, Set<CoturnServer>> pair = IceServer.mapperFromMap(iceServersData);
 
         iceServers.addAll(pair.getFirst());
         debug().updateCoturnList(pair.getSecond());
 
+        iceServerChecker.start();
         log.info("Ice Servers set, total addresses: {}", iceServers.size());
     }
 
-    public void onIceMessageReceived(Peer peer, CandidatesMessage message) {
-        iceAsync.runAsync(peer, () -> connectServiceHandler.onIceMessageReceived(peer, message));
+    public void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
+        iceAsync.runAsync("onIceMessageFromRPC", peer, () -> connectServiceHandler.onMessageFromRPC(peer, message));
     }
 
     @Override
@@ -202,17 +189,17 @@ public class GameSession implements IceGameSession {
 
     @Override
     public int getMyId() {
-        return IceAdapter.getId();
+        return options.getId();
     }
 
     @Override
     public void sendToRpc(CandidatesMessage message) {
-        IceAdapter.INSTANCE.getRpcService().onIceMsg(message);
+        rpcService.onIceMsg(message);
     }
 
     @Override
     public void onConnected(Peer peer, boolean connected) {
-        IceAdapter.INSTANCE.getRpcService().onConnected(getMyId(), peer.getRemoteId(), connected);
+        rpcService.onConnected(getMyId(), peer.getRemoteId(), connected);
     }
 
     @Override

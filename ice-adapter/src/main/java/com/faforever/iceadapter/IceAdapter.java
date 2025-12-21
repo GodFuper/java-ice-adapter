@@ -1,6 +1,7 @@
 package com.faforever.iceadapter;
 
 import com.faforever.iceadapter.debug.Debug;
+import com.faforever.iceadapter.debug.TelemetryDebugger;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.GameSession;
@@ -10,10 +11,8 @@ import com.faforever.iceadapter.util.TrayIcon;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.StackProperties;
 import picocli.CommandLine;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
@@ -29,6 +28,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     private static String VERSION = "SNAPSHOT";
 
     @CommandLine.ArgGroup(exclusive = false)
+    @Getter
     private IceOptions iceOptions;
 
     @Getter
@@ -41,15 +41,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     public static void main(String[] args) {
         new CommandLine(new IceAdapter()).setUnmatchedArgumentsAllowed(true).execute(args);
-    }
-
-    private void settingIce4j() {
-
-        List<String> list = List.of(StackProperties.FIRST_CTRAN_RETRANS_AFTER, StackProperties.MAX_CTRAN_RETRANS_TIMER, StackProperties.KEEP_CRANS_AFTER_A_RESPONSE);
-
-        list.forEach(key -> {
-            log.info("Setting Ice4j property {}={}", key, System.getProperty(key));
-        });
     }
 
     @Override
@@ -69,6 +60,9 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         gpgNetServer.init(this, rpcService);
         rpcService.init(gpgNetServer, this);
 
+        var telemetryDebugger = new TelemetryDebugger(gpgNetServer, iceOptions.getTelemetryServer(), iceOptions.getGameId(), iceOptions.getId());
+        Debug.register(telemetryDebugger);
+
         Debug.DELAY_UI_MS = iceOptions.getDelayUi();
         Debug.ENABLE_DEBUG_WINDOW = iceOptions.isDebugWindow();
         Debug.ENABLE_INFO_WINDOW = iceOptions.isInfoWindow();
@@ -77,9 +71,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         TrayIcon.create();
 
 
-
         debug().startupComplete();
-        settingIce4j();
     }
 
     @Override
@@ -155,7 +147,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
                 log.warn("Error closing previous GAME_SESSION", e);
             }
         }
-        GameSession gameSession = new GameSession();
+        GameSession gameSession = new GameSession(rpcService, iceOptions);
         setGameSession(gameSession);
         return gameSession;
     }

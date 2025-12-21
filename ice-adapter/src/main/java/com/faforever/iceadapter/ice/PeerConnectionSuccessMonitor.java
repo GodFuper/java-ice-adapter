@@ -8,7 +8,6 @@ import org.ice4j.ice.*;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.Map;
 import java.util.concurrent.*;
 
 import static org.ice4j.ice.Agent.PROPERTY_ICE_PROCESSING_STATE;
@@ -17,7 +16,7 @@ import static org.ice4j.ice.Agent.PROPERTY_ICE_PROCESSING_STATE;
 @RequiredArgsConstructor
 public class PeerConnectionSuccessMonitor implements PropertyChangeListener, AgentSuccessMonitor {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final Map<CandidatePair, ScheduledFuture<?>> pendingPairs = new ConcurrentHashMap<>();
+    private ScheduledFuture<?> scheduledFuture;
     private CompletableFuture<Boolean> future;
     private String name = "";
     private final long timeoutMs;
@@ -49,9 +48,8 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
         agent.addStateChangeListener(this);
         mediaStream.addPairChangeListener(this);
 
-        for (CandidatePair pair : mediaStream.getCheckList()) {
-            scheduleTimeoutCheck(pair);
-        }
+        scheduledFuture = scheduler.schedule(this::agentTimeoutFailed, timeoutMs, TimeUnit.MILLISECONDS);
+
         return future;
     }
 
@@ -74,40 +72,28 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
         }
     }
 
-    private void scheduleTimeoutCheck(CandidatePair pair) {
-        ScheduledFuture<?> future = scheduler.schedule(() -> {
-            if (pendingPairs.remove(pair) != null) {
-                onPairTimeout(pair);
-            }
-        }, timeoutMs, TimeUnit.MILLISECONDS);
-
-        pendingPairs.put(pair, future);
-    }
-
     private void onPairSucceeded(CandidatePair pair) {
-        String oldThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
+        Thread.currentThread().setName(name);
         log.debug("✅ Successful: Pair is SUCCEEDED: {}", pair);
         future.complete(true);
     }
 
-    private void onPairTimeout(CandidatePair pair) {
-        String oldThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
-        log.info("❌ Timeout: Pair not state SUCCEEDED by {} ms: {}", timeoutMs, pair);
-        future.complete(true);
+    private void agentTimeoutFailed() {
+        Thread.currentThread().setName(name);
+        log.info("❌ Timeout: Time has run out to try to connect by {} ms", timeoutMs);
+        future.complete(false);
     }
 
     private void agentConnectionFailed() {
-        String oldThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName("%s-%s".formatted(oldThreadName, name));
+        Thread.currentThread().setName(name);
         log.warn("❌ Agent state failed");
         future.complete(false);
     }
 
     public void shutdown() {
         scheduler.shutdown();
-        pendingPairs.values().forEach(f -> f.cancel(true));
-        pendingPairs.clear();
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(true);
+        }
     }
 }

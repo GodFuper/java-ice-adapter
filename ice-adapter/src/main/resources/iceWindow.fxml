@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import java.net.URL?>
 <AnchorPane fx:id="root" prefHeight="700.0" xmlns="http://javafx.com/javafx/8.0.121"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.faforever.iceadapter.debug.WindowController">
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.faforever.iceadapter.ui.controller.WindowController">
     <children>
 
         <VBox AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0"
@@ -51,6 +51,7 @@
                             <TableColumn fx:id="hostColumn" text="host"/>
                             <TableColumn fx:id="reflexiveColumn" text="reflexive"/>
                             <TableColumn fx:id="relayColumn" text="relay"/>
+                            <TableColumn fx:id="reconnectColumn" text="reconnect"/>
                             <TableColumn fx:id="stateColumn" text="state"/>
                             <TableColumn fx:id="pairConColumn" text="pair" prefWidth="100"/>
                             <TableColumn fx:id="agentStateColumn" text="agent"/>
@@ -61,17 +62,16 @@
                         </columns>
                     </TableView>
                 </VBox>
-                <!-- Панель действий справа -->
+
                 <VBox fx:id="peerActionPane" visible="false" managed="false"
                       spacing="10" minWidth="150" prefWidth="150"
                       style="-fx-border-color: gray; -fx-border-width: 2"
                       VBox.vgrow="ALWAYS">
 
-                    <!-- Заголовок и крестик в одной строке -->
                     <HBox spacing="5" alignment="CENTER_LEFT">
                         <Label fx:id="peerActionTitle" text="Peer" style="-fx-font-weight: bold;"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <!-- Крестик -->
+
                         <Label text="✕"
                                style="-fx-cursor: hand; -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: gray;"
                                HBox.hgrow="NEVER"
@@ -89,7 +89,7 @@
                                   prefWidth="Infinity"
                                   HBox.hgrow="ALWAYS"/>
 
-                        <ComboBox fx:id="connectionModeComboBox"
+                        <ComboBox fx:id="connectionStrategyComboBox"
                                   prefWidth="Infinity"
                                   HBox.hgrow="ALWAYS"/>
                     </VBox>

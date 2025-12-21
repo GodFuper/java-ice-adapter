@@ -1,7 +1,10 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.LogoUtils;
+import com.faforever.iceadapter.debug.Debug;
+import com.faforever.iceadapter.services.impl.UIAdapterImpl;
+import com.faforever.iceadapter.ui.controller.WindowController;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -33,9 +36,8 @@ public class IceWindow extends Application {
             stage.getIcons().add(logo);
         });
 
-
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/debugWindow2.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/iceWindow.fxml"));
             root = loader.load();
 
             controller = loader.getController();
@@ -55,8 +57,7 @@ public class IceWindow extends Application {
         if (Debug.ENABLE_DEBUG_WINDOW) {
             CompletableFuture.runAsync(
                     () -> runOnUIThread(stage::show),
-                    CompletableFuture.delayedExecutor(
-                            Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
+                    CompletableFuture.delayedExecutor(Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
         }
 
         log.info("Created debug window.");
@@ -65,6 +66,8 @@ public class IceWindow extends Application {
     public void showWindow() {
         runOnUIThread(() -> {
             stage.show();
+            stage.toFront();
+            stage.requestFocus();
         });
     }
 

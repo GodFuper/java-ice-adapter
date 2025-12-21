@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.debug;
 
-import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.ui.IceWindow;
+import com.faforever.iceadapter.ui.InfoWindow;
 import javafx.application.Platform;
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,18 +10,9 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class Debug {
-    // TODO
-    public static boolean ENABLE_DEBUG_WINDOW_LOG_TEXT_AREA =
-            false; // disabled as this causes high memory and cpu load, should be replaced by limiting the number of
-    // lines in the text area
-
     public static boolean ENABLE_DEBUG_WINDOW = false;
     public static boolean ENABLE_INFO_WINDOW = false;
     public static int DELAY_UI_MS = 0; // delays the launch of the user interface by X ms
-
-    public static int RPC_PORT;
-
-    private static TelemetryDebugger telemetryDebugger;
 
     private static final DebugFacade debugFacade = new DebugFacade();
 
@@ -33,19 +25,14 @@ public class Debug {
     }
 
     public static void init() {
-        telemetryDebugger =
-                new TelemetryDebugger(IceAdapter.INSTANCE.getGpgNetServer(), IceAdapter.getTelemetryServer(), IceAdapter.getGameId(), IceAdapter.getId());
-        register(telemetryDebugger);
         if (isJavaFxSupported()) {
             CompletableFuture.runAsync(IceWindow::launch);
 
             if (Debug.ENABLE_INFO_WINDOW) {
                 CompletableFuture.runAsync(
                         () -> runOnUIThread(InfoWindow::launch),
-                        CompletableFuture.delayedExecutor(
-                                Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
+                        CompletableFuture.delayedExecutor(Debug.DELAY_UI_MS, TimeUnit.MILLISECONDS));
             }
-
 
         } else {
             log.info("No JavaFX support detected. Running without debug window.");
@@ -53,10 +40,7 @@ public class Debug {
     }
 
     public static void close() {
-        if (telemetryDebugger != null) {
-            telemetryDebugger.close();
-            telemetryDebugger = null;
-        }
+        debugFacade.close();
     }
 
     public static Debugger debug() {

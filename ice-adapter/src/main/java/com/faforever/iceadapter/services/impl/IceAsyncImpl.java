@@ -6,7 +6,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 public class IceAsyncImpl implements IceAsync {
@@ -29,13 +32,8 @@ public class IceAsyncImpl implements IceAsync {
                 CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, executorService));
     }
 
-    @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(Peer peer, Runnable runnable, long delayMs) {
-        return scheduledExecutorService.scheduleAtFixedRate(() -> doBeforeRun(peer, runnable), 0, delayMs, TimeUnit.MILLISECONDS);
-    }
-
     private void doBeforeRun(String methodName, Peer peer, Runnable runnable) {
-        Thread.currentThread().setName(createNameForThread(methodName, getNameForThread(peer)));
+        Thread.currentThread().setName(createNameForThread(methodName, getPeerName(peer)));
         runnable.run();
     }
 
@@ -53,7 +51,7 @@ public class IceAsyncImpl implements IceAsync {
         return joiner.toString();
     }
 
-    private String getNameForThread(Peer peer) {
+    private String getPeerName(Peer peer) {
         return Optional.ofNullable(peer)
                 .map(Peer::getPeerIdentifier)
                 .orElse(null);

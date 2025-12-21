@@ -1,7 +1,10 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui.controller;
 
+import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import com.faforever.iceadapter.services.UIAdapter;
+import com.faforever.iceadapter.ui.IceServerWindow;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -14,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,32 +40,34 @@ public class WindowController {
     private Label rpcServerStatus, rpcClientStatus, gpgnetServerStatus, gpgnetClientStatus, gameState;
 
     @FXML
-    private TableView<PeerInfo> peerTable;
+    private TableView<PeerView> peerTable;
     @FXML
-    private TableColumn<PeerInfo, Integer> idColumn;
+    private TableColumn<PeerView, Integer> idColumn;
     @FXML
-    private TableColumn<PeerInfo, String> loginColumn;
+    private TableColumn<PeerView, String> loginColumn;
     @FXML
-    private TableColumn<PeerInfo, String> pairConColumn;
+    private TableColumn<PeerView, String> pairConColumn;
     @FXML
-    private TableColumn<PeerInfo, String> stateColumn;
+    private TableColumn<PeerView, String> reconnectColumn;
     @FXML
-    private TableColumn<PeerInfo, String> agentStateColumn;
+    private TableColumn<PeerView, String> stateColumn;
     @FXML
-    private TableColumn<PeerInfo, String> offerColumn;
+    private TableColumn<PeerView, String> agentStateColumn;
     @FXML
-    private TableColumn<PeerInfo, String> rttColumn;
+    private TableColumn<PeerView, String> offerColumn;
     @FXML
-    private TableColumn<PeerInfo, String> lastColumn;
+    private TableColumn<PeerView, String> rttColumn;
     @FXML
-    private TableColumn<PeerInfo, String> echosRcvColumn;
+    private TableColumn<PeerView, String> lastColumn;
     @FXML
-    private TableColumn<PeerInfo, Boolean> hostColumn;
+    private TableColumn<PeerView, String> echosRcvColumn;
+    @FXML
+    private TableColumn<PeerView, Boolean> hostColumn;
 
     @FXML
-    private TableColumn<PeerInfo, Boolean> reflexiveColumn;
+    private TableColumn<PeerView, Boolean> reflexiveColumn;
     @FXML
-    private TableColumn<PeerInfo, Boolean> relayColumn;
+    private TableColumn<PeerView, Boolean> relayColumn;
 
     @FXML
     private VBox peerActionPane;
@@ -72,7 +78,7 @@ public class WindowController {
     @FXML
     private ComboBox<AllowCombination> allowCombinationComboBox;
     @FXML
-    private ComboBox<IceAgentStrategy> connectionModeComboBox;
+    private ComboBox<IceAgentStrategy> connectionStrategyComboBox;
 
     @FXML
     private TextArea pairCandidateInfoArea;
@@ -80,11 +86,11 @@ public class WindowController {
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
-    private PeerInfo selectedPeer;
+    private PeerView selectedPeer;
 
     public void openSettingsStunAndTurn() {
         CompletableFuture.runAsync(
-                () -> runOnUIThread(IceServerTableView::launch));
+                () -> runOnUIThread(IceServerWindow::launch));
     }
 
     public void initialize() {
@@ -92,11 +98,6 @@ public class WindowController {
         setupPeerTable();
         startPeriodicUpdates();
         updateAllInfo();
-    }
-
-    public void resizeRoot() {
-        Stage stage = (Stage) root.getScene().getWindow();
-        stage.sizeToScene();
     }
 
     public void setAdapter(UIAdapter adapter) {
@@ -136,6 +137,35 @@ public class WindowController {
         reflexiveColumn.setCellFactory(CheckBoxTableCell.forTableColumn(reflexiveColumn));
         relayColumn.setCellValueFactory(peer -> peer.getValue().getAdditionalInfo().getAllowRelay());
         relayColumn.setCellFactory(CheckBoxTableCell.forTableColumn(relayColumn));
+
+        reconnectColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button button = new Button("Reconnect");
+
+            {
+                button.setOnAction(event -> {
+                    PeerView peer = getTableView().getItems().get(getIndex());
+                    if (peer != null && adapter != null) {
+                        adapter.reconnect(peer);
+                    }
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    PeerView peer = getTableView().getItems().get(getIndex());
+                    if (peer != null) {
+                        button.setDisable(!peer.getConnected().get());
+                        setGraphic(button);
+                    } else {
+                        setGraphic(null);
+                    }
+                }
+            }
+        });
     }
 
     @FXML
@@ -146,32 +176,37 @@ public class WindowController {
         peerTable.getSelectionModel().clearSelection();
     }
 
-    private void setSelectedPeer(PeerInfo peer) {
+    private void setSelectedPeer(PeerView peer) {
+
+        if (!isAdditionalPanelEnabled()) {
+            return;
+        }
 
         if (Objects.equals(selectedPeer, peer)) {
             return;
         }
 
         if (peer == null) {
-            // спрятать панель
+            // Hide panel
             peerActionPane.setVisible(false);
             peerActionPane.setManaged(false);
             selectedPeer = null;
             return;
         }
         selectedPeer = peer;
-        // показать панель
+        // Show panel
         peerActionPane.setVisible(true);
         peerActionPane.setManaged(true);
 
-        // обновить заголовок или действия
         peerActionTitle.setText(peer.getLogin().get());
 
         allowCombinationComboBox.getItems().setAll(AllowCombination.values());
         allowCombinationComboBox.setValue(peer.getAdditionalInfo().getCombination());
+        allowCombinationComboBox.setVisible(adapter.isEnabledManualCombinationConnection());
 
-        connectionModeComboBox.getItems().setAll(IceAgentStrategy.values());
-        connectionModeComboBox.setValue(peer.getAdditionalInfo().getAgentStrategy());
+        connectionStrategyComboBox.getItems().setAll(IceAgentStrategy.values());
+        connectionStrategyComboBox.setValue(peer.getAdditionalInfo().getAgentStrategy());
+        connectionStrategyComboBox.setVisible(adapter.isEnabledManualStrategyConnection());
 
         allowCombinationComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!Objects.equals(oldValue, newValue)) {
@@ -179,7 +214,7 @@ public class WindowController {
             }
         });
 
-        connectionModeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+        connectionStrategyComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!Objects.equals(oldValue, newValue)) {
                 adapter.setStrategy(peer, newValue);
             }
@@ -192,13 +227,22 @@ public class WindowController {
         updatePairCandidateInfo(peer.getAdditionalInfo().getGetFullCandidateInfo().get());
     }
 
+    private boolean isAdditionalPanelEnabled() {
+        return Optional.ofNullable(adapter)
+                .map(adapter -> adapter.isEnabledAdditionalPeerInfo()
+                        || adapter.isEnabledManualCombinationConnection()
+                        || adapter.isEnabledManualStrategyConnection())
+                .orElse(false);
+    }
+
     private void updatePairCandidateInfo(String info) {
         if (StringUtils.isEmpty(info)) {
             pairCandidateInfoArea.setText("No candidate information available.");
         } else {
             pairCandidateInfoArea.setText(info);
         }
-        pairCandidateInfoArea.setScrollTop(0); // Прокрутка наверх
+        pairCandidateInfoArea.setScrollTop(0);
+        pairCandidateInfoArea.setVisible(adapter.isEnabledAdditionalPeerInfo());
     }
 
     private void updateAllInfo() {
@@ -206,31 +250,26 @@ public class WindowController {
             return;
         }
 
-        // Пример обновления меток
         versionLabel.setText("Version: %s".formatted(adapter.getVersion()));
         userLabel.setText("User: %s(%s)".formatted(adapter.getUsername(), adapter.getUserId()));
         rpcPortLabel.setText("RPC_PORT: %s".formatted(adapter.getRpcPort()));
         gpgnetPortLabel.setText("GPGNET_PORT: %s".formatted(adapter.getGpgNetPort()));
         lobbyPortLabel.setText("LOBBY_PORT: %s".formatted(adapter.getLobbyPort()));
 
-        // Обновление статусов
         rpcServerStatus.setText("RPCServer: %s".formatted(adapter.getRpcServerStatus()));
         rpcClientStatus.setText("RPCClient: %s".formatted(adapter.getRpcClientStatus()));
         gpgnetServerStatus.setText("GPGNetServer: %s".formatted(adapter.getGpgNetServerStatus()));
         gpgnetClientStatus.setText("GPGNetClient: %s".formatted(adapter.getGpgNetClientStatus()));
         gameState.setText("GameState: %s".formatted(adapter.getGameState()));
 
-        // Обновление таблицы пиров
         Platform.runLater(() -> {
-            PeerInfo currentlySelected = peerTable.getSelectionModel().getSelectedItem();
+            PeerView currentlySelected = peerTable.getSelectionModel().getSelectedItem();
 
-            // Обновляем список
             peerTable.getItems().setAll(adapter.getPeerInfoList());
 
-            // Восстанавливаем выбор
             if (currentlySelected != null) {
                 boolean found = false;
-                for (PeerInfo p : peerTable.getItems()) {
+                for (PeerView p : peerTable.getItems()) {
                     if (Objects.equals(p, currentlySelected)) {
                         peerTable.getSelectionModel().select(p);
                         setSelectedPeer(p);
@@ -258,7 +297,6 @@ public class WindowController {
         }
     }
 
-    // Метод для закрытия окна
     public void close() {
         Stage stage = (Stage) root.getScene().getWindow();
         stage.close();

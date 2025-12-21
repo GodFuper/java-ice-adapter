@@ -18,6 +18,16 @@ public class FASocketModule implements ModuleBase {
 
     private final Peer peer;
 
+    public void firstStart() {
+        LockUtil.executeWithLock(peer.getLock(LOCK_MODULE), () -> {
+            try {
+                peer.setFaSocket(initForwarding(peer.getPreferredPort(), peer.getLocalPort()));
+            } catch (Exception e) {
+                log.error("Could not connect to FA for {}", peer.getPeerIdentifier(), e);
+            }
+        });
+    }
+
     @Override
     public void start() {
         LockUtil.executeWithLock(peer.getLock(LOCK_MODULE), this::checkSocket);

@@ -1,8 +1,8 @@
 package com.faforever.iceadapter.ice.peer.modules.ice;
 
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
@@ -12,12 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
 import org.ice4j.socket.MultiplexingDatagramSocket;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 
-import static com.faforever.iceadapter.ice.ConnectivityModule.COMMAND_ECHO;
+import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -86,7 +85,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 Thread.ofVirtual()
                         .name(threadComponentListenerName())
                         .start(() -> handlerData(peer, dataCopy, 0, dataCopy.length));
-            } catch (IOException e) {
+            } catch (Exception e) {
                 if (peer.isClosing()) {
                     break;
                 }

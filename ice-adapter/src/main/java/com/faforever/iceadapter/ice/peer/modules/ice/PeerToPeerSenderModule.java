@@ -1,26 +1,24 @@
 package com.faforever.iceadapter.ice.peer.modules.ice;
 
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
 
-import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 
 @Slf4j
 @RequiredArgsConstructor
 public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     private static final String LOCK_COMPONENT = "LockComponent";
-    private static final String LOCK_SOCKET = "LockIceSocket";
 
     private final Peer peer;
 
-    private boolean running = false;
-
+    @Setter
     private Component component;
     private Lock lockComponent;
 
@@ -31,10 +29,6 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void start() {
-    }
-
-    @Override
     public void stop() {
         LockUtil.executeWithLock(lockComponent, () -> setComponent(null));
     }
@@ -42,11 +36,6 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     @Override
     public void onIceComponentChange(Peer peer, Component component) {
         LockUtil.executeWithLock(lockComponent, () -> setComponent(component));
-    }
-
-    private void setComponent(Component component) {
-        this.component = component;
-        running = component != null;
     }
 
     @Override
@@ -66,7 +55,7 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
         try {
             component.send(data, offset, length);
             log.trace("Send to {} {} {}", peer.getPeerIdentifier(), offset, length);
-        } catch (IOException e) {
+        } catch (Exception e) {
             if (!peer.isClosing()) {
                 log.error("Send failed", e);
                 peer.lostConnect();

@@ -11,8 +11,6 @@ import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidate
 import com.faforever.iceadapter.ice.peer.modules.other.ChangeIceStrategyModule;
 import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
-import com.faforever.iceadapter.services.IceAsync;
-import kotlin.Pair;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -24,52 +22,24 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Getter
 public enum PeerModule implements Comparator<PeerModule> {
-    EVENT_BUS(0, components -> {
-        Peer peer = components.getFirst();
-        IceAsync async = components.getSecond();
-        return new EventBusModule(peer, async);
+    EVENT_BUS(0, EventBusModule::new),
+    FA_SOCKET_MODULE(1, peer -> {
+        var module = new FASocketModule(peer);
+        module.firstStart();
+        return module;
     }),
-    FA_SOCKET_MODULE(1, components -> {
-        Peer peer = components.getFirst();
-        ModuleBase module = new FASocketModule(peer);
+    FA_SENDER_MODULE(PeerToFaModule::new),
+    FA_REPEATER_MODULE(peer -> {
+        var module = new FaToPeerModule(peer);
         module.start();
         return module;
     }),
-    FA_SENDER_MODULE(components -> {
-        Peer peer = components.getFirst();
-        return new PeerToFaModule(peer);
-    }),
-    FA_REPEATER_MODULE(components -> {
-        Peer peer = components.getFirst();
-        FaToPeerModule module = new FaToPeerModule(peer);
-        module.start();
-        return module;
-    }),
-    CALCULATE_RTT(components -> {
-        Peer peer = components.getFirst();
-        return new RttCalculateModule(peer);
-    }),
-    ICE_TO_ICE_SENDER(components -> {
-        Peer peer = components.getFirst();
-        return new PeerToPeerSenderModule(peer);
-    }),
-    ICE_LISTENER_MODULE(components -> {
-        Peer peer = components.getFirst();
-        return new PeerToPeerListenerModule(peer);
-    }),
-    CONNECTION_CHECKER_MODULE(components -> {
-        Peer peer = components.getFirst();
-        IceAsync async = components.getSecond();
-        return new PeerConnectivityCheckerModule(peer, async);
-    }),
-    AUTO_SETTING_ALLOW_CANDIDATE(components -> {
-        Peer peer = components.getFirst();
-        return new AutoSettingAllowCandidates(peer);
-    }),
-    CHANGE_AGENT_STRATEGY(components -> {
-        Peer peer = components.getFirst();
-        return new ChangeIceStrategyModule(peer);
-    });
+    CALCULATE_RTT(RttCalculateModule::new),
+    ICE_TO_ICE_SENDER(PeerToPeerSenderModule::new),
+    ICE_LISTENER_MODULE(PeerToPeerListenerModule::new),
+    CONNECTION_CHECKER_MODULE(PeerConnectivityCheckerModule::new),
+    AUTO_SETTING_ALLOW_CANDIDATE(AutoSettingAllowCandidates::new),
+    CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new);
 
     @Getter
     private static final List<PeerModule> sortedModules = Stream.of(PeerModule.values())
@@ -77,14 +47,14 @@ public enum PeerModule implements Comparator<PeerModule> {
             .toList();
 
     private final int priority;
-    private final Function<Pair<Peer, IceAsync>, ModuleBase> createModule;
+    private final Function<Peer, ModuleBase> createModule;
 
-    PeerModule(Function<Pair<Peer, IceAsync>, ModuleBase> createModule) {
+    PeerModule(Function<Peer, ModuleBase> createModule) {
         this(10, createModule);
     }
 
-    public ModuleBase createModule(Pair<Peer, IceAsync> components) {
-        ModuleBase module = createModule.apply(components);
+    public ModuleBase createModule(Peer peer) {
+        ModuleBase module = createModule.apply(peer);
         module.init();
         return module;
     }

@@ -1,9 +1,9 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.dto;
 
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.beans.property.*;
 import lombok.Data;
@@ -13,10 +13,10 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 @Data
-public class PeerInfo implements PeerEventListener {
+public class PeerView implements PeerEventListener {
     private final IntegerProperty id = new SimpleIntegerProperty();
     private final StringProperty login = new SimpleStringProperty();
-    private final StringProperty connected = new SimpleStringProperty();
+    private final BooleanProperty connected = new SimpleBooleanProperty();
     private final StringProperty localCand = new SimpleStringProperty();
     private final StringProperty remoteCand = new SimpleStringProperty();
     private final StringProperty pairConnection = new SimpleStringProperty();
@@ -38,11 +38,9 @@ public class PeerInfo implements PeerEventListener {
         private Supplier<String> getFullCandidateInfo;
     }
 
-    // Конструктор
-    public PeerInfo(int id, String login) {
+    public PeerView(int id, String login) {
         this.id.set(id);
         this.login.set(login);
-
     }
 
     @Override
@@ -61,7 +59,7 @@ public class PeerInfo implements PeerEventListener {
     }
 
     public void update(Peer peer) {
-        getConnected().set(String.valueOf(peer.isConnected()));
+        getConnected().set(peer.isConnected());
 
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
@@ -93,8 +91,8 @@ public class PeerInfo implements PeerEventListener {
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
-        PeerInfo peerInfo = (PeerInfo) object;
-        return Objects.equals(id.get(), peerInfo.id.get());
+        PeerView peerView = (PeerView) object;
+        return Objects.equals(id.get(), peerView.id.get());
     }
 
     @Override

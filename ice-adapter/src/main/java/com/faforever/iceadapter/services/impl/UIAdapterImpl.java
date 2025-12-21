@@ -1,13 +1,17 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.IceOptions;
+import com.faforever.iceadapter.dto.IceServerView;
+import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
-import com.faforever.iceadapter.ice.OneIceServer;
+import com.faforever.iceadapter.ice.IceServer;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
+import com.faforever.iceadapter.services.UIAdapter;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +29,7 @@ public class UIAdapterImpl implements UIAdapter {
 
     private final IceAdapter iceAdapter;
 
-    private final Map<Integer, PeerInfo> uiPeers = new ConcurrentHashMap<>();
+    private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
 
     private Optional<IceGameSession> getGameSession() {
         return Optional.ofNullable(iceAdapter.getGameSession());
@@ -75,7 +79,6 @@ public class UIAdapterImpl implements UIAdapter {
 
     @Override
     public String getRpcClientStatus() {
-        // В текущей реализации нет явного "клиента" RPC, только сервер
         return "N/A";
     }
 
@@ -100,7 +103,7 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public ObservableList<PeerInfo> getPeerInfoList() {
+    public ObservableList<PeerView> getPeerInfoList() {
         Map<Integer, Peer> peers = getGameSession()
                 .map(IceGameSession::getPeers)
                 .orElse(Collections.emptyMap());
@@ -128,18 +131,18 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public ObservableList<OneIceServerWrapper> getIceServersList() {
-        List<OneIceServer> servers = getGameSession().map(IceGameSession::getIceServers)
+    public ObservableList<IceServerView> getIceServersList() {
+        List<IceServer> servers = getGameSession().map(IceGameSession::getIceServers)
                 .orElse(Collections.emptyList());
 
         return FXCollections.observableArrayList(servers.stream()
-                .map(OneIceServerWrapper::new)
+                .map(IceServerView::new)
                 .toList());
     }
 
-    private PeerInfo toPeerInfo(Peer peer) {
-        PeerInfo info = uiPeers.computeIfAbsent(peer.getRemoteId(), id -> {
-            PeerInfo uiInfo = new PeerInfo(peer.getRemoteId(), peer.getRemoteLogin());
+    private PeerView toPeerInfo(Peer peer) {
+        PeerView info = uiPeers.computeIfAbsent(peer.getRemoteId(), id -> {
+            PeerView uiInfo = new PeerView(peer.getRemoteId(), peer.getRemoteLogin());
             peer.addEventListener(uiInfo);
             return uiInfo;
         });
@@ -150,7 +153,7 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public void reconnect(PeerInfo peer) {
+    public void reconnect(PeerView peer) {
         if (peer == null) {
             return;
         }
@@ -161,7 +164,7 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public void setAllowCombination(PeerInfo peer, AllowCombination combination) {
+    public void setAllowCombination(PeerView peer, AllowCombination combination) {
         if (peer == null || combination == null) {
             return;
         }
@@ -172,7 +175,7 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public void setStrategy(PeerInfo peer, IceAgentStrategy newStrategy) {
+    public void setStrategy(PeerView peer, IceAgentStrategy newStrategy) {
         if (peer == null || newStrategy == null) {
             return;
         }
@@ -180,6 +183,27 @@ public class UIAdapterImpl implements UIAdapter {
         getGameSession()
                 .flatMap(session -> session.getPeer(id))
                 .ifPresent(p -> p.setAgentStrategy(newStrategy));
+    }
+
+    @Override
+    public boolean isEnabledManualCombinationConnection() {
+        return Optional.ofNullable(iceAdapter.getIceOptions())
+                .map(IceOptions::isManualCombinationConnection)
+                .orElse(false);
+    }
+
+    @Override
+    public boolean isEnabledManualStrategyConnection() {
+        return Optional.ofNullable(iceAdapter.getIceOptions())
+                .map(IceOptions::isManualStrategyConnection)
+                .orElse(false);
+    }
+
+    @Override
+    public boolean isEnabledAdditionalPeerInfo() {
+        return Optional.ofNullable(iceAdapter.getIceOptions())
+                .map(IceOptions::isAdditionalInfoPeer)
+                .orElse(false);
     }
 
     @Override

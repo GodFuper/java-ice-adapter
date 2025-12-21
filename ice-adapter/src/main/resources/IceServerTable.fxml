@@ -5,7 +5,7 @@
 <?import java.net.URL?>
 <VBox fx:id="root" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.faforever.iceadapter.debug.IceServerController"
+      fx:controller="com.faforever.iceadapter.ui.controller.IceServerController"
       prefHeight="400.0">
     <TableView fx:id="tableView" editable="true" VBox.vgrow="ALWAYS">
         <columns>
@@ -13,7 +13,7 @@
             <TableColumn fx:id="transportColumn" text="Transport" editable="false"/>
             <TableColumn fx:id="addressColumn" prefWidth="300" text="Address" editable="false"/>
             <TableColumn fx:id="rttColumn" text="Rtt" editable="false"/>
-            <TableColumn fx:id="enabledColumn" text="Enabled" editable="true"/>
+            <TableColumn fx:id="enabledColumn" text="Enabled"/>
         </columns>
     </TableView>
 

@@ -1,6 +1,7 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui;
 
 import com.faforever.iceadapter.LogoUtils;
+import com.faforever.iceadapter.ui.controller.InfoWindowController;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -61,7 +62,6 @@ public class InfoWindow {
     public void showWindow() {
         runOnUIThread(() -> {
             this.stage.show();
-            Platform.setImplicitExit(true);
         });
     }
 

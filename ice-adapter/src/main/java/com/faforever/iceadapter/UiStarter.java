@@ -1,0 +1,22 @@
+package com.faforever.iceadapter;
+
+public class UiStarter {
+
+    public static void main(String[] args) {
+        String[] stubArgs = {
+                "--id=12345",
+                "--game-id=67890",
+                "--login=testUser",
+                "--gpgnet-port=5000",
+                "--rpc-port=5001",
+                "--lobby-port=5002",
+                "--debug-window=true",
+                "--info-window=true"
+        };
+
+        IceAdapter.main(stubArgs);
+
+        IceAdapter adapter = IceAdapter.INSTANCE;
+        adapter.onJoinGame("Player2", 123);
+    }
+}

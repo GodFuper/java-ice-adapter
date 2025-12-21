@@ -40,15 +40,15 @@ public class ConnectServiceHandler implements ConnectService {
     }
 
     @Override
-    public void onIceMessageReceived(Peer peer, CandidatesMessage message) {
+    public void onMessageFromRPC(Peer peer, CandidatesMessage message) {
         if (message == null || peer == null) {
             return;
         }
 
         if (peer.isLocalOffer()) {
-            controlledConnectService.onIceMessageReceived(peer, message);
+            controlledConnectService.onMessageFromRPC(peer, message);
         } else {
-            notControlledConnectService.onIceMessageReceived(peer, message);
+            notControlledConnectService.onMessageFromRPC(peer, message);
         }
     }
 }

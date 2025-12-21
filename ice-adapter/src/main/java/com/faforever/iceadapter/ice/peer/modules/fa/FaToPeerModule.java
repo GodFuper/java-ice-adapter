@@ -26,8 +26,6 @@ public class FaToPeerModule implements ModuleBase {
     private final Peer peer;
     private volatile Future<?> listener;
 
-    private volatile boolean isRunning = false;
-
     @Override
     public void start() {
         LockUtil.executeWithLock(peer.getLock(LOCK_MODULE), this::startListeners);
@@ -56,8 +54,6 @@ public class FaToPeerModule implements ModuleBase {
      * This method get's invoked by the thread listening for data from FA
      */
     private void faListener() {
-
-        isRunning = true;
         while (!peer.isClosing()) {
             DatagramSocket socket = peer.getFaSocket();
             if (socket != null) {
@@ -67,7 +63,6 @@ public class FaToPeerModule implements ModuleBase {
                 break;
             }
         }
-        isRunning = false;
         log.debug("No longer listening for messages from FA for peer");
     }
 

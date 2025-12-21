@@ -1,8 +1,8 @@
 package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

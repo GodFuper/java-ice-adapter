@@ -2,10 +2,8 @@ package com.faforever.iceadapter.ice.peer;
 
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
-import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.CandidateUtil;
 import kotlin.Pair;
 import lombok.Data;
@@ -20,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -35,6 +34,7 @@ public class Peer {
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
     private final int preferredPort;
     private final int lobbyPort;
+    private final Set<PeerModule> disabledModules;
 
     private String peerIdentifier;
 
@@ -71,10 +71,13 @@ public class Peer {
         peerIdentifier = "%s(%d)".formatted(remoteLogin, remoteId);
     }
 
-    public void initModules(IceAsync iceAsync) {
-        for (PeerModule module : PeerModule.getSortedModules()) {
-            modules.putIfAbsent(module, module.createModule(new Pair<>(this, iceAsync)));
-        }
+    public void initModules() {
+        PeerModule.getSortedModules()
+                .stream()
+                .filter(Predicate.not(disabledModules::contains))
+                .forEach((module) -> {
+                    modules.putIfAbsent(module, module.createModule(this));
+                });
     }
 
     public void startModules() {

@@ -155,7 +155,7 @@ public class GPGNetServer implements AutoCloseable {
                         sendGpgnetMessage(
                                 "CreateLobby",
                                 lobbyInitMode.getId(),
-                                GPGNetServer.getStaticLobbyPort(),
+                                lobbyPort,
                                 IceAdapter.getLogin(),
                                 IceAdapter.getId(),
                                 1);

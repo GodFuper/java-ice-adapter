@@ -69,4 +69,9 @@ public class DebugFacade implements Debugger {
     public void updateCoturnList(Collection<CoturnServer> servers) {
         debuggers.forEach(d -> d.updateCoturnList(servers));
     }
+
+    @Override
+    public void close() {
+        debuggers.forEach(Debugger::close);
+    }
 }

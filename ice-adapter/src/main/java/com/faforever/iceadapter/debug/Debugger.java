@@ -28,4 +28,7 @@ public interface Debugger {
     void peerConnectivityUpdate(Peer peer);
 
     default void updateCoturnList(Collection<CoturnServer> servers) {}
+
+    default void close() {
+    }
 }

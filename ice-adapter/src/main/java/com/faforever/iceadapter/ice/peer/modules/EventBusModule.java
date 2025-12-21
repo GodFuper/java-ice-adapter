@@ -2,9 +2,8 @@ package com.faforever.iceadapter.ice.peer.modules;
 
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Agent;
@@ -19,7 +18,6 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     private final CopyOnWriteArrayList<PeerEventListener> listeners = new CopyOnWriteArrayList<>();
 
     private final Peer peer;
-    private final IceAsync iceAsync;
 
     public void register(PeerEventListener listener) {
         listeners.add(listener);

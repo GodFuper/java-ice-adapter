@@ -1,7 +1,9 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.LogoUtils;
+import com.faforever.iceadapter.services.impl.UIAdapterImpl;
+import com.faforever.iceadapter.ui.controller.IceServerController;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -13,9 +15,9 @@ import static javafx.application.Application.STYLESHEET_MODENA;
 import static javafx.application.Application.setUserAgentStylesheet;
 
 @Slf4j
-public class IceServerTableView {
+public class IceServerWindow {
 
-    public static IceServerTableView INSTANCE;
+    public static IceServerWindow INSTANCE;
 
     private IceServerController controller;
 
@@ -48,19 +50,17 @@ public class IceServerTableView {
         primaryStage.show();
     }
 
-    // Wrapper class to make OneIceServer JavaFX-property friendly
-
-
     public void showWindow() {
         runOnUIThread(() -> {
-            this.stage.show();
-            Platform.setImplicitExit(true);
+            stage.show();
+            stage.toFront();
+            stage.requestFocus();
         });
     }
 
     public void minimize() {
         Platform.setImplicitExit(false);
-        runOnUIThread(this.stage::hide);
+        runOnUIThread(stage::hide);
     }
 
     private static void runOnUIThread(Runnable runnable) {
@@ -74,7 +74,7 @@ public class IceServerTableView {
     public static void launch() {
         log.info("Launching IceServerTableApp window.");
         if (INSTANCE == null) {
-            runOnUIThread(() -> new IceServerTableView().start(new Stage()));
+            runOnUIThread(() -> new IceServerWindow().start(new Stage()));
         } else {
             INSTANCE.showWindow();
         }

@@ -1,15 +1,17 @@
 package com.faforever.iceadapter.ice.peer.modules.other;
 
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.util.LockUtil;
 import com.google.common.primitives.Longs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import static com.faforever.iceadapter.debug.Debug.debug;
 
@@ -24,10 +26,11 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     public static final char COMMAND_ECHO = 'e';
     private static final String LOCK_CHECKER_MODULE = "PeerConnectivityCheckerModule";
 
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
     private static final int ECHO_INTERVAL = 1000;
     private static final int TIMEOUT_BEFORE_LOST_CONNECT = 10000;
     private final Peer peer;
-    private final IceAsync iceAsync;
 
     private ScheduledFuture<?> scheduledFuture;
 
@@ -51,9 +54,10 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
             }
 
             log.debug("Starting connectivity checker for peer");
-
-
-            scheduledFuture = iceAsync.scheduleAtFixedRate(peer, this::checkerThread, ECHO_INTERVAL);
+            scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::checkerThread,
+                    0,
+                    ECHO_INTERVAL,
+                    TimeUnit.MILLISECONDS);
         });
     }
 

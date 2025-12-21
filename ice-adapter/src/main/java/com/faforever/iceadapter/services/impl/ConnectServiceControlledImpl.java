@@ -78,7 +78,7 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
     }
 
     @Override
-    public void onIceMessageReceived(Peer peer, CandidatesMessage message) {
+    public void onMessageFromRPC(Peer peer, CandidatesMessage message) {
         LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> {
             onGetCandidates(peer, message);
         });

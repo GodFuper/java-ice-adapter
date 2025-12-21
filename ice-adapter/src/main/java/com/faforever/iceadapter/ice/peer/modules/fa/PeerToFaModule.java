@@ -1,9 +1,8 @@
 package com.faforever.iceadapter.ice.peer.modules.fa;
 
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.util.LockUtil;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,34 +11,17 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.locks.Lock;
 
 @Slf4j
 @RequiredArgsConstructor
 public class PeerToFaModule implements ModuleBase, PeerEventListener {
     private static final String LOCALHOST = "127.0.0.1";
-    private static final String LOCK_FA_SOCKET = "socket_fa";
-    private static final String LOCK_MODULE = "PeerToFaModule";
 
     private final Peer peer;
-    private Lock lock;
-
-    private boolean running = false;
 
     @Override
     public void init() {
         peer.addEventListener(this);
-        lock = peer.getLock(LOCK_FA_SOCKET);
-    }
-
-    @Override
-    public void start() {
-        LockUtil.executeWithLock(peer.getLock(LOCK_MODULE), this::checkSocket);
-    }
-
-    @Override
-    public void stop() {
-        LockUtil.executeWithLock(peer.getLock(LOCK_MODULE), this::stopSocket);
     }
 
     @Override
@@ -77,12 +59,5 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
         }
     }
 
-    private void checkSocket() {
-        running = true;
-    }
-
-    private void stopSocket() {
-        running = false;
-    }
 
 }

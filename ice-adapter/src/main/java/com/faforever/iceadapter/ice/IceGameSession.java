@@ -12,9 +12,7 @@ public interface IceGameSession {
 
     Optional<Peer> getPeer(int peerId);
 
-    List<OneIceServer> getFilteredTurnIceServers();
-
-    List<OneIceServer> getIceServers();
+    List<IceServer> getIceServers();
 
     boolean isGameEnded();
 

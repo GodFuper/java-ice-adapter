@@ -1,6 +1,9 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.debug.Debug;
+import com.faforever.iceadapter.ui.IceWindow;
+import com.faforever.iceadapter.ui.InfoWindow;
 import com.faforever.iceadapter.util.TrayIcon;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

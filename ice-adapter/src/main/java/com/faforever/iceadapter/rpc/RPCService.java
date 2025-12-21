@@ -2,10 +2,10 @@ package com.faforever.iceadapter.rpc;
 
 import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.debug.Debug;
-import com.faforever.iceadapter.debug.InfoWindow;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.CandidatesMessage;
+import com.faforever.iceadapter.ui.InfoWindow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -36,7 +36,6 @@ public class RPCService implements AutoCloseable {
     private String host;
 
     public void init(GPGNetServer gpgNetServer, FafRpcCallbacks callbacks) {
-        Debug.RPC_PORT = port;
         host = NOT_CONNECTION;
         log.info("Creating RPC server on port {}", port);
 

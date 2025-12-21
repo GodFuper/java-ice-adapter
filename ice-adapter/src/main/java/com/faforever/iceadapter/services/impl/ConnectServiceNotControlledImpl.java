@@ -64,7 +64,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
     }
 
     @Override
-    public void onIceMessageReceived(Peer peer, CandidatesMessage message) {
+    public void onMessageFromRPC(Peer peer, CandidatesMessage message) {
         LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> {
             logicOnIceMessageReceived(peer, message);
         });

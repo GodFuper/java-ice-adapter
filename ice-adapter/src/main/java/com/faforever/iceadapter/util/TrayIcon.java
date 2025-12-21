@@ -2,7 +2,7 @@ package com.faforever.iceadapter.util;
 
 import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.debug.Debug;
-import com.faforever.iceadapter.debug.InfoWindow;
+import com.faforever.iceadapter.ui.InfoWindow;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -48,7 +48,6 @@ public class TrayIcon {
                 } else {
                     InfoWindow.INSTANCE.showWindow();
                 }
-//                CompletableFuture.runAsync(InfoWindow::launch);
             }
 
             @Override

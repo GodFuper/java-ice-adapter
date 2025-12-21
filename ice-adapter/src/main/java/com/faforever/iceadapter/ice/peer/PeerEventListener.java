@@ -1,6 +1,6 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.peer;
 
-import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.IceState;
 import org.ice4j.ice.Agent;
 import org.ice4j.ice.Component;
 import org.ice4j.ice.IceMediaStream;

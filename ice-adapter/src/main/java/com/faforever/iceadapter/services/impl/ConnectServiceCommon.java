@@ -88,21 +88,20 @@ public abstract class ConnectServiceCommon {
         Agent agent = peer.getAgent();
         IceMediaStream mediaStream = peer.getMediaStream();
 
-        List<OneIceServer> servers = iceGameSession.getIceServers();
-        // For STUN all servers are relevant (latency is not an issue)
+        List<IceServer> servers = iceGameSession.getIceServers();
+
         servers.stream()
-                .filter(OneIceServer::isStun)
-                .filter(OneIceServer::isEnabled)
-                .map(OneIceServer::getAddress)
+                .filter(IceServer::isStun)
+                .filter(IceServer::isEnabled)
+                .map(IceServer::getAddress)
                 .forEach(address -> {
                     log.info("Add STUN harvester for {}", address.getHostName());
                     agent.addCandidateHarvester(new StunCandidateHarvester(address));
                 });
 
-        // TURN is latency sensitive
         servers.stream()
-                .filter(OneIceServer::isTurn)
-                .filter(OneIceServer::isEnabled)
+                .filter(IceServer::isTurn)
+                .filter(IceServer::isEnabled)
                 .forEach(iceServer -> {
                     var address = iceServer.getAddress();
                     var harvester = new TurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
