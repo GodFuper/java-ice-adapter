@@ -102,11 +102,7 @@ public class RPCHandler {
     }
 
     public void setIceServers(List<Map<String, Object>> iceServers) {
-        GameSession gameSession = IceAdapter.getGameSessionSafe();
-        if (gameSession == null) {
-            return;
-        }
-        gameSession.setIceServers(iceServers);
+        GameSession.setIceServers(iceServers);
     }
 
     @Deprecated(forRemoval = true)

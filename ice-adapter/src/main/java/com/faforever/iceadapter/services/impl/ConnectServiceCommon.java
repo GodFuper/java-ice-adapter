@@ -222,11 +222,16 @@ public abstract class ConnectServiceCommon {
 
     protected void onConnected(Peer peer) {
         log.info("ICE state connected");
+        Component component = IceUtils.getFirstComponent(peer.getMediaStream()).orElse(null);
+        if (component == null) {
+            log.warn("Fake connection {}", peer.getMediaStream());
+            connectLost(peer, true);
+            return;
+        }
+
+        peer.setComponent(component);
 
         iceGameSession.onConnected(peer, true);
-
-        Component component = IceUtils.getFirstComponent(peer.getMediaStream()).orElseThrow();
-        peer.setComponent(component);
 
         log.debug("ICE terminated, connected, candidate pair: {} ", peer.getStrCandidateTypes("|"));
 

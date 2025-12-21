@@ -33,6 +33,7 @@ public class IceServer {
     private String turnUsername = "";
     private String turnCredential = "";
     private boolean enabled = true;
+    private boolean auto = true;
     private CompletableFuture<OptionalDouble> roundTripTime = CompletableFuture.completedFuture(OptionalDouble.empty());
 
     public static final Pattern urlPattern = Pattern.compile(

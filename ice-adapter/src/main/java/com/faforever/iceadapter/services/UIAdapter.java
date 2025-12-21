@@ -107,6 +107,8 @@ public interface UIAdapter {
      */
     ObservableList<IceServerView> getIceServersList();
 
+    void setEnabledIceServer(IceServerView iceServer, boolean enabled);
+
     /**
      * Requests reconnection to the specified peer.
      *

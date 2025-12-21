@@ -140,6 +140,16 @@ public class UIAdapterImpl implements UIAdapter {
                 .toList());
     }
 
+    @Override
+    public void setEnabledIceServer(IceServerView view, boolean enabled) {
+        if (view == null) {
+            return;
+        }
+        IceServer iceServer = view.getServer();
+        iceServer.setEnabled(enabled);
+        iceServer.setAuto(false);
+    }
+
     private PeerView toPeerInfo(Peer peer) {
         PeerView info = uiPeers.computeIfAbsent(peer.getRemoteId(), id -> {
             PeerView uiInfo = new PeerView(peer.getRemoteId(), peer.getRemoteLogin());

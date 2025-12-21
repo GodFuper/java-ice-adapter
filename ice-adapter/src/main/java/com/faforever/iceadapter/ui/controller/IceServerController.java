@@ -12,6 +12,7 @@ import javafx.scene.layout.VBox;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -61,12 +62,9 @@ public class IceServerController {
             private final CheckBox checkBox = new CheckBox();
 
             {
-                // Слушаем клики по чекбоксу
                 checkBox.setOnAction(event -> {
                     IceServerView item = getTableView().getItems().get(getIndex());
-                    if (item != null) {
-                        item.getServer().setEnabled(checkBox.isSelected());
-                    }
+                    adapter.setEnabledIceServer(item, checkBox.isSelected());
                 });
             }
 
@@ -74,7 +72,6 @@ public class IceServerController {
             protected void updateItem(Boolean item, boolean empty) {
                 super.updateItem(item, empty);
 
-                // Очищаем содержимое
                 setGraphic(null);
                 setText(null);
 
@@ -99,7 +96,9 @@ public class IceServerController {
         }
 
         Platform.runLater(() -> {
-            tableView.getItems().setAll(adapter.getIceServersList());
+            if (!Objects.equals(adapter.getIceServersList().size(), tableView.getItems().size())) {
+                tableView.getItems().setAll(adapter.getIceServersList());
+            }
         });
     }
 
@@ -107,7 +106,7 @@ public class IceServerController {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
         updateScheduler.scheduleAtFixedRate(() -> {
             Platform.runLater(this::updateAllInfo);
-        }, 0, 1, TimeUnit.MINUTES);
+        }, 2, 30, TimeUnit.SECONDS);
     }
 
 }

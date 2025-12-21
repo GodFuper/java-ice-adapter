@@ -62,6 +62,7 @@ public class GameSession implements IceGameSession {
         this.rpcService = rpcService;
         this.options = options;
         iceServerChecker = new IceServerChecker(options, this);
+        iceServerChecker.start();
     }
 
     /**
@@ -161,7 +162,7 @@ public class GameSession implements IceGameSession {
      * Set ice servers (to be used for harvesting candidates)
      * Called by the client via jsonRPC
      */
-    public void setIceServers(List<Map<String, Object>> iceServersData) {
+    public static void setIceServers(List<Map<String, Object>> iceServersData) {
         iceServers.clear();
         addDefaultIceServers(iceServers);
 
@@ -174,7 +175,7 @@ public class GameSession implements IceGameSession {
         iceServers.addAll(pair.getFirst());
         debug().updateCoturnList(pair.getSecond());
 
-        iceServerChecker.start();
+
         log.info("Ice Servers set, total addresses: {}", iceServers.size());
     }
 

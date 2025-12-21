@@ -33,6 +33,7 @@ public class IceServerChecker {
     private void checkerThread() {
         gameSession.getIceServers().stream()
                 .filter(IceServer::isTurn)
+                .filter(IceServer::isAuto)
                 .forEach(server -> {
                     server.setEnabled(server.hasAcceptableLatency(options.getAcceptableLatency()));
                 });
