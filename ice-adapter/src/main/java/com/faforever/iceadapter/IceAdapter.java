@@ -77,9 +77,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     @Override
     public void onHostGame(String mapName) {
         log.info("onHostGame");
-
-        // query session in a thread-safe manner
-        GameSession gs = createGameSession();
+        createGameSession();
         sendToGpgNet("HostGame", mapName);
     }
 
