@@ -7,10 +7,7 @@ import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
-import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
-import com.faforever.iceadapter.ice.peer.modules.other.ChangeIceStrategyModule;
-import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
-import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
+import com.faforever.iceadapter.ice.peer.modules.other.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +36,7 @@ public enum PeerModule implements Comparator<PeerModule> {
     ICE_LISTENER_MODULE(PeerToPeerListenerModule::new),
     CONNECTION_CHECKER_MODULE(PeerConnectivityCheckerModule::new),
     AUTO_SETTING_ALLOW_CANDIDATE(AutoSettingAllowCandidates::new),
+    UPNP_SUPPORT(UPNPSupport::new),
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new);
 
     @Getter
