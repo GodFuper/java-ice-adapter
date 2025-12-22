@@ -27,7 +27,7 @@ public class FaDataOutputStream extends OutputStream {
     private final LittleEndianDataOutputStream outputStream;
     private final Charset charset = StandardCharsets.UTF_8;
     private final Lock writer = new ReentrantLock();
-    private volatile boolean closed = false; // Для отслеживания состояния
+    private volatile boolean closed = false;
 
     public FaDataOutputStream(OutputStream outputStream) {
         if (outputStream == null) {
@@ -50,8 +50,9 @@ public class FaDataOutputStream extends OutputStream {
     /**
      * Writes a message with header and arguments.
      * Supports Integer, Double (as int), and String.
+     *
      * @param header the message header (must not be null)
-     * @param args the arguments (null values are skipped)
+     * @param args   the arguments (null values are skipped)
      * @throws IOException if an I/O error occurs
      */
     public void writeMessage(String header, Object... args) throws IOException {
@@ -73,7 +74,9 @@ public class FaDataOutputStream extends OutputStream {
 
     @Override
     public void flush() throws IOException {
-        if (closed) return; // flush после close — допустим, но ничего не делает
+        if (closed) {
+            return;
+        }
         writer.lock();
         try {
             outputStream.flush();
@@ -88,11 +91,7 @@ public class FaDataOutputStream extends OutputStream {
         try {
             if (closed) return;
             closed = true;
-            try {
-                outputStream.close();
-            } finally {
-                // Даже если close выбросил исключение, всё равно освобождаем ресурсы
-            }
+            outputStream.close();
         } finally {
             writer.unlock();
         }
@@ -104,11 +103,9 @@ public class FaDataOutputStream extends OutputStream {
             return;
         }
 
-        // Фильтрация null-значений и подсчёт валидных аргументов
         List<Object> validArgs = args.stream()
                 .filter(arg -> {
                     if (arg == null) {
-                        // Можно включить логирование при необходимости
                         return false;
                     }
                     return true;
@@ -128,7 +125,7 @@ public class FaDataOutputStream extends OutputStream {
                 writeByte(FIELD_TYPE_STRING);
                 writeString(str);
             } else {
-                log.error("Unsupported argument type: {} {}",arg.getClass().getSimpleName(), arg);
+                log.error("Unsupported argument type: {} {}", arg.getClass().getSimpleName(), arg);
             }
         }
     }

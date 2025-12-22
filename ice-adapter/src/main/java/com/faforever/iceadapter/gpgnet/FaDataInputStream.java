@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.gpgnet;
 
 import com.google.common.io.LittleEndianDataInputStream;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,13 +17,12 @@ public class FaDataInputStream extends InputStream {
 
     private static final int MAX_CHUNK_SIZE = 10;
     private static final int FIELD_TYPE_INT = 0;
-    private static final int FIELD_TYPE_STRING = 1; // Добавлено: явное определение типа строки
+    private static final int FIELD_TYPE_STRING = 1;
 
     private final LittleEndianDataInputStream inputStream;
     private final Charset charset = StandardCharsets.UTF_8;
 
     public FaDataInputStream(InputStream inputStream) {
-        // Улучшено: проверка на null
         if (inputStream == null) {
             throw new IllegalArgumentException("Input stream cannot be null");
         }
@@ -55,15 +55,14 @@ public class FaDataInputStream extends InputStream {
                     chunks.add(readInt());
                     break;
 
-                case FIELD_TYPE_STRING: // Явная обработка строки
+                case FIELD_TYPE_STRING:
                     String str = readString();
-                    // Исправлено: замена экранированных последовательностей
-                    str = str.replace("\\t", "\t").replace("\\n", "\n"); // Исправлено: /t → \t
+                    str = str.replace("\\t", "\t").replace("\\n", "\n");
                     chunks.add(str);
                     break;
 
                 default:
-                    throw new IOException("Unknown field type: " + fieldType); // Лучше чем молчание
+                    throw new IOException("Unknown field type: " + fieldType);
             }
         }
 
@@ -90,7 +89,7 @@ public class FaDataInputStream extends InputStream {
         }
 
         if (size == 0) {
-            return ""; // Оптимизация: пустая строка
+            return "";
         }
 
         byte[] buffer = new byte[size];
@@ -100,9 +99,6 @@ public class FaDataInputStream extends InputStream {
 
     @Override
     public void close() throws IOException {
-        // Добавлен null-check (на всякий случай)
-        if (inputStream != null) {
-            inputStream.close();
-        }
+        inputStream.close();
     }
 }

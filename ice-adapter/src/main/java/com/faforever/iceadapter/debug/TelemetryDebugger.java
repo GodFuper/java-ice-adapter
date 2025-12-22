@@ -30,7 +30,7 @@ import java.util.concurrent.*;
 @Slf4j
 @EqualsAndHashCode
 public class TelemetryDebugger implements Debugger, AutoCloseable {
-    private static final int MAX_RECONNECT_ATTEMPTS = 2;
+    private static final int MAX_RECONNECT_ATTEMPTS = 5;
     private static final Duration RECONNECT_BASE_DELAY = Duration.ofSeconds(1);
     private static final Duration MAX_RECONNECT_DELAY = Duration.ofSeconds(30);
 
@@ -40,7 +40,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     private final ObjectMapper objectMapper;
 
     private final Map<Integer, RateLimiter> peerRateLimiter = new ConcurrentHashMap<>();
-    private final BlockingQueue<OutgoingMessageV1> messageQueue = new LinkedBlockingQueue<>(1000); // Ограничение очереди
+    private final BlockingQueue<OutgoingMessageV1> messageQueue = new LinkedBlockingQueue<>(1000);
 
     private final Thread sendingLoopThread;
 
@@ -56,7 +56,6 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
                 gameId,
                 playerId);
 
-        // Создаём первый клиент
         createNewWebSocketClient();
 
         objectMapper = new ObjectMapper();
@@ -69,8 +68,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
         this.websocketClient = new WebSocketClient(websocketUri) {
             @Override
             public void onOpen(ServerHandshake handshakedata) {
-                log.info("Telemetry websocket opened");
-                reconnectAttempt = 0; // Сброс счётчика при успехе
+                log.trace("Telemetry websocket opened");
             }
 
             @Override
@@ -81,7 +79,6 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
             @Override
             public void onClose(int code, String reason, boolean remote) {
                 log.info("Telemetry websocket closed (code: {}, reason: {})", code, reason);
-                // Клиент закрыт — следующая попытка должна создать новый
             }
 
             @Override
@@ -105,8 +102,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     private void sendingLoop() {
         try {
             while (shouldRun) {
-                OutgoingMessageV1 message = messageQueue.poll(1, TimeUnit.SECONDS);
-                if (message == null) continue;
+                OutgoingMessageV1 message = messageQueue.take();
 
                 if (!ensureConnected()) {
                     log.warn("Failed to send telemetry message (no connection): {}", message.getType());
@@ -137,7 +133,9 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     private boolean ensureConnected() throws InterruptedException {
         while (shouldRun && !websocketClient.isOpen()) {
-            if (!shouldRun) return false;
+            if (!shouldRun) {
+                return false;
+            }
 
             // Exponential latency with jitter
             Duration delay = RECONNECT_BASE_DELAY.multipliedBy((long) Math.pow(2, Math.min(reconnectAttempt, 5)));
@@ -149,8 +147,9 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
             Thread.sleep(delay.toMillis());
 
             try {
-                createNewWebSocketClient(); // Создаём новый клиент
+                createNewWebSocketClient();
                 if (websocketClient.connectBlocking()) {
+                    reconnectAttempt = 0;
                     return true;
                 } else {
                     log.warn("Failed to connect to telemetry websocket (attempt {}/{})", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
