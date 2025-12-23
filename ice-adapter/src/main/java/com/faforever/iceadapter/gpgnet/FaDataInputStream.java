@@ -30,10 +30,10 @@ public class FaDataInputStream extends InputStream {
     }
 
     /**
-     * Читает блоки данных из FA. Поддерживает только int и строковые значения.
+     * Reads data chunks from Forged Alliance. Supports only int and string values.
      *
-     * @return список объектов (Integer или String)
-     * @throws IOException при ошибках чтения или некорректных данных
+     * @return a list of objects (Integer or String)
+     * @throws IOException if an I/O error occurs or if the data is malformed
      */
     public List<Object> readChunks() throws IOException {
         int numberOfChunks = readInt();
@@ -80,7 +80,7 @@ public class FaDataInputStream extends InputStream {
     }
 
     /**
-     * Читает строку с префиксом длины (int).
+     * Reads a string prefixed with its length (int).
      */
     public String readString() throws IOException {
         int size = readInt();
