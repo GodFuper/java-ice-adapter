@@ -1,0 +1,113 @@
+package com.faforever.iceadapter.ice.peer.modules.other;
+
+import com.faforever.iceadapter.ice.ModuleBase;
+import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
+import com.faforever.iceadapter.util.LockUtil;
+import com.google.common.primitives.Longs;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
+
+/**
+ * Periodically sends echo requests via the ICE data channel and initiates a reconnect after timeout
+ * ONLY THE OFFERING ADAPTER of a connection will send echos and reoffer.
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListener {
+
+    public static final char COMMAND_ECHO = 'e';
+    private static final String LOCK_CHECKER_MODULE = "PeerConnectivityCheckerModule";
+
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
+    private static final int ECHO_INTERVAL = 1000;
+    private static final int TIMEOUT_BEFORE_LOST_CONNECT = 10000;
+    private final Peer peer;
+
+    private ScheduledFuture<?> scheduledFuture;
+
+    @Override
+    public void init() {
+        peer.addEventListener(this);
+    }
+
+    @Override
+    public void start() {
+        if (!peer.isLocalOffer()) {
+            return;
+        }
+        peer.setLastPacketReceived(System.currentTimeMillis());
+        LockUtil.executeWithLock(peer.getLock(LOCK_CHECKER_MODULE), () -> {
+            if (peer.isClosing()) {
+                return;
+            }
+            if (isRunning()) {
+                return;
+            }
+
+            log.debug("Starting connectivity checker for peer");
+            scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::checkerThread,
+                    0,
+                    ECHO_INTERVAL,
+                    TimeUnit.MILLISECONDS);
+        });
+    }
+
+    @Override
+    public Boolean isRunning() {
+        return scheduledFuture != null && !scheduledFuture.isDone();
+    }
+
+    private String getThreadName() {
+        return "connectivityChecker-%s".formatted(peer.getPeerIdentifier());
+    }
+
+    @Override
+    public void stop() {
+        if (!peer.isLocalOffer()) {
+            return;
+        }
+
+        LockUtil.executeWithLock(peer.getLock(LOCK_CHECKER_MODULE), () -> {
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(true);
+                scheduledFuture = null;
+            }
+        });
+    }
+
+    private void checkerThread() {
+        if (!peer.isConnected()) {
+            return;
+        }
+        Thread.currentThread().setName(getThreadName());
+        log.trace("Running connectivity checker");
+
+        byte[] data = new byte[9];
+        data[0] = COMMAND_ECHO;
+
+        // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
+        System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, data, 1, 8);
+
+        peer.sendToPeer(data, 0, data.length);
+
+        long lastPacketReceived = peer.getLastPacketReceived();
+        long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;
+
+        if (sinceLastReal > TIMEOUT_BEFORE_LOST_CONNECT) {
+            log.warn("{} No traffic (echo or game) for {} ms (> {} ms timeout). Closing connection.",
+                    peer.getPeerIdentifier(), lastPacketReceived, TIMEOUT_BEFORE_LOST_CONNECT);
+            peer.lostConnect();
+            return;
+        }
+        debug().peerConnectivityUpdate(peer);
+    }
+}

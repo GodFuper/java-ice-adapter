@@ -1,15 +1,19 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.debug.Debug;
+import com.faforever.iceadapter.ui.IceWindow;
+import com.faforever.iceadapter.ui.InfoWindow;
 import com.faforever.iceadapter.util.TrayIcon;
-import java.awt.*;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import lombok.SneakyThrows;
+
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 public class InfoWindowController {
     public Button killAdapterButton;
@@ -31,7 +35,13 @@ public class InfoWindowController {
     }
 
     public void onShowDebugWindowClicked(ActionEvent actionEvent) {
-        DebugWindow.INSTANCE.thenAcceptAsync(DebugWindow::showWindow, IceAdapter.getExecutor());
+        if (IceWindow.INSTANCE == null) {
+            Debug.ENABLE_DEBUG_WINDOW = true;
+            IceWindow.launch();
+        } else {
+            IceWindow.INSTANCE.showWindow();
+        }
+
     }
 
     @SneakyThrows
@@ -49,8 +59,7 @@ public class InfoWindowController {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-                },
-                IceAdapter.getExecutor());
+                });
     }
 
     public void onMinimizeToTrayClicked(ActionEvent actionEvent) {

@@ -1,17 +1,18 @@
-package com.faforever.iceadapter.debug;
+package com.faforever.iceadapter.ui;
 
-import static javafx.application.Application.STYLESHEET_MODENA;
-import static javafx.application.Application.setUserAgentStylesheet;
-
-import java.io.IOException;
+import com.faforever.iceadapter.LogoUtils;
+import com.faforever.iceadapter.ui.controller.InfoWindowController;
 import javafx.application.Platform;
-import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+
+import static javafx.application.Application.STYLESHEET_MODENA;
+import static javafx.application.Application.setUserAgentStylesheet;
 
 @Slf4j
 public class InfoWindow {
@@ -26,23 +27,20 @@ public class InfoWindow {
     private static final int WIDTH = 533;
     private static final int HEIGHT = 330;
 
-    public InfoWindow() {
+    public void start(Stage stage) {
         INSTANCE = this;
-    }
-
-    public void init() {
-        stage = new Stage();
-        stage.getIcons().add(new Image("https://faforever.com/images/faf-logo.png"));
-
+        this.stage = stage;
+        LogoUtils.getLogoFx().ifPresent(logo -> {
+            stage.getIcons().add(logo);
+        });
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/infoWindow.fxml"));
             root = loader.load();
-
             controller = loader.getController();
-
         } catch (IOException e) {
             log.error("Could not load debugger window fxml", e);
         }
+
 
         setUserAgentStylesheet(STYLESHEET_MODENA);
 
@@ -50,7 +48,7 @@ public class InfoWindow {
 
         stage.setScene(scene);
         stage.setTitle("FAF ICE adapter");
-        stage.setOnCloseRequest(Event::consume);
+        stage.setOnCloseRequest(event -> minimize());
         stage.show();
 
         log.info("Created info window.");
@@ -58,13 +56,29 @@ public class InfoWindow {
 
     public void minimize() {
         Platform.setImplicitExit(false);
-        Platform.runLater(this.stage::hide);
+        runOnUIThread(this.stage::hide);
     }
 
-    public void show() {
-        Platform.runLater(() -> {
+    public void showWindow() {
+        runOnUIThread(() -> {
             this.stage.show();
-            Platform.setImplicitExit(true);
         });
+    }
+
+    private static void runOnUIThread(Runnable runnable) {
+        if (Platform.isFxApplicationThread()) {
+            runnable.run();
+        } else {
+            Platform.runLater(runnable);
+        }
+    }
+
+    public static void launch() {
+        log.info("Launching info window.");
+        if (INSTANCE == null) {
+            runOnUIThread(() -> new InfoWindow().start(new Stage()));
+        } else {
+            INSTANCE.showWindow();
+        }
     }
 }

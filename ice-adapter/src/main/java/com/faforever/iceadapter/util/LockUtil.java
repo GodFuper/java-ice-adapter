@@ -1,7 +1,9 @@
 package com.faforever.iceadapter.util;
 
-import java.util.concurrent.locks.Lock;
 import lombok.experimental.UtilityClass;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
 
 @UtilityClass
 public class LockUtil {
@@ -9,6 +11,17 @@ public class LockUtil {
         lock.lock();
         try {
             task.run();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public <T> T executeWithLock(Lock lock, Callable<T> task) {
+        lock.lock();
+        try {
+            return task.call();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             lock.unlock();
         }

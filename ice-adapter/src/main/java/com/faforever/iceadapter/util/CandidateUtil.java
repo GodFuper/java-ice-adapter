@@ -2,21 +2,39 @@ package com.faforever.iceadapter.util;
 
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
+import org.ice4j.Transport;
+import org.ice4j.TransportAddress;
+import org.ice4j.ice.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.ice4j.Transport;
-import org.ice4j.TransportAddress;
-import org.ice4j.ice.Agent;
-import org.ice4j.ice.CandidateType;
-import org.ice4j.ice.Component;
-import org.ice4j.ice.IceMediaStream;
-import org.ice4j.ice.LocalCandidate;
-import org.ice4j.ice.RemoteCandidate;
 
 public class CandidateUtil {
 
     public static int candidateIDFactory = 0;
+
+    private static CandidatePacket createCandidatePacket(Agent agent, LocalCandidate localCandidate) {
+        String relAddr = null;
+        int relPort = 0;
+
+        if (localCandidate.getRelatedAddress() != null) {
+            relAddr = localCandidate.getRelatedAddress().getHostAddress();
+            relPort = localCandidate.getRelatedAddress().getPort();
+        }
+
+        return new CandidatePacket(
+                localCandidate.getFoundation(),
+                localCandidate.getTransportAddress().getTransport().toString(),
+                localCandidate.getPriority(),
+                localCandidate.getTransportAddress().getHostAddress(),
+                localCandidate.getTransportAddress().getPort(),
+                localCandidate.getType(),
+                agent.getGeneration(),
+                String.valueOf(candidateIDFactory++),
+                relAddr,
+                relPort);
+    }
 
     public static CandidatesMessage packCandidates(
             int srcId,
@@ -28,32 +46,15 @@ public class CandidateUtil {
             boolean allowRelay) {
         final List<CandidatePacket> candidatePackets = new ArrayList<>();
 
-        for (LocalCandidate localCandidate : component.getLocalCandidates()) {
-            String relAddr = null;
-            int relPort = 0;
-
-            if (localCandidate.getRelatedAddress() != null) {
-                relAddr = localCandidate.getRelatedAddress().getHostAddress();
-                relPort = localCandidate.getRelatedAddress().getPort();
-            }
-
-            CandidatePacket candidatePacket = new CandidatePacket(
-                    localCandidate.getFoundation(),
-                    localCandidate.getTransportAddress().getTransport().toString(),
-                    localCandidate.getPriority(),
-                    localCandidate.getTransportAddress().getHostAddress(),
-                    localCandidate.getTransportAddress().getPort(),
-                    localCandidate.getType(),
-                    agent.getGeneration(),
-                    String.valueOf(candidateIDFactory++),
-                    relAddr,
-                    relPort);
-
-            if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, localCandidate.getType())) {
-                candidatePackets.add(candidatePacket);
+        List<CandidatePacket> prePackets = component.getLocalCandidates()
+                .stream()
+                .map(candidate -> createCandidatePacket(agent, candidate))
+                .toList();
+        for (CandidatePacket packet : prePackets) {
+            if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, packet.type())) {
+                candidatePackets.add(packet);
             }
         }
-
         Collections.sort(candidatePackets);
 
         return new CandidatesMessage(srcId, destId, agent.getLocalPassword(), agent.getLocalUfrag(), candidatePackets);
@@ -68,8 +69,9 @@ public class CandidateUtil {
             boolean allowReflexive,
             boolean allowRelay) {
         // Set candidates
+        String ufrag = remoteCandidatesMessage.ufrag();
         mediaStream.setRemotePassword(remoteCandidatesMessage.password());
-        mediaStream.setRemoteUfrag(remoteCandidatesMessage.ufrag());
+        mediaStream.setRemoteUfrag(ufrag);
 
         remoteCandidatesMessage.candidates().stream()
                 .sorted() // just in case some ICE adapter implementation did not sort it yet
@@ -96,11 +98,11 @@ public class CandidateUtil {
                         RemoteCandidate remoteCandidate = new RemoteCandidate(
                                 mainAddress,
                                 component,
-                                remoteCandidatePacket
-                                        .type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
+                                remoteCandidatePacket.type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
                                 remoteCandidatePacket.foundation(),
                                 remoteCandidatePacket.priority(),
-                                relatedCandidate);
+                                relatedCandidate,
+                                ufrag);
 
                         if (isAllowedCandidate(allowHost, allowReflexive, allowRelay, remoteCandidate.getType())) {
                             component.addRemoteCandidate(remoteCandidate);
@@ -109,13 +111,56 @@ public class CandidateUtil {
                 });
     }
 
-    private static boolean isAllowedCandidate(
-            boolean allowHost, boolean allowReflexive, boolean allowRelay, CandidateType candidateType) {
+    public static String infoCandidate(CandidatePair pair) {
+        if (pair == null) {
+            return null;
+        }
+        return """
+                Local Candidate:
+                  Type: %s
+                  Transport: %s
+                  Address: %s:%d
+                  Priority: %d
+                  Foundation: %s
+                
+                Remote Candidate:
+                  Type: %s
+                  Transport: %s
+                  Address: %s:%d
+                  Priority: %d
+                  Foundation: %s
+                
+                Priority: %d
+                Nominated: %s
+                State: %s
+                """.formatted(
+                pair.getLocalCandidate().getType(),
+                pair.getLocalCandidate().getTransport(),
+                pair.getLocalCandidate().getTransportAddress().getHostAddress(),
+                pair.getLocalCandidate().getTransportAddress().getPort(),
+                pair.getLocalCandidate().getPriority(),
+                pair.getLocalCandidate().getFoundation(),
+                pair.getRemoteCandidate().getType(),
+                pair.getLocalCandidate().getTransport(),
+                pair.getRemoteCandidate().getTransportAddress().getHostAddress(),
+                pair.getRemoteCandidate().getTransportAddress().getPort(),
+                pair.getRemoteCandidate().getPriority(),
+                pair.getRemoteCandidate().getFoundation(),
+                pair.getPriority(),
+                pair.isNominated(),
+                pair.getState()
+        );
+    }
+
+    private static boolean isAllowedCandidate(boolean allowHost,
+                                              boolean allowReflexive,
+                                              boolean allowRelay,
+                                              CandidateType candidateType) {
         // Candidate types LOCAL and STUN can never occur as they are deprecated and not used
         boolean isAllowedHostCandidate = allowHost && candidateType == CandidateType.HOST_CANDIDATE;
         boolean isAllowedReflexiveCandidate = allowReflexive
                 && (candidateType == CandidateType.SERVER_REFLEXIVE_CANDIDATE
-                        || candidateType == CandidateType.PEER_REFLEXIVE_CANDIDATE);
+                || candidateType == CandidateType.PEER_REFLEXIVE_CANDIDATE);
         boolean isAllowedRelayCandidate = allowRelay && candidateType == CandidateType.RELAYED_CANDIDATE;
 
         return isAllowedHostCandidate || isAllowedReflexiveCandidate || isAllowedRelayCandidate;

@@ -10,6 +10,7 @@ apply plugin: 'java'
 apply plugin: 'java-library'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.diffplug.spotless'
+apply plugin: 'org.openjfx.javafxplugin'
 
 group 'com.faforever'
 
@@ -30,15 +31,16 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:$picocliVersion")
     implementation("info.picocli:picocli:$picocliVersion")
 
-    implementation("org.jitsi:ice4j:3.0-66-g1c60acc")
+    implementation("org.jitsi:ice4j:3.2-12-gc2cbf61")
     implementation("com.github.faforever:JJsonRpc:37669e0fed")
     implementation("com.google.guava:guava:$guavaVersion")
-    implementation("org.slf4j:slf4j-api:1.7.36")
+    implementation("org.slf4j:slf4j-api:2.0.13")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("ch.qos.logback:logback-core:$logbackVersion")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     implementation('com.fasterxml.jackson.core:jackson-databind:2.13.4.2')
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.4")
+    implementation("org.apache.commons:commons-lang3:3.20.0")
 
     if(javafxClasspath == "compileOnly") {
         compileOnly("org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}")
@@ -55,6 +57,10 @@ dependencies {
         implementation("org.openjfx:javafx-web:${javafxVersion}:${javafxPlatform}")
         implementation("org.openjfx:javafx-media:${javafxVersion}:${javafxPlatform}")
     }
+
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.10.2')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.10.2')
+    testImplementation('org.junit.jupiter:junit-jupiter-params:5.10.2')
 }
 
 shadowJar {
@@ -78,4 +84,8 @@ spotless {
         cleanthat()
         palantirJavaFormat()
     }
+}
+
+test {
+    useJUnitPlatform()
 }

@@ -1,70 +1,107 @@
 package com.faforever.iceadapter.ice;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
-import com.faforever.iceadapter.IceAdapter;
+import com.faforever.iceadapter.IceOptions;
+import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerModule;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import com.faforever.iceadapter.rpc.RPCService;
+import com.faforever.iceadapter.services.ConnectService;
+import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.services.IceTrigger;
+import com.faforever.iceadapter.services.impl.ConnectServiceControlledImpl;
+import com.faforever.iceadapter.services.impl.ConnectServiceHandler;
+import com.faforever.iceadapter.services.impl.ConnectServiceNotControlledImpl;
+import com.faforever.iceadapter.services.impl.IceAsyncImpl;
 import com.faforever.iceadapter.telemetry.CoturnServer;
-import com.faforever.iceadapter.util.PingWrapper;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import com.faforever.iceadapter.util.ExecutorHolder;
+import com.faforever.iceadapter.util.TrayIcon;
+import kotlin.Pair;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.Transport;
-import org.ice4j.TransportAddress;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 /**
  * Represents a game session and the current ICE status/communication with all peers
  * Is created by a JoinGame or HostGame event (via RPC), is destroyed by a gpgnet connection breakdown
  */
 @Slf4j
-public class GameSession {
+@RequiredArgsConstructor
+public class GameSession implements IceGameSession {
 
-    private static final String STUN = "stun";
-    private static final String TURN = "turn";
+    private static final List<IceServer> iceServers = createIceServers();
 
-    private static final List<TransportAddress> PUBLIC_STUN_SERVERS = List.of(
-            new TransportAddress("stun.cloudflare.com", 3478, Transport.UDP),
-            new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
-            new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
+    public static List<IceServer> getAllServers() {
+        return iceServers;
+    }
 
     @Getter
     private final Map<Integer, Peer> peers = new ConcurrentHashMap<>();
+
+    private final RPCService rpcService;
+    private final IceOptions options;
+
+    private final IceAsync iceAsync = new IceAsyncImpl(ExecutorHolder.getExecutor(), ExecutorHolder.getScheduledExecutor());
+    private final ConnectService controlledConnectService = new ConnectServiceControlledImpl(this, iceAsync);
+    private final ConnectService notControlledConnectService = new ConnectServiceNotControlledImpl(this, iceAsync);
+    private final ConnectService connectServiceHandler = new ConnectServiceHandler(controlledConnectService, notControlledConnectService);
+    private final IceTrigger iceTrigger = new IceTrigger(iceAsync, connectServiceHandler);
+    private final IceServerChecker iceServerChecker;
 
     @Getter
     @Setter
     private volatile boolean gameEnded = false;
 
-    public GameSession() {}
+    public GameSession(RPCService rpcService, IceOptions options) {
+        this.rpcService = rpcService;
+        this.options = options;
+        iceServerChecker = new IceServerChecker(options, this);
+        iceServerChecker.start();
+    }
 
     /**
      * Initiates a connection to a peer (ICE)
      *
      * @return the port the ice adapter will be listening/sending for FA
      */
-    public int connectToPeer(String remotePlayerLogin, int remotePlayerId, boolean offer, int preferredPort) {
+    public int connectToPeer(String remotePlayerLogin,
+                             int remotePlayerId,
+                             boolean offer,
+                             int preferredPort,
+                             AllowCombination combination) {
         if (peers.containsKey(remotePlayerId)) {
-            reconnectToPeer(remotePlayerId);
+            reCreatePeer(remotePlayerId);
+            debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
             return peers.get(remotePlayerId).getLocalPort();
         }
-        Peer peer = new Peer(this, remotePlayerId, remotePlayerLogin, offer, preferredPort);
+        Peer peer = new Peer(remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort(), getDisabledModules());
+        peer.init();
+        peer.setCombination(combination);
+        peer.initModules();
+        peer.addEventListener(iceTrigger);
+        peer.startInitPeer();
         peers.put(remotePlayerId, peer);
         debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
         return peer.getLocalPort();
+    }
+
+    private void reCreatePeer(Integer remotePlayerId) {
+        Peer reconnectPeer = peers.get(remotePlayerId);
+        if (Objects.nonNull(reconnectPeer)) {
+            String remotePlayerLogin = reconnectPeer.getRemoteLogin();
+            boolean offer = reconnectPeer.isLocalOffer();
+            int port = reconnectPeer.getLocalPort();
+            AllowCombination combination = reconnectPeer.getCombination();
+
+            disconnectFromPeer(remotePlayerId);
+            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, combination);
+        }
     }
 
     /**
@@ -81,32 +118,45 @@ public class GameSession {
     }
 
     /**
-     * Does a manual {@link #disconnectFromPeer} and {@link #connectToPeer}.
-     * Uses the same port that was on the previous connection.
-     */
-    public void reconnectToPeer(Integer remotePlayerId) {
-        Peer reconnectPeer = peers.get(remotePlayerId);
-        if (Objects.nonNull(reconnectPeer)) {
-            String remotePlayerLogin = reconnectPeer.getRemoteLogin();
-            boolean offer = reconnectPeer.isLocalOffer();
-            int port = reconnectPeer.getLocalPort();
-
-            disconnectFromPeer(remotePlayerId);
-            connectToPeer(remotePlayerLogin, remotePlayerId, offer, port);
-        }
-    }
-
-    /**
      * Stops the connection to all peers and all ice agents
      */
     public void close() {
         log.info("Closing gameSession");
         peers.values().forEach(Peer::close);
         peers.clear();
+        iceServerChecker.stop();
     }
 
-    @Getter
-    private static final List<IceServer> iceServers = new ArrayList<>();
+
+    public List<IceServer> getIceServers() {
+        return iceServers;
+    }
+
+    @Override
+    public Optional<Peer> getPeer(int peerId) {
+        return Optional.ofNullable(peers.get(peerId));
+    }
+
+    private Set<PeerModule> getDisabledModules() {
+        Set<PeerModule> disabledModules = new HashSet<>();
+        if (!options.isManualStrategyConnection()) {
+            disabledModules.add(PeerModule.CHANGE_AGENT_STRATEGY);
+        }
+        if (options.isForceRelay() || options.isManualCombinationConnection()) {
+            disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
+        }
+        return disabledModules;
+    }
+
+    public static List<IceServer> createIceServers() {
+        List<IceServer> iceServers = new ArrayList<>();
+        addDefaultIceServers(iceServers);
+        return iceServers;
+    }
+
+    public static void addDefaultIceServers(List<IceServer> iceServers) {
+        iceServers.addAll(IceServer.createPublicServers());
+    }
 
     /**
      * Set ice servers (to be used for harvesting candidates)
@@ -114,97 +164,47 @@ public class GameSession {
      */
     public static void setIceServers(List<Map<String, Object>> iceServersData) {
         iceServers.clear();
-
-        PUBLIC_STUN_SERVERS.forEach(stunServer -> {
-            var iceServer = new IceServer();
-            iceServer.getStunAddresses().add(stunServer);
-            iceServers.add(iceServer);
-        });
+        addDefaultIceServers(iceServers);
 
         if (iceServersData.isEmpty()) {
             return;
         }
 
-        // For caching RTT to a given host (the same host can appear in multiple urls)
-        LoadingCache<String, CompletableFuture<OptionalDouble>> hostRTTCache = CacheBuilder.newBuilder()
-                .build(new CacheLoader<>() {
-                    @Override
-                    public CompletableFuture<OptionalDouble> load(String host) {
-                        return PingWrapper.getLatency(host, IceAdapter.getPingCount())
-                                .thenApply(OptionalDouble::of)
-                                .exceptionally(ex -> OptionalDouble.empty());
-                    }
-                });
+        Pair<List<IceServer>, Set<CoturnServer>> pair = IceServer.mapperFromMap(iceServersData);
 
-        Set<CoturnServer> coturnServers = new HashSet<>();
+        iceServers.addAll(pair.getFirst());
+        debug().updateCoturnList(pair.getSecond());
 
-        for (Map<String, Object> iceServerData : iceServersData) {
-            IceServer iceServer = new IceServer();
 
-            if (iceServerData.containsKey("username")) {
-                iceServer.setTurnUsername((String) iceServerData.get("username"));
-            }
-            if (iceServerData.containsKey("credential")) {
-                iceServer.setTurnCredential((String) iceServerData.get("credential"));
-            }
+        log.info("Ice Servers set, total addresses: {}", iceServers.size());
+    }
 
-            if (iceServerData.containsKey("urls")) {
-                List<String> urls;
-                Object urlsData = iceServerData.get("urls");
-                if (urlsData instanceof List) {
-                    urls = (List<String>) urlsData;
-                } else {
-                    urls = Collections.singletonList((String) iceServerData.get("url"));
-                }
+    public void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
+        iceAsync.runAsync("onIceMessageFromRPC", peer, () -> connectServiceHandler.onMessageFromRPC(peer, message));
+    }
 
-                urls.stream()
-                        .map(stringUrl -> {
-                            try {
-                                return new URI(stringUrl);
-                            } catch (Exception e) {
-                                log.warn("Invalid ICE server URI: {}", stringUrl);
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .forEach(uri -> {
-                            String host = uri.getHost();
-                            int port = uri.getPort() == -1 ? 3478 : uri.getPort();
-                            Transport transport = Optional.ofNullable(uri.getQuery()).stream()
-                                    .flatMap(query -> Arrays.stream(query.split("&")))
-                                    .map(param -> param.split("="))
-                                    .filter(param -> param.length == 2)
-                                    .filter(param -> param[0].equals("transport"))
-                                    .map(param -> param[1])
-                                    .map(Transport::parse)
-                                    .findFirst()
-                                    .orElse(Transport.UDP);
+    @Override
+    public int getLobbyPort() {
+        return GPGNetServer.getStaticLobbyPort();
+    }
 
-                            TransportAddress address = new TransportAddress(host, port, transport);
-                            switch (uri.getScheme()) {
-                                case STUN -> iceServer.getStunAddresses().add(address);
-                                case TURN -> iceServer.getTurnAddresses().add(address);
-                                default -> log.warn("Invalid ICE server protocol: {}", uri);
-                            }
+    @Override
+    public int getMyId() {
+        return options.getId();
+    }
 
-                            if (IceAdapter.getPingCount() > 0) {
-                                iceServer.setRoundTripTime(hostRTTCache.getUnchecked(host));
-                            }
+    @Override
+    public void sendToRpc(CandidatesMessage message) {
+        rpcService.onIceMsg(message);
+    }
 
-                            coturnServers.add(new CoturnServer("n/a", host, port, null));
-                        });
-            }
+    @Override
+    public void onConnected(Peer peer, boolean connected) {
+        rpcService.onConnected(getMyId(), peer.getRemoteId(), connected);
+    }
 
-            iceServers.add(iceServer);
-        }
-
-        debug().updateCoturnList(coturnServers);
-
-        log.info(
-                "Ice Servers set, total addresses: {}",
-                iceServers.stream()
-                        .mapToInt(iceServer -> iceServer.getStunAddresses().size()
-                                + iceServer.getTurnAddresses().size())
-                        .sum());
+    @Override
+    public void showMessage(String message) {
+        TrayIcon.showMessage(message);
     }
 }

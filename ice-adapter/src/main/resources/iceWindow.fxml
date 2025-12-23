@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<AnchorPane fx:id="root" prefHeight="700.0" xmlns="http://javafx.com/javafx/8.0.121"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.faforever.iceadapter.ui.controller.WindowController">
+    <children>
+
+        <VBox AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0"
+              spacing="5">
+
+            <HBox spacing="10">
+                <Button fx:id="killAdapterButton" text="CLOSE ADAPTER. This will disconnect you from the game!"
+                        HBox.hgrow="ALWAYS"/>
+                <Button text="STUN/TURN" HBox.hgrow="ALWAYS" onAction="#openSettingsStunAndTurn"/>
+            </HBox>
+
+            <HBox spacing="25">
+                <Label fx:id="versionLabel" text="Version: version"/>
+                <Label fx:id="userLabel" text="User: login(id)"/>
+                <Label fx:id="rpcPortLabel" text="RPC_PORT: port"/>
+                <Label fx:id="gpgnetPortLabel" text="GPGNET_PORT: port"/>
+                <Label fx:id="lobbyPortLabel" text="LOBBY_PORT: port"/>
+            </HBox>
+
+            <Separator/>
+
+            <HBox spacing="25">
+                <HBox spacing="25">
+                    <Label fx:id="rpcServerStatus" text="RPCServer: new"/>
+                    <Label fx:id="rpcClientStatus" text="RPCClient: -"/>
+                </HBox>
+                <Separator orientation="VERTICAL"/>
+                <HBox spacing="25">
+                    <Label fx:id="gpgnetServerStatus" text="GPGNetServer: new"/>
+                    <Label fx:id="gpgnetClientStatus" text="GPGNetClient: -"/>
+                    <Label fx:id="gameState" text="GameState: -"/>
+                </HBox>
+            </HBox>
+
+            <Separator/>
+
+            <HBox spacing="10" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+
+                <VBox spacing="5" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+                    <TableView fx:id="peerTable" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="idColumn" text="id"/>
+                            <TableColumn fx:id="loginColumn" text="login"/>
+                            <TableColumn fx:id="hostColumn" text="host"/>
+                            <TableColumn fx:id="reflexiveColumn" text="reflexive"/>
+                            <TableColumn fx:id="relayColumn" text="relay"/>
+                            <TableColumn fx:id="reconnectColumn" text="reconnect"/>
+                            <TableColumn fx:id="stateColumn" text="state"/>
+                            <TableColumn fx:id="pairConColumn" text="pair" prefWidth="100"/>
+                            <TableColumn fx:id="agentStateColumn" text="agent"/>
+                            <TableColumn fx:id="offerColumn" text="localOffer"/>
+                            <TableColumn fx:id="rttColumn" text="rtt"/>
+                            <TableColumn fx:id="lastColumn" text="last recv"/>
+                            <TableColumn fx:id="echosRcvColumn" text="echos s/f"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+
+                <VBox fx:id="peerActionPane" visible="false" managed="false"
+                      spacing="10" minWidth="150" prefWidth="150"
+                      style="-fx-border-color: gray; -fx-border-width: 2"
+                      VBox.vgrow="ALWAYS">
+
+                    <HBox spacing="5" alignment="CENTER_LEFT">
+                        <Label fx:id="peerActionTitle" text="Peer" style="-fx-font-weight: bold;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <Label text="✕"
+                               style="-fx-cursor: hand; -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: gray;"
+                               HBox.hgrow="NEVER"
+                               onMouseClicked="#closePeerManagerPanel"/>
+                    </HBox>
+
+                    <VBox spacing="10" alignment="CENTER">
+                        <Button fx:id="reconnectPeerButton" text="Reconnect" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <Label text="Actions for peer:" style="-fx-font-weight: bold;"/>
+
+                    <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
+                        <ComboBox fx:id="allowCombinationComboBox"
+                                  prefWidth="Infinity"
+                                  HBox.hgrow="ALWAYS"/>
+
+                        <ComboBox fx:id="connectionStrategyComboBox"
+                                  prefWidth="Infinity"
+                                  HBox.hgrow="ALWAYS"/>
+                    </VBox>
+
+                    <VBox spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
+                        <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
+                        <TextArea fx:id="pairCandidateInfoArea"
+                                  wrapText="true"
+                                  editable="false"
+                                  VBox.vgrow="ALWAYS"
+                                  prefHeight="150"/>
+                    </VBox>
+                </VBox>
+
+            </HBox>
+
+        </VBox>
+
+    </children>
+
+    <stylesheets>
+        <URL value="@debugWindowStyle.css"/>
+    </stylesheets>
+</AnchorPane>

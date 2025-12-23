@@ -1,34 +1,42 @@
 package com.faforever.iceadapter.rpc;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.debug.Debug;
-import com.faforever.iceadapter.debug.InfoWindow;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.CandidatesMessage;
+import com.faforever.iceadapter.ui.InfoWindow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nbarraille.jjsonrpc.JJsonPeer;
 import com.nbarraille.jjsonrpc.TcpServer;
-import java.util.Arrays;
-import java.util.List;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 /**
  * Handles communication between client and adapter, opens a server for the client to connect to
  */
 @Slf4j
+@RequiredArgsConstructor
+@Data
 public class RPCService implements AutoCloseable {
 
+    private static final String NOT_CONNECTION = "N/A";
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private static TcpServer tcpServer;
     private static volatile boolean skipRPCMessages = false;
 
-    public void init(int port, GPGNetServer gpgNetServer, FafRpcCallbacks callbacks) {
-        Debug.RPC_PORT = port;
+    private final int port;
+    private String host;
+
+    public void init(GPGNetServer gpgNetServer, FafRpcCallbacks callbacks) {
+        host = NOT_CONNECTION;
         log.info("Creating RPC server on port {}", port);
 
         RPCHandler rpcHandler = new RPCHandler(port, callbacks, gpgNetServer);
@@ -37,7 +45,9 @@ public class RPCService implements AutoCloseable {
 
         debug().rpcStarted(tcpServer.getFirstPeer());
         tcpServer.getFirstPeer().thenAccept(firstPeer -> {
+            host = String.valueOf(firstPeer.getSocket().getInetAddress());
             firstPeer.onConnectionLost(() -> {
+                host = NOT_CONNECTION;
                 GameState gameState = gpgNetServer.getGameState().orElse(null);
                 if (gameState == GameState.LAUNCHING) {
                     skipRPCMessages = true;
@@ -46,11 +56,9 @@ public class RPCService implements AutoCloseable {
                         Debug.ENABLE_INFO_WINDOW = true;
                         Debug.init();
                     }
-                    InfoWindow.INSTANCE.show();
+                    InfoWindow.INSTANCE.showWindow();
                 } else {
-                    log.info(
-                            "Lost connection to first RPC Peer. GameState: {}, Stopping adapter...",
-                            gameState.getName());
+                    log.info("Lost connection to first RPC Peer. GameState: {}, Stopping adapter...", gameState);
                     callbacks.close();
                 }
             });
@@ -59,13 +67,13 @@ public class RPCService implements AutoCloseable {
 
     public void onConnectionStateChanged(String newState) {
         if (!skipRPCMessages) {
-            getPeerOrWait().sendNotification("onConnectionStateChanged", Arrays.asList(newState));
+            getPeerOrWait().sendNotification("onConnectionStateChanged", List.of(newState));
         }
     }
 
     public void onGpgNetMessageReceived(String header, List<Object> chunks) {
         if (!skipRPCMessages) {
-            getPeerOrWait().sendNotification("onGpgNetMessageReceived", Arrays.asList(header, chunks));
+            getPeerOrWait().sendNotification("onGpgNetMessageReceived", List.of(header, chunks));
         }
     }
 
@@ -75,10 +83,7 @@ public class RPCService implements AutoCloseable {
                 getPeerOrWait()
                         .sendNotification(
                                 "onIceMsg",
-                                Arrays.asList(
-                                        candidatesMessage.srcId(),
-                                        candidatesMessage.destId(),
-                                        objectMapper.writeValueAsString(candidatesMessage)));
+                                List.of(candidatesMessage.srcId(), candidatesMessage.destId(), objectMapper.writeValueAsString(candidatesMessage)));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -89,13 +94,13 @@ public class RPCService implements AutoCloseable {
         if (!skipRPCMessages) {
             getPeerOrWait()
                     .sendNotification(
-                            "onIceConnectionStateChanged", Arrays.asList(localPlayerId, remotePlayerId, state));
+                            "onIceConnectionStateChanged", List.of(localPlayerId, remotePlayerId, state));
         }
     }
 
     public void onConnected(long localPlayerId, long remotePlayerId, boolean connected) {
         if (!skipRPCMessages) {
-            getPeerOrWait().sendNotification("onConnected", Arrays.asList(localPlayerId, remotePlayerId, connected));
+            getPeerOrWait().sendNotification("onConnected", List.of(localPlayerId, remotePlayerId, connected));
         }
     }
 

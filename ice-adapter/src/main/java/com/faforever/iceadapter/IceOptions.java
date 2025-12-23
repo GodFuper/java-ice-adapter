@@ -1,11 +1,11 @@
 package com.faforever.iceadapter;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import picocli.CommandLine.Option;
 
-@Getter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class IceOptions {
@@ -24,8 +24,7 @@ public class IceOptions {
     @Option(names = "--gpgnet-port", defaultValue = "0", description = "set the port of internal GPGNet server")
     private int gpgnetPort;
 
-    @Option(
-            names = "--lobby-port",
+    @Option(names = "--lobby-port",
             defaultValue = "0",
             description = "set the port the game lobby should use for incoming UDP packets from the PeerRelay")
     private int lobbyPort;
@@ -39,8 +38,7 @@ public class IceOptions {
     @Option(names = "--info-window", description = "activate the info window")
     private boolean infoWindow;
 
-    @Option(
-            names = "--delay-ui",
+    @Option(names = "--delay-ui",
             defaultValue = "0",
             description = "delays the launch of the info and debug window (in ms)")
     private int delayUi;
@@ -51,15 +49,28 @@ public class IceOptions {
             description = "number of times to ping each turn server to determine latency")
     private int pingCount;
 
-    @Option(
-            names = "--acceptable-latency",
+    @Option(names = "--acceptable-latency",
             defaultValue = "250.0",
             description = "number of times to ping each turn server to determine latency")
     private double acceptableLatency;
 
-    @Option(
-            names = "--telemetry-server",
+    @Option(names = "--telemetry-server",
             defaultValue = "wss://ice-telemetry.faforever.com",
             description = "Telemetry server to connect to")
     private String telemetryServer;
+
+    @Option(names = "--manual-combination-connection",
+            defaultValue = "false",
+            description = "Manually editing the connection combination in the UI")
+    private boolean manualCombinationConnection;
+
+    @Option(names = "--manual-strategy-connection",
+            defaultValue = "false",
+            description = "Manually editing the connection strategy in the UI")
+    private boolean manualStrategyConnection;
+
+    @Option(names = "--additional-info-peer",
+            defaultValue = "false",
+            description = "Additional information about Peer in the UI")
+    private boolean additionalInfoPeer;
 }

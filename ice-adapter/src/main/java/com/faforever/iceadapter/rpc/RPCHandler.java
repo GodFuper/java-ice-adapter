@@ -4,19 +4,13 @@ import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceStatus;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.gpgnet.LobbyInitMode;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
-import com.faforever.iceadapter.ice.Peer;
+import com.faforever.iceadapter.ice.peer.Peer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +18,13 @@ import org.ice4j.TransportAddress;
 import org.ice4j.ice.Candidate;
 import org.ice4j.ice.CandidatePair;
 import org.ice4j.ice.CandidateType;
-import org.ice4j.ice.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Handles calls from JsonRPC (the client)
@@ -61,27 +61,40 @@ public class RPCHandler {
     }
 
     public void iceMsg(long remotePlayerId, Object msg) {
-        boolean err = true;
-
-        GameSession gameSession = IceAdapter.getGameSession();
-        if (gameSession != null) { // This is highly unlikely, game session got created if JoinGame/HostGame came first
-            Peer peer = gameSession.getPeers().get((int) remotePlayerId);
-            if (peer != null) { // This is highly unlikely, peer is present if connectToPeer was called first
-                try {
-                    peer.getIce().onIceMessageReceived(objectMapper.readValue((String) msg, CandidatesMessage.class));
-                    err = false;
-                } catch (IOException e) {
-                    log.error("Failed to parse iceMsg {}", msg, e);
-                    return;
-                }
-            }
-        }
-
-        if (err) {
-            log.error("ICE MESSAGE IGNORED for id: {}", remotePlayerId);
-        }
-
         log.info("IceMsg received {}", msg);
+        boolean err = true;
+        CandidatesMessage message;
+        try {
+            message = objectMapper.readValue((String) msg, CandidatesMessage.class);
+        } catch (Exception e) {
+            log.error("Failed to parse iceMsg {}", msg, e);
+            return;
+        }
+        int idFrom = message.srcId();
+        int idTo = message.destId();
+        int myId = IceAdapter.getId();
+        if (myId != idTo) {
+            log.error("The iceMsg {} is not meant for {}. IceMsg ignored", message, idTo);
+            return;
+        }
+
+        if (remotePlayerId != idFrom) {
+            log.error("The sender {} != {} does not match the IceMsg source. IceMsg ignored", remotePlayerId, idFrom);
+            return;
+        }
+
+        GameSession gameSession = IceAdapter.getGameSessionSafe();
+        if (gameSession == null) {
+            log.error("The gameSession is null. IceMsg ignored. {}", message);
+            return;
+        }
+
+        Peer peer = gameSession.getPeers().get((int) remotePlayerId);
+        if (peer == null) {
+            log.error("Peer not found for id: {}. IceMsg ignored. {}", remotePlayerId, message);
+            return;
+        }
+        gameSession.onIceMessageFromRPC(peer, message);
     }
 
     public void sendToGpgNet(String header, Object... args) {
@@ -96,43 +109,36 @@ public class RPCHandler {
     @SneakyThrows
     public String status() {
         IceStatus.IceGPGNetState gpgpnet = new IceStatus.IceGPGNetState(
-                gpgNetServer.getGpgnetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameStateString(), "-");
+                gpgNetServer.getStaticGpgNetPort(), gpgNetServer.isConnected(), gpgNetServer.getGameState().orElse(GameState.NONE).getName(), "-");
 
         List<IceStatus.IceRelay> relays = new ArrayList<>();
-        GameSession gameSession = IceAdapter.getGameSession();
+        GameSession gameSession = IceAdapter.getGameSessionSafe();
         if (gameSession != null) {
             lockStatus.lock();
             try {
                 gameSession.getPeers().values().stream()
                         .map(peer -> {
+                            Optional<CandidatePair> pair = peer.getActiveCandidatePair();
                             IceStatus.IceRelay.IceRelayICEState iceRelayICEState =
                                     new IceStatus.IceRelay.IceRelayICEState(
                                             peer.isLocalOffer(),
-                                            peer.getIce().getIceState().getMessage(),
+                                            peer.getIceState().getMessage(),
                                             "",
                                             "",
-                                            peer.getIce().isConnected(),
-                                            Optional.ofNullable(peer.getIce().getComponent())
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getLocalCandidate)
+                                            peer.isConnected(),
+                                            pair.map(CandidatePair::getLocalCandidate)
                                                     .map(Candidate::getHostAddress)
                                                     .map(TransportAddress::toString)
                                                     .orElse(""),
-                                            Optional.ofNullable(peer.getIce().getComponent())
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getRemoteCandidate)
+                                            pair.map(CandidatePair::getRemoteCandidate)
                                                     .map(Candidate::getHostAddress)
                                                     .map(TransportAddress::toString)
                                                     .orElse(""),
-                                            Optional.ofNullable(peer.getIce().getComponent())
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getLocalCandidate)
+                                            pair.map(CandidatePair::getLocalCandidate)
                                                     .map(Candidate::getType)
                                                     .map(CandidateType::toString)
                                                     .orElse(""),
-                                            Optional.ofNullable(peer.getIce().getComponent())
-                                                    .map(Component::getSelectedPair)
-                                                    .map(CandidatePair::getRemoteCandidate)
+                                            pair.map(CandidatePair::getRemoteCandidate)
                                                     .map(Candidate::getType)
                                                     .map(CandidateType::toString)
                                                     .orElse(""),
@@ -141,7 +147,7 @@ public class RPCHandler {
                             return new IceStatus.IceRelay(
                                     peer.getRemoteId(),
                                     peer.getRemoteLogin(),
-                                    peer.getFaSocket().getLocalPort(),
+                                    peer.getLocalPort(),
                                     iceRelayICEState);
                         })
                         .forEach(relays::add);
@@ -152,14 +158,11 @@ public class RPCHandler {
 
         IceStatus status = new IceStatus(
                 IceAdapter.getVersion(),
-                GameSession.getIceServers().stream()
-                        .mapToInt(s -> s.getTurnAddresses().size()
-                                + s.getStunAddresses().size())
-                        .sum(),
-                gpgNetServer.getLobbyPort(),
+                GameSession.getAllServers().size(),
+                gpgNetServer.getStaticLobbyPort(),
                 gpgNetServer.getLobbyInitMode().getName(),
                 new IceStatus.IceOptions(
-                        IceAdapter.getId(), IceAdapter.getLogin(), rpcPort, gpgNetServer.getGpgnetPort()),
+                        IceAdapter.getId(), IceAdapter.getLogin(), rpcPort, gpgNetServer.getStaticGpgNetPort()),
                 gpgpnet,
                 relays.toArray(new IceStatus.IceRelay[relays.size()]));
 
