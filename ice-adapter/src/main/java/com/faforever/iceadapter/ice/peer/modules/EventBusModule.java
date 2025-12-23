@@ -36,19 +36,19 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     public void onAgentChange(Peer peer, Agent newAgent) {
-        log.info("Peer {} agent changed. now = {}", peer.getPeerIdentifier(), newAgent);
+        log.trace("Peer {} agent changed. now = {}", peer.getPeerIdentifier(), newAgent);
         listeners.forEach(l -> safeAsyncCall(l, "onAgentChange",
                 () -> l.onAgentChange(peer, newAgent)));
     }
 
     public void onIceMediaStreamChange(Peer peer, IceMediaStream stream) {
-        log.info("Peer {} iceMediaStream changed. now = {}", peer.getPeerIdentifier(), stream);
+        log.trace("Peer {} iceMediaStream changed. now = {}", peer.getPeerIdentifier(), stream);
         listeners.forEach(l -> safeAsyncCall(l, "onIceMediaStreamChange",
                 () -> l.onIceMediaStreamChange(peer, stream)));
     }
 
     public void onIceComponentChange(Peer peer, Component component) {
-        log.info("Peer {} component changed. now = {}", peer.getPeerIdentifier(), component);
+        log.trace("Peer {} component changed. now = {}", peer.getPeerIdentifier(), component);
         listeners.forEach(l -> safeAsyncCall(l, "onIceComponentChange",
                 () -> l.onIceComponentChange(peer, component)));
     }
