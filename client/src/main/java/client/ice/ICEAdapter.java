@@ -35,7 +35,7 @@ import static com.github.nocatch.NoCatch.noCatch;
 
 public class ICEAdapter {
 
-	private static final String LOG_LEVEL = "debug";
+	private static final String LOG_LEVEL = "info";
 
 	private static final int CONNECTION_ATTEMPTS = 100;
 
@@ -215,41 +215,14 @@ public class ICEAdapter {
 //					(System.getProperty("os.name").contains("Windows") ? "faf-ice-adapter.exe" : "./faf-ice-adapter"),
 					"java",
 //					"-Djava.net.preferIPv4Stack=true",
-                    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5004",
-                    "-jar",
-					"faf-ice-adapter-old.jar",
-                    "--id", String.valueOf(TestClient.playerID),
-                    "--login", TestClient.username,
-                    "--rpc-port", String.valueOf(ADAPTER_PORT),
-                    "--game-id", String.valueOf(100),
-                    "--debug-window=true",
-                    "--info-window=true",
-//				"--gpgnet-port", String.valueOf(GPG_PORT), retrieved afterwards
-//				"--lobby-port", String.valueOf(LOBBY_PORT),
-                    "--log-level", LOG_LEVEL,
-//					"--log-directory", "iceAdapterLogs/"
-            };
-
-            if (Objects.equals(TestClient.username, "2")) {
-                command = new String[]{
-//					(System.getProperty("os.name").contains("Windows") ? "faf-ice-adapter.exe" : "./faf-ice-adapter"),
-                        "java",
-//						"-Djava.net.preferIPv4Stack=true",
-                        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
-                        "-jar",
-                        "faf-ice-adapter.jar",
-                        "--id", String.valueOf(TestClient.playerID),
-                        "--login", TestClient.username,
-                        "--rpc-port", String.valueOf(ADAPTER_PORT),
-                        "--game-id", String.valueOf(100),
-                        "--debug-window=true",
-                        "--info-window=true",
-//				"--gpgnet-port", String.valueOf(GPG_PORT), retrieved afterwards
-//				"--lobby-port", String.valueOf(LOBBY_PORT),
-                        "--log-level", LOG_LEVEL,
-//					"--log-directory", "iceAdapterLogs/"
-                };
-            }
+					"-jar",
+					"faf-ice-adapter.jar",
+					"--id", String.valueOf(TestClient.playerID),
+					"--login", TestClient.username,
+					"--rpc-port", String.valueOf(ADAPTER_PORT),
+					"--game-id", String.valueOf(100),
+					"--log-level", LOG_LEVEL,
+			};
 
 			ProcessBuilder processBuilder = new ProcessBuilder(command);
 //			processBuilder.inheritIO();
