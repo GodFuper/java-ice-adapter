@@ -26,7 +26,7 @@ public class Debug {
 
     public static void init() {
         if (isJavaFxSupported()) {
-            CompletableFuture.runAsync(IceWindow::launch);
+            new Thread(IceWindow::launch).start();
 
             if (Debug.ENABLE_INFO_WINDOW) {
                 CompletableFuture.runAsync(

@@ -59,7 +59,7 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
         if (PROPERTY_ICE_PROCESSING_STATE.equals(event.getPropertyName())) {
             IceProcessingState state = (IceProcessingState) event.getNewValue();
 
-            if (state.isEstablished()) {
+            if (state.isEstablished() && !peer.isConnected()) {
 
                 IceUtils.getFirstComponent(peer.getMediaStream())
                         .map(Component::getSelectedPair)

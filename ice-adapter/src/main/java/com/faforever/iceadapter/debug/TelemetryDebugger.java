@@ -61,7 +61,8 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
-        sendingLoopThread = Thread.ofVirtual().name("telemetry-sending-loop").start(this::sendingLoop);
+        sendingLoopThread = new Thread(this::sendingLoop, "telemetry-sending-loop");
+        sendingLoopThread.start();
     }
 
     private void createNewWebSocketClient() {

@@ -2,6 +2,7 @@ package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.util.Task;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
@@ -17,28 +18,38 @@ public class IceAsyncImpl implements IceAsync {
     private final ScheduledExecutorService scheduledExecutorService;
 
     @Override
-    public CompletableFuture<Void> runAsync(String methodName, Peer peer, Runnable runnable) {
-        return CompletableFuture.runAsync(() -> doBeforeRun(methodName, peer, runnable), executorService);
+    public CompletableFuture<Void> runAsync(boolean maxPriority, String methodName, Peer peer, Runnable runnable) {
+        return CompletableFuture.runAsync(doBeforeRun(maxPriority, methodName, peer, runnable), executorService);
     }
 
     @Override
     public CompletableFuture<Void> runAsync(Peer peer, Runnable runnable) {
-        return CompletableFuture.runAsync(() -> doBeforeRun(peer, runnable), executorService);
+        return CompletableFuture.runAsync(doBeforeRun(false, peer, runnable), executorService);
     }
 
     @Override
-    public CompletableFuture<Void> runAsyncDelay(Peer peer, Runnable runnable, int delayMs) {
-        return CompletableFuture.runAsync(() -> doBeforeRun(peer, runnable),
-                CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, executorService));
+    public void runAsyncDelay(Peer peer, Runnable runnable, int delayMs) {
+        scheduledExecutorService.schedule(initBeforeRun(null, peer, runnable), delayMs, TimeUnit.MILLISECONDS);
     }
 
-    private void doBeforeRun(String methodName, Peer peer, Runnable runnable) {
-        Thread.currentThread().setName(createNameForThread(methodName, getPeerName(peer)));
-        runnable.run();
+    private Runnable initBeforeRun(String methodName, Peer peer, Runnable runnable) {
+        return () -> {
+            String name = Thread.currentThread().getName();
+            try {
+                Thread.currentThread().setName(createNameForThread(methodName, getPeerName(peer)));
+                runnable.run();
+            } finally {
+                Thread.currentThread().setName(name);
+            }
+        };
     }
 
-    private void doBeforeRun(Peer peer, Runnable runnable) {
-        doBeforeRun(null, peer, runnable);
+    private Task doBeforeRun(boolean maxPriority, String methodName, Peer peer, Runnable runnable) {
+        return new Task(maxPriority, peer, initBeforeRun(methodName, peer, runnable));
+    }
+
+    private Task doBeforeRun(boolean maxPriority, Peer peer, Runnable runnable) {
+        return new Task(maxPriority, peer, initBeforeRun(null, peer, runnable));
     }
 
     private String createNameForThread(Object... args) {

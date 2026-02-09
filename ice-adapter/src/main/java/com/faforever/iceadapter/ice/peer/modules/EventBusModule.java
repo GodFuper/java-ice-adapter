@@ -31,74 +31,74 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
 
     public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
         log.info("Peer {} change iceState {} -> {}", peer.getPeerIdentifier(), oldState, newState);
-        listeners.forEach(l -> safeAsyncCall(l, "onIceStateChange",
+        listeners.forEach(l -> callMethod(peer, "onIceStateChange",
                 () -> l.onIceStateChange(peer, oldState, newState)));
     }
 
     public void onAgentChange(Peer peer, Agent newAgent) {
         log.trace("Peer {} agent changed. now = {}", peer.getPeerIdentifier(), newAgent);
-        listeners.forEach(l -> safeAsyncCall(l, "onAgentChange",
+        listeners.forEach(l -> callMethod(peer, "onAgentChange",
                 () -> l.onAgentChange(peer, newAgent)));
     }
 
     public void onIceMediaStreamChange(Peer peer, IceMediaStream stream) {
         log.trace("Peer {} iceMediaStream changed. now = {}", peer.getPeerIdentifier(), stream);
-        listeners.forEach(l -> safeAsyncCall(l, "onIceMediaStreamChange",
+        listeners.forEach(l -> callMethod(peer, "onIceMediaStreamChange",
                 () -> l.onIceMediaStreamChange(peer, stream)));
     }
 
     public void onIceComponentChange(Peer peer, Component component) {
         log.trace("Peer {} component changed. now = {}", peer.getPeerIdentifier(), component);
-        listeners.forEach(l -> safeAsyncCall(l, "onIceComponentChange",
+        listeners.forEach(l -> callMethod(peer, "onIceComponentChange",
                 () -> l.onIceComponentChange(peer, component)));
     }
 
     @Override
     public void onChangeEcho(Peer peer, Long lastEcho, long echo) {
-        listeners.forEach(l -> safeAsyncCall(l, "onChangeEcho",
+        listeners.forEach(l -> callMethod(peer, "onChangeEcho",
                 () -> l.onChangeEcho(peer, lastEcho, echo)));
     }
 
     public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
         log.trace("Peer {} change lastPacketReceived {} -> {}", peer.getPeerIdentifier(), lastTimestamp, timestamp);
-        listeners.forEach(l -> safeAsyncCall(l, "onLastPacketReceived",
+        listeners.forEach(l -> callMethod(peer, "onLastPacketReceived",
                 () -> l.onLastPacketReceived(peer, lastTimestamp, timestamp)));
     }
 
     @Override
     public void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
         log.trace("Peer {} onSendToFaSocket data with length {}", peer.getPeerIdentifier(), length);
-        listeners.forEach(l -> safeAsyncCall(l, "onSendToFaSocket",
+        listeners.forEach(l -> callMethod(peer, "onSendToFaSocket",
                 () -> l.onSendToFaSocket(peer, data, offset, length)));
     }
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data, int offset, int length) {
         log.trace("Peer {} onSendToPeer data with length {}", peer.getPeerIdentifier(), length);
-        listeners.forEach(l -> safeAsyncCall(l, "onSendToPeer",
+        listeners.forEach(l -> callMethod(peer, "onSendToPeer",
                 () -> l.onSendToPeer(peer, data, offset, length)));
     }
 
     @Override
     public void onConnectionLost(Peer peer) {
         log.info("Peer onConnectionLost: {}", peer.getPeerIdentifier());
-        listeners.forEach(l -> safeAsyncCall(l, "onConnectionLost", () -> l.onConnectionLost(peer)));
+        listeners.forEach(l -> callMethod(peer, "onConnectionLost", () -> l.onConnectionLost(peer)));
     }
 
     @Override
     public void onClose(Peer peer, boolean hasClosed) {
         log.info("Peer closed: {}", peer.getPeerIdentifier());
-        listeners.forEach(l -> safeAsyncCall(l, "onClose", () -> l.onClose(peer, hasClosed)));
+        listeners.forEach(l -> callMethod(peer, "onClose", () -> l.onClose(peer, hasClosed)));
     }
 
-    private void safeAsyncCall(PeerEventListener listener, String methodName, Runnable call) {
-        asyncVirtual(methodName, peer, call);
-    }
-
-    private void asyncVirtual(String methodName, Peer peer, Runnable call) {
-        Thread.ofVirtual()
-                .name(methodName + "|" + peer.getPeerIdentifier())
-                .start(call);
+    private void callMethod(Peer peer, String methodName, Runnable call) {
+        String name = Thread.currentThread().getName();
+        try {
+            Thread.currentThread().setName("%s|%s".formatted(methodName, peer.getPeerIdentifier()));
+            call.run();
+        } finally {
+            Thread.currentThread().setName(name);
+        }
     }
 
     @Override

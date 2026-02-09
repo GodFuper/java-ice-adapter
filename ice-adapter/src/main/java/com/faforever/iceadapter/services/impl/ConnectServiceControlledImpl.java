@@ -70,11 +70,8 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
     }
 
     private void tryReInitState(Peer peer, IceState oldState) {
-        if (oldState == CONNECTED) {
-            iceAsync.runAsyncDelay(peer, () -> peer.setIceState(NEW), 1000);
-        } else {
-            iceAsync.runAsyncDelay(peer, () -> peer.setIceState(NEW), 5000);
-        }
+        iceAsync.runAsyncDelay(peer, () -> peer.setIceState(NEW),
+                oldState == CONNECTED ? 1000 : 5000);
     }
 
     @Override

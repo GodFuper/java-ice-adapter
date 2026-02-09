@@ -46,7 +46,7 @@ public class GPGNetServer implements AutoCloseable {
     // single reference to current client (atomic for safe reads)
     private final AtomicReference<GPGNetClient> currentClient = new AtomicReference<>();
 
-    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     @Setter
     private volatile LobbyInitMode lobbyInitMode = LobbyInitMode.NORMAL;
@@ -108,7 +108,7 @@ public class GPGNetServer implements AutoCloseable {
         }
 
         // start accept loop on executor
-        executor.submit(this::acceptLoop);
+        new Thread(this::acceptLoop).start();
         log.info("GPGNetServer started on port {}", this.gpgNetPort);
     }
 
@@ -133,8 +133,7 @@ public class GPGNetServer implements AutoCloseable {
             rpcService.onConnectionStateChanged("Connected");
             log.info("GPGNetClient connected from {}", socket.getRemoteSocketAddress());
 
-            // start listener task on executor
-            executor.submit(this::listenerLoop);
+            new Thread(this::listenerLoop).start();
         }
 
         private boolean isReadyForLobby() {

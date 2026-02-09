@@ -41,7 +41,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         }
 
         log.info("Create ice listener");
-        Thread.ofVirtual().name(threadComponentListenerName()).start(() -> LockUtil.executeWithLock(lockSocket, () -> createListener(component)));
+        new Thread(() -> LockUtil.executeWithLock(lockSocket, () -> createListener(component)), threadComponentListenerName()).start();
     }
 
     private String threadComponentListenerName() {
@@ -82,9 +82,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 byte[] dataCopy = new byte[packet.getLength()];
                 System.arraycopy(packet.getData(), packet.getOffset(), dataCopy, 0, packet.getLength());
 
-                Thread.ofVirtual()
-                        .name(threadComponentListenerName())
-                        .start(() -> handlerData(peer, dataCopy, 0, dataCopy.length));
+                handlerData(peer, dataCopy, 0, dataCopy.length);
             } catch (Exception e) {
                 if (peer.isClosing()) {
                     break;
@@ -101,6 +99,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
     }
 
     private void handlerData(Peer peer, byte[] data, int offset, int length) {
+        Thread.currentThread().setName(threadComponentListenerName());
         peer.setLastPacketReceived(System.currentTimeMillis());
 
 

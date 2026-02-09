@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,6 +20,8 @@ public class PingWrapper {
     static final Pattern WINDOWS_OUTPUT_PATTERN = Pattern.compile("Average = (\\d+)ms", Pattern.MULTILINE);
     static final Pattern GNU_OUTPUT_PATTERN =
             Pattern.compile("min/avg/max/mdev = [0-9.]+/([0-9.]+)/[0-9.]+/[0-9.]+", Pattern.MULTILINE);
+
+    private static ExecutorService executor = Executors.newFixedThreadPool(4);
 
     /*
      * Get the round trip time to an address.
@@ -58,7 +62,7 @@ public class PingWrapper {
                         } catch (InterruptedException | IOException | RuntimeException e) {
                             throw new CompletionException(e);
                         }
-                    });
+                    }, executor);
         } catch (IOException e) {
             CompletableFuture<Double> future = new CompletableFuture<>();
             future.completeExceptionally(e);

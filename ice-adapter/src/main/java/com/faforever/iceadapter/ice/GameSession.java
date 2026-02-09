@@ -180,7 +180,7 @@ public class GameSession implements IceGameSession {
     }
 
     public void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
-        iceAsync.runAsync("onIceMessageFromRPC", peer, () -> connectServiceHandler.onMessageFromRPC(peer, message));
+        iceAsync.runAsync(true, "onIceMessageFromRPC", peer, () -> connectServiceHandler.onMessageFromRPC(peer, message));
     }
 
     @Override

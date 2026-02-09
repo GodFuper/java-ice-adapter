@@ -17,6 +17,9 @@ public class UiStarter {
         IceAdapter.main(stubArgs);
 
         IceAdapter adapter = IceAdapter.INSTANCE;
-        adapter.onJoinGame("Player2", 123);
+        adapter.onHostGame("test");
+
+        adapter.onConnectToPeer("Player3", 124, true);
+        adapter.onConnectToPeer("Player4", 125, false);
     }
 }

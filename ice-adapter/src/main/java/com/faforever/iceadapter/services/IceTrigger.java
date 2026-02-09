@@ -14,11 +14,11 @@ public class IceTrigger implements PeerEventListener {
 
     @Override
     public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
-        iceAsync.runAsync("onIceStateChange", peer, () -> connectService.onChangeIceState(peer, oldState, newState));
+        iceAsync.runAsync(false, "onIceStateChange", peer, () -> connectService.onChangeIceState(peer, oldState, newState));
     }
 
     @Override
     public void onConnectionLost(Peer peer) {
-        iceAsync.runAsync("onConnectionLost", peer, () -> connectService.onConnectionLost(peer));
+        iceAsync.runAsync(true, "onConnectionLost", peer, () -> connectService.onConnectionLost(peer));
     }
 }
