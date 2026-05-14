@@ -8,14 +8,12 @@ buildscript {
 apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'java-library'
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 apply plugin: 'com.diffplug.spotless'
 apply plugin: 'org.openjfx.javafxplugin'
 
 group 'com.faforever'
 
-
-sourceCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenCentral()
@@ -31,7 +29,7 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:$picocliVersion")
     implementation("info.picocli:picocli:$picocliVersion")
 
-    implementation("org.jitsi:ice4j:3.2-12-gc2cbf61")
+    implementation("org.jitsi:ice4j:3.2-14-g8e0db06")
     implementation("com.github.faforever:JJsonRpc:37669e0fed")
     implementation("com.google.guava:guava:$guavaVersion")
     implementation("org.slf4j:slf4j-api:2.0.13")

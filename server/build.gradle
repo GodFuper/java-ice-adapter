@@ -1,11 +1,9 @@
 
 apply plugin: 'java'
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 
 group 'com.faforever'
 version '1.0-SNAPSHOT'
-
-sourceCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenCentral()
