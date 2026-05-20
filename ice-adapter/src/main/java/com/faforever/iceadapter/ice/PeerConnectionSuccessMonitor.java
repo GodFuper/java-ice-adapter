@@ -59,8 +59,7 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
         if (PROPERTY_ICE_PROCESSING_STATE.equals(event.getPropertyName())) {
             IceProcessingState state = (IceProcessingState) event.getNewValue();
 
-            if (state.isEstablished() && !peer.isConnected()) {
-
+            if (state.isEstablished() && !isConnected()) {
                 IceUtils.getFirstComponent(peer.getMediaStream())
                         .map(Component::getSelectedPair)
                         .ifPresent(this::onPairSucceeded);
@@ -70,6 +69,10 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
                 agentConnectionFailed();
             }
         }
+    }
+
+    private boolean isConnected() {
+        return peer.getIceState() == IceState.CONNECTED && peer.getComponent() != null;
     }
 
     private void onPairSucceeded(CandidatePair pair) {

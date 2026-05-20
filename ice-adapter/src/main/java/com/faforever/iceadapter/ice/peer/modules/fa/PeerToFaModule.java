@@ -25,8 +25,12 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
-        getSocketAndTrySend(data, offset, length);
+    public void onHandleData(Peer peer, byte[] data) {
+        if (data[0] != FaToPeerModule.COMMAND_FA) {
+            return;
+        }
+        int length = data.length;
+        getSocketAndTrySend(data, 1, length - 1);
     }
 
     private void getSocketAndTrySend(byte[] data, int offset, int length) {

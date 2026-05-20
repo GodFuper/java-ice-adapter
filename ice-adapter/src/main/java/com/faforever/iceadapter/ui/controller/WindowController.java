@@ -5,11 +5,16 @@ import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.ui.IceServerWindow;
+import com.faforever.iceadapter.ui.InfoServerPeerWindow;
 import javafx.application.Platform;
+import javafx.beans.property.IntegerProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import lombok.NoArgsConstructor;
@@ -17,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -63,12 +67,18 @@ public class WindowController {
     private TableColumn<PeerView, String> echosRcvColumn;
     @FXML
     private TableColumn<PeerView, Boolean> hostColumn;
-
     @FXML
     private TableColumn<PeerView, Boolean> reflexiveColumn;
     @FXML
     private TableColumn<PeerView, Boolean> relayColumn;
 
+    @FXML
+    private TableColumn<PeerView, Integer> selectedRelayPeerColumn;
+    @FXML
+    private TableColumn<PeerView, Boolean> relaySupport;
+
+    @FXML
+    private VBox selectPeerActionPane;
     @FXML
     private VBox peerActionPane;
     @FXML
@@ -76,12 +86,20 @@ public class WindowController {
     @FXML
     private Button reconnectPeerButton;
     @FXML
+    private Label actionsPeerLabel;
+    @FXML
     private ComboBox<AllowCombination> allowCombinationComboBox;
     @FXML
     private ComboBox<IceAgentStrategy> connectionStrategyComboBox;
 
     @FXML
+    private VBox pairCandidateInfoAreaPane;
+
+    @FXML
     private TextArea pairCandidateInfoArea;
+
+    @FXML
+    private ComboBox<PeerView> relayPeerComboBox;
 
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
@@ -93,16 +111,44 @@ public class WindowController {
                 () -> runOnUIThread(IceServerWindow::launch));
     }
 
+    public void openPanelServerPeers() {
+        CompletableFuture.runAsync(
+                () -> runOnUIThread(InfoServerPeerWindow::launch));
+    }
+
     public void initialize() {
         setupButtonActions();
         setupPeerTable();
         startPeriodicUpdates();
-        updateAllInfo();
+        initPanes();
+    }
+
+    private void initPanes() {
+
+        relayPeerComboBox.setOnAction(event -> {
+            PeerView newValue = relayPeerComboBox.getValue();
+            if (adapter != null) {
+                adapter.setRelayPeer(selectedPeer, newValue);
+            }
+        });
+
+        allowCombinationComboBox.setOnAction(event -> {
+            AllowCombination newValue = allowCombinationComboBox.getValue();
+            if (newValue != null && adapter != null) {
+                adapter.setAllowCombination(selectedPeer, newValue);
+            }
+        });
+        connectionStrategyComboBox.setOnAction(event -> {
+            IceAgentStrategy newValue = connectionStrategyComboBox.getValue();
+            if (newValue != null && adapter != null) {
+                adapter.setStrategy(selectedPeer, newValue);
+            }
+        });
     }
 
     public void setAdapter(UIAdapter adapter) {
         this.adapter = adapter;
-        updateAllInfo();
+        Platform.runLater(this::updateAllInfo);
     }
 
     private void setupButtonActions() {
@@ -138,6 +184,26 @@ public class WindowController {
         relayColumn.setCellValueFactory(peer -> peer.getValue().getAdditionalInfo().getAllowRelay());
         relayColumn.setCellFactory(CheckBoxTableCell.forTableColumn(relayColumn));
 
+        // Настройка столбца выбранного пира
+        selectedRelayPeerColumn.setCellValueFactory(cellData -> {
+            PeerView peer = cellData.getValue();
+            IntegerProperty selectedRelayPeerId = peer.getAdditionalInfo().getRelayPeerId();
+            return selectedRelayPeerId.asObject();
+        });
+        selectedRelayPeerColumn.setCellFactory(column -> new TableCell<PeerView, Integer>() {
+            @Override
+            protected void updateItem(Integer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item == -1) {
+                    setText("-");
+                } else {
+                    setText(String.valueOf(item));
+                }
+            }
+        });
+        relaySupport.setCellValueFactory(peer -> peer.getValue().getPeerRelaySupport());
+        relaySupport.setCellFactory(CheckBoxTableCell.forTableColumn(relaySupport));
+
         reconnectColumn.setCellFactory(param -> new TableCell<>() {
             private final Button button = new Button("Reconnect");
 
@@ -166,83 +232,118 @@ public class WindowController {
                 }
             }
         });
+        relayPeerComboBox.setCellFactory(comboBox -> new ListCell<PeerView>() {
+            @Override
+            protected void updateItem(PeerView item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("Disable");
+                } else {
+                    setText(item.prettyPrint());
+                }
+            }
+        });
+        relayPeerComboBox.setButtonCell(new ListCell<PeerView>() {
+            @Override
+            protected void updateItem(PeerView item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("Disable");
+                } else {
+                    setText(item.prettyPrint());
+                }
+            }
+        });
+
+        reconnectPeerButton.setOnAction(e -> {
+            if (selectedPeer != null) {
+                adapter.reconnect(selectedPeer);
+            }
+        });
+
+        allowCombinationComboBox.getItems().setAll(AllowCombination.values());
+        connectionStrategyComboBox.getItems().setAll(IceAgentStrategy.values());
     }
 
     @FXML
     private void closePeerManagerPanel() {
         peerActionPane.setVisible(false);
-        peerActionPane.setManaged(false);
+        selectPeerActionPane.setVisible(true);
         selectedPeer = null;
         peerTable.getSelectionModel().clearSelection();
     }
 
+    private void setVisible(Region region, boolean visible) {
+        region.setVisible(visible);
+        region.setManaged(visible);
+    }
+
     private void setSelectedPeer(PeerView peer) {
 
-        if (!isAdditionalPanelEnabled()) {
-            return;
-        }
+        setVisible(actionsPeerLabel, adapter == null || adapter.isEnabledManualStrategyConnection() || adapter.isEnabledManualCombinationConnection());
+        setVisible(connectionStrategyComboBox, adapter == null || adapter.isEnabledManualStrategyConnection());
+        setVisible(allowCombinationComboBox, adapter == null || adapter.isEnabledManualCombinationConnection());
+        setVisible(pairCandidateInfoAreaPane, adapter == null || adapter.isEnabledAdditionalPeerInfo());
 
-        if (Objects.equals(selectedPeer, peer)) {
-            return;
-        }
-
+        peerActionPane.setVisible(peer != null);
+        selectPeerActionPane.setVisible(peer == null);
+        selectPeerActionPane.setManaged(false);
         if (peer == null) {
-            // Hide panel
-            peerActionPane.setVisible(false);
-            peerActionPane.setManaged(false);
             selectedPeer = null;
             return;
         }
-        selectedPeer = peer;
-        // Show panel
-        peerActionPane.setVisible(true);
-        peerActionPane.setManaged(true);
+
+        if (!Objects.equals(selectedPeer, peer)) {
+            selectedPeer = peer;
+        }
+
+        ObservableList<PeerView> items = FXCollections.observableArrayList();
+        items.add(null);
+        items.addAll(adapter.getRelayPeersInfoList(peer.getId().get()));
+        setItems(relayPeerComboBox, items);
 
         peerActionTitle.setText(peer.getLogin().get());
 
-        allowCombinationComboBox.getItems().setAll(AllowCombination.values());
-        allowCombinationComboBox.setValue(peer.getAdditionalInfo().getCombination());
-        allowCombinationComboBox.setVisible(adapter.isEnabledManualCombinationConnection());
+        int selectedId = peer.getAdditionalInfo().getRelayPeerId().get();
+        PeerView peerToSelect = adapter != null ? adapter.getPeerInfo(selectedId) : null;
+        selectComboBox(relayPeerComboBox, peerToSelect);
 
-        connectionStrategyComboBox.getItems().setAll(IceAgentStrategy.values());
-        connectionStrategyComboBox.setValue(peer.getAdditionalInfo().getAgentStrategy());
-        connectionStrategyComboBox.setVisible(adapter.isEnabledManualStrategyConnection());
+        selectComboBox(allowCombinationComboBox, peer.getAdditionalInfo().getCombination());
 
-        allowCombinationComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (!Objects.equals(oldValue, newValue)) {
-                adapter.setAllowCombination(peer, newValue);
-            }
-        });
-
-        connectionStrategyComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (!Objects.equals(oldValue, newValue)) {
-                adapter.setStrategy(peer, newValue);
-            }
-        });
-
-        reconnectPeerButton.setOnAction(e -> {
-            adapter.reconnect(peer);
-        });
+        selectComboBox(connectionStrategyComboBox, peer.getAdditionalInfo().getAgentStrategy());
 
         updatePairCandidateInfo(peer.getAdditionalInfo().getGetFullCandidateInfo().get());
     }
 
-    private boolean isAdditionalPanelEnabled() {
-        return Optional.ofNullable(adapter)
-                .map(adapter -> adapter.isEnabledAdditionalPeerInfo()
-                        || adapter.isEnabledManualCombinationConnection()
-                        || adapter.isEnabledManualStrategyConnection())
-                .orElse(false);
+    private <T> void setItems(ComboBox<T> comboBox, ObservableList<T> items) {
+        var oldGetOnAction = comboBox.getOnAction();
+        if (!Objects.equals(comboBox.getItems(), items)) {
+            comboBox.setOnAction(null);
+            comboBox.setItems(items);
+            comboBox.setOnAction(oldGetOnAction);
+        }
+    }
+
+    private <T> void selectComboBox(ComboBox<T> comboBox, T select) {
+        var oldGetOnAction = comboBox.getOnAction();
+        if (!Objects.equals(comboBox.getValue(), select)) {
+            comboBox.setOnAction(null);
+            if (select == null) {
+                comboBox.getSelectionModel().selectFirst();
+            } else {
+                comboBox.getSelectionModel().select(select);
+            }
+            comboBox.setOnAction(oldGetOnAction);
+        }
     }
 
     private void updatePairCandidateInfo(String info) {
         if (StringUtils.isEmpty(info)) {
             pairCandidateInfoArea.setText("No candidate information available.");
-        } else {
+        } else if (!Objects.equals(info, pairCandidateInfoArea.getText())) {
             pairCandidateInfoArea.setText(info);
+            pairCandidateInfoArea.setScrollTop(0);
         }
-        pairCandidateInfoArea.setScrollTop(0);
-        pairCandidateInfoArea.setVisible(adapter.isEnabledAdditionalPeerInfo());
     }
 
     private void updateAllInfo() {
@@ -263,9 +364,11 @@ public class WindowController {
         gameState.setText("GameState: %s".formatted(adapter.getGameState()));
 
         Platform.runLater(() -> {
+            var peerList = adapter.getPeerInfoList();
+            if (!Objects.equals(peerList, peerTable.getItems())) {
+                peerTable.setItems(peerList);
+            }
             PeerView currentlySelected = peerTable.getSelectionModel().getSelectedItem();
-
-            peerTable.getItems().setAll(adapter.getPeerInfoList());
 
             if (currentlySelected != null) {
                 boolean found = false;
@@ -281,6 +384,7 @@ public class WindowController {
                     closePeerManagerPanel();
                 }
             }
+            peerTable.refresh();
         });
     }
 

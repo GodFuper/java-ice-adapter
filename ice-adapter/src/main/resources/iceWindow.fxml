@@ -14,6 +14,7 @@
                 <Button fx:id="killAdapterButton" text="CLOSE ADAPTER. This will disconnect you from the game!"
                         HBox.hgrow="ALWAYS"/>
                 <Button text="STUN/TURN" HBox.hgrow="ALWAYS" onAction="#openSettingsStunAndTurn"/>
+                <Button text="Server peers" HBox.hgrow="ALWAYS" onAction="#openPanelServerPeers"/>
             </HBox>
 
             <HBox spacing="25">
@@ -59,48 +60,60 @@
                             <TableColumn fx:id="rttColumn" text="rtt"/>
                             <TableColumn fx:id="lastColumn" text="last recv"/>
                             <TableColumn fx:id="echosRcvColumn" text="echos s/f"/>
+                            <TableColumn fx:id="relaySupport" text="PeerRelay"/>
+                            <TableColumn fx:id="selectedRelayPeerColumn" text="Proxy peer" prefWidth="100"/>
                         </columns>
                     </TableView>
                 </VBox>
-
-                <VBox fx:id="peerActionPane" visible="false" managed="false"
-                      spacing="10" minWidth="150" prefWidth="150"
+                <VBox spacing="10" minWidth="150" prefWidth="150"
                       style="-fx-border-color: gray; -fx-border-width: 2"
                       VBox.vgrow="ALWAYS">
-
-                    <HBox spacing="5" alignment="CENTER_LEFT">
-                        <Label fx:id="peerActionTitle" text="Peer" style="-fx-font-weight: bold;"/>
-                        <Region HBox.hgrow="ALWAYS"/>
-
-                        <Label text="✕"
-                               style="-fx-cursor: hand; -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: gray;"
-                               HBox.hgrow="NEVER"
-                               onMouseClicked="#closePeerManagerPanel"/>
-                    </HBox>
-
-                    <VBox spacing="10" alignment="CENTER">
-                        <Button fx:id="reconnectPeerButton" text="Reconnect" maxWidth="Infinity"/>
+                    <VBox fx:id="selectPeerActionPane" alignment="CENTER" spacing="10" VBox.vgrow="ALWAYS">
+                        <Label text="Select peer" style="-fx-font-weight: bold;"/>
                     </VBox>
+                    <VBox fx:id="peerActionPane" visible="false">
+                        <HBox spacing="5" alignment="CENTER_LEFT">
+                            <Label fx:id="peerActionTitle" text="Peer" style="-fx-font-weight: bold;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
 
-                    <Label text="Actions for peer:" style="-fx-font-weight: bold;"/>
+                            <Label text="✕"
+                                   style="-fx-cursor: hand; -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: gray;"
+                                   HBox.hgrow="NEVER"
+                                   onMouseClicked="#closePeerManagerPanel"/>
+                        </HBox>
 
-                    <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
-                        <ComboBox fx:id="allowCombinationComboBox"
-                                  prefWidth="Infinity"
-                                  HBox.hgrow="ALWAYS"/>
+                        <VBox spacing="10" alignment="CENTER">
+                            <Button fx:id="reconnectPeerButton" text="Reconnect" maxWidth="Infinity"/>
+                        </VBox>
 
-                        <ComboBox fx:id="connectionStrategyComboBox"
-                                  prefWidth="Infinity"
-                                  HBox.hgrow="ALWAYS"/>
-                    </VBox>
+                        <Label fx:id="actionsPeerLabel" text="Actions for peer:" style="-fx-font-weight: bold;"/>
 
-                    <VBox spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
-                        <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
-                        <TextArea fx:id="pairCandidateInfoArea"
-                                  wrapText="true"
-                                  editable="false"
-                                  VBox.vgrow="ALWAYS"
-                                  prefHeight="150"/>
+                        <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
+                            <ComboBox fx:id="allowCombinationComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+
+                            <ComboBox fx:id="connectionStrategyComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+                        </VBox>
+
+                        <Label text="Peer Relay (BETA):" style="-fx-font-weight: bold;"/>
+
+                        <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
+                            <ComboBox fx:id="relayPeerComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+                        </VBox>
+
+                        <VBox fx:id="pairCandidateInfoAreaPane" spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
+                            <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
+                            <TextArea fx:id="pairCandidateInfoArea"
+                                      wrapText="true"
+                                      editable="false"
+                                      VBox.vgrow="ALWAYS"
+                                      prefHeight="150"/>
+                        </VBox>
                     </VBox>
                 </VBox>
 

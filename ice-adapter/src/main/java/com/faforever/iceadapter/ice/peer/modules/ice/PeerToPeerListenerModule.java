@@ -4,9 +4,11 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
+import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
+import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.RelayServerModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
-import com.google.common.primitives.Longs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
@@ -15,8 +17,6 @@ import org.ice4j.socket.MultiplexingDatagramSocket;
 import java.net.DatagramPacket;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
-
-import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -52,8 +52,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         if (running) {
             log.info("Stopping IceListenerModule");
             running = false;
-            // Прерываем receive() через закрытие сокета или thread.interrupt()
-            Component component = peer.getComponent(); // предположим, есть такой метод
+            Component component = peer.getComponent();
             if (component != null) {
                 try {
                     component.getSocket().close();
@@ -63,7 +62,6 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
             }
         }
     }
-
 
     private void createListener(Component component) {
         running = true;
@@ -82,7 +80,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 byte[] dataCopy = new byte[packet.getLength()];
                 System.arraycopy(packet.getData(), packet.getOffset(), dataCopy, 0, packet.getLength());
 
-                handlerData(peer, dataCopy, 0, dataCopy.length);
+                handlerData(peer, dataCopy, dataCopy.length);
             } catch (Exception e) {
                 if (peer.isClosing()) {
                     break;
@@ -98,24 +96,16 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         running = false;
     }
 
-    private void handlerData(Peer peer, byte[] data, int offset, int length) {
+    private void handlerData(Peer peer, byte[] data, int length) {
         Thread.currentThread().setName(threadComponentListenerName());
         peer.setLastPacketReceived(System.currentTimeMillis());
 
-
-        if (data[0] == FaToPeerModule.COMMAND_FA) {
-            peer.sendToFaSocket(data, 1, length - 1);
-        } else if (data[0] == COMMAND_ECHO) {
-            if (!peer.isLocalOffer()) {
-                peer.sendToPeer(data, offset, length);
-            }
-            if (length == 9) {
-                peer.setLastEcho(Longs.fromByteArray(Arrays.copyOfRange(data, 1, length)));
-                peer.getEchosReceived().incrementAndGet();
-            } else {
-                peer.getInvalidPacket().incrementAndGet();
-                log.error("Invalid Echo received. length={}", length);
-            }
+        peer.handleData(data);
+        if (data[0] == FaToPeerModule.COMMAND_FA
+                || data[0] == PeerConnectivityCheckerModule.COMMAND_ECHO
+                || data[0] == RelayServerModule.COMMAND_CLIENT
+                || data[0] == RelayServerModule.COMMAND_SERVER
+                || data[0] == CommandModule.COMMAND_BASE) {
 
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);

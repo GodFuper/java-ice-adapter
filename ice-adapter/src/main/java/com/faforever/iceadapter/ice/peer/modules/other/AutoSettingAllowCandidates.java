@@ -17,8 +17,8 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
     private static final List<AllowCombination> combinations = List.of(AllowCombination.values());
 
     private final Peer peer;
-
     private final AtomicInteger index = new AtomicInteger(0);
+    private boolean enabled = true;
 
     @Override
     public void init() {
@@ -27,7 +27,7 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
 
     @Override
     public void onAgentChange(Peer peer, Agent agent) {
-        if (agent != null) {
+        if (agent != null && isEnabled()) {
             changeCombination();
         }
     }
@@ -40,5 +40,20 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
         }
         AllowCombination combination = combinations.get(id);
         peer.setCombination(combination);
+    }
+
+    @Override
+    public Boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public void enable() {
+        enabled = true;
+    }
+
+    @Override
+    public void disable() {
+        enabled = false;
     }
 }

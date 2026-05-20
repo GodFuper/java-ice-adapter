@@ -7,16 +7,17 @@ import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
-import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
-import com.faforever.iceadapter.ice.peer.modules.other.ChangeIceStrategyModule;
-import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
-import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
+import com.faforever.iceadapter.ice.peer.modules.other.*;
+import com.faforever.iceadapter.ice.peer.modules.relay.RelayClientModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.RelayServerModule;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
@@ -35,16 +36,28 @@ public enum PeerModule implements Comparator<PeerModule> {
         return module;
     }),
     CALCULATE_RTT(RttCalculateModule::new),
-    ICE_TO_ICE_SENDER(PeerToPeerSenderModule::new),
-    ICE_LISTENER_MODULE(PeerToPeerListenerModule::new),
+    PEER_TO_PEER_SENDER(PeerToPeerSenderModule::new),
+    PEER_LISTENER_MODULE(PeerToPeerListenerModule::new),
     CONNECTION_CHECKER_MODULE(PeerConnectivityCheckerModule::new),
     AUTO_SETTING_ALLOW_CANDIDATE(AutoSettingAllowCandidates::new),
-    CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new);
+    COMMAND_EXECUTE(CommandModule::new),
+    RELAY_CLIENT_MODULE(RelayClientModule::new),
+    RELAY_SERVER_MODULE(RelayServerModule::new),
+    CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
+    INFO_STATUS_MODULE(InfoStatusModule::new),
+    PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new);
 
     @Getter
     private static final List<PeerModule> sortedModules = Stream.of(PeerModule.values())
             .sorted()
             .toList();
+
+    private static final Set<PeerModule> MODULES_FOR_SERVER = Set.of(EVENT_BUS, RELAY_SERVER_MODULE, PEER_LISTENER_MODULE, PEER_TO_PEER_SENDER, PEER_TURN_REFRESHER_MODULE);
+
+    @Getter
+    private static final Set<PeerModule> modulesDisableForServer = Stream.of(PeerModule.values())
+            .filter(m -> !MODULES_FOR_SERVER.contains(m))
+            .collect(Collectors.toSet());
 
     private final int priority;
     private final Function<Peer, ModuleBase> createModule;

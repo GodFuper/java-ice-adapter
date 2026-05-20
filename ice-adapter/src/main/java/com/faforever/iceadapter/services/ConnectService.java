@@ -8,7 +8,7 @@ public interface ConnectService {
 
     void onChangeIceState(Peer peer, IceState oldState, IceState iceState);
 
-    void onConnectionLost(Peer peer);
+    void onConnectionLost(Peer peer, boolean clearIceState);
 
     void onMessageFromRPC(Peer peer, CandidatesMessage message);
 }

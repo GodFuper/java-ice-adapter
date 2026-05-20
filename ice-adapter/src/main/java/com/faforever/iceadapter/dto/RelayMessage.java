@@ -1,0 +1,51 @@
+package com.faforever.iceadapter.dto;
+
+import lombok.extern.slf4j.Slf4j;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+@Slf4j
+public record RelayMessage(int targetId, byte[] data) {
+
+    public static RelayMessage fromBytes(byte[] bytes, int offset, int length) {
+        if (bytes == null || length < 8) {
+            log.error("Minimal length for relay message is 8. Args: {}, {}, {}", bytes, offset, length);
+            return null;
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(bytes, offset, length).order(ByteOrder.BIG_ENDIAN);
+
+        int targetId = buffer.getInt();
+        int dataLength = buffer.getInt();
+
+        if (dataLength < 0 || dataLength > buffer.remaining()) {
+            log.error("Invalid data length: {}. Args: {}, {}, {}", dataLength, bytes, offset, length);
+            return null;
+        }
+
+        byte[] messageData = new byte[dataLength];
+        buffer.get(messageData);
+
+        return new RelayMessage(targetId, messageData);
+    }
+
+    public byte[] toBytes() {
+        int dataLength = data == null ? 0 : data.length;
+        ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + dataLength)
+                .order(ByteOrder.BIG_ENDIAN);
+
+        buffer.putInt(targetId);
+        buffer.putInt(dataLength);
+        if (data != null) {
+            buffer.put(data);
+        }
+        return buffer.array();
+    }
+
+    @Override
+    public String toString() {
+        return "RelayMessage{" +
+                "targetId=" + targetId +
+                '}';
+    }
+}

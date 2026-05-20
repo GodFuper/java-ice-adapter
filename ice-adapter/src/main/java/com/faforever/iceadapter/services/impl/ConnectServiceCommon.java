@@ -3,7 +3,9 @@ package com.faforever.iceadapter.services.impl;
 import com.faforever.iceadapter.ice.*;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import com.faforever.iceadapter.ice.turn.ModifyTurnCandidateHarvester;
 import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.IceUtils;
@@ -15,7 +17,6 @@ import org.ice4j.ice.Component;
 import org.ice4j.ice.IceMediaStream;
 import org.ice4j.ice.KeepAliveStrategy;
 import org.ice4j.ice.harvest.StunCandidateHarvester;
-import org.ice4j.ice.harvest.TurnCandidateHarvester;
 import org.ice4j.security.LongTermCredential;
 
 import java.util.List;
@@ -32,6 +33,7 @@ public abstract class ConnectServiceCommon {
     protected static final int MAXIMUM_PORT = 7112;
     protected static final int TIMEOUT_ON_CHECKING = 15000;
     protected static final int LOST_CONNECT_DURATION = 5000;
+    protected final MessageService messageService;
     protected final IceGameSession iceGameSession;
     protected final IceAsync iceAsync;
 
@@ -71,7 +73,7 @@ public abstract class ConnectServiceCommon {
         Agent oldAgent = peer.getAgent();
 
         if (oldAgent != null) {
-            closeAgent(oldAgent);
+            closeConnections(peer);
         }
 
         log.info("Creating agent");
@@ -104,7 +106,7 @@ public abstract class ConnectServiceCommon {
                 .filter(IceServer::isEnabled)
                 .forEach(iceServer -> {
                     var address = iceServer.getAddress();
-                    var harvester = new TurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
+                    var harvester = new ModifyTurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
                     log.info("Add TURN harvester for {}", address.getHostName());
                     agent.addCandidateHarvester(harvester);
                 });
@@ -136,7 +138,7 @@ public abstract class ConnectServiceCommon {
         AllowCombination combination = peer.getCombination();
         for (Component component : mediaStream.getComponents()) {
             CandidatesMessage candidatesMessage = CandidateUtil.packCandidates(
-                    iceGameSession.getMyId(),
+                    peer.getFromId(),
                     peer.getRemoteId(),
                     agent,
                     component,
@@ -145,7 +147,7 @@ public abstract class ConnectServiceCommon {
                     combination.isAllowRelay());
             log.debug("Sending own candidates, offered candidates: {}", candidatesMessage.toStrCandidates());
 
-            iceGameSession.sendToRpc(candidatesMessage);
+            peer.sendToRpc(candidatesMessage);
         }
     }
 
@@ -153,19 +155,7 @@ public abstract class ConnectServiceCommon {
         log.info("ICE state disconnected");
 
         peer.setLastLostConnect(System.currentTimeMillis());
-        Component component = peer.getComponent();
-        if (component != null) {
-            peer.setComponent(null);
-        }
-        IceMediaStream mediaStream = peer.getMediaStream();
-        if (mediaStream != null) {
-            peer.setMediaStream(null);
-        }
-        Agent agent = peer.getAgent();
-        if (agent != null) {
-            closeAgent(agent);
-            peer.setAgent(null);
-        }
+        closeConnections(peer);
 
         if (peer.isClosing()) {
             log.warn("Peer not connected anymore, aborting onConnectionLost of ICE");
@@ -178,12 +168,16 @@ public abstract class ConnectServiceCommon {
         }
 
         if (oldState == CONNECTED) {
-            iceGameSession.showMessage("Reconnecting to %s (connection lost)".formatted(peer.getRemoteLogin()));
+            messageService.showMessage("Reconnecting to %s (connection lost)".formatted(peer.getRemoteLogin()));
         }
     }
 
     protected void connectLost(Peer peer, boolean force) {
-        if (peer.getIceState() == DISCONNECTED) {
+        connectLost(peer, force, false);
+    }
+
+    protected void connectLost(Peer peer, boolean force, boolean clearIceState) {
+        if (peer.getIceState() == DISCONNECTED && !clearIceState) {
             log.warn("Lost connection, albeit already in ice state disconnected");
             return;
         }
@@ -194,13 +188,14 @@ public abstract class ConnectServiceCommon {
             return;
         }
         peer.setLastLostConnect(now);
+        closeConnections(peer);
         log.info("Lost connection");
 
         peer.stopModules();
 
-        iceGameSession.onConnected(peer, peer.isConnected());
+        peer.setConnected(false);
 
-        peer.setIceState(DISCONNECTED);
+        peer.setIceState(clearIceState ? null : DISCONNECTED);
     }
 
     protected boolean checking(Peer peer) {
@@ -231,7 +226,7 @@ public abstract class ConnectServiceCommon {
 
         peer.setComponent(component);
 
-        iceGameSession.onConnected(peer, true);
+        peer.setConnected(true);
 
         log.debug("ICE terminated, connected, candidate pair: {} ", peer.getStrCandidateTypes("|"));
 
@@ -265,6 +260,22 @@ public abstract class ConnectServiceCommon {
         }
     }
 
+    protected void closeConnections(Peer peer) {
+        Component component = peer.getComponent();
+        if (component != null) {
+            peer.setComponent(null);
+        }
+        IceMediaStream mediaStream = peer.getMediaStream();
+        if (mediaStream != null) {
+            peer.setMediaStream(null);
+        }
+        Agent agent = peer.getAgent();
+        if (agent != null) {
+            closeAgent(agent);
+            peer.setAgent(null);
+        }
+    }
+
     protected void closeAgent(Agent agent) {
         log.info("Close agent");
         try {
@@ -279,6 +290,4 @@ public abstract class ConnectServiceCommon {
             log.warn("Error freeing existing agent", e);
         }
     }
-
-    abstract void onConnectionLost(Peer peer);
 }

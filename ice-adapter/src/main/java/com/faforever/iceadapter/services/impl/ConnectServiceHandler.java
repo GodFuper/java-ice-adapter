@@ -27,15 +27,15 @@ public class ConnectServiceHandler implements ConnectService {
     }
 
     @Override
-    public void onConnectionLost(Peer peer) {
+    public void onConnectionLost(Peer peer, boolean clearIceState) {
         if (peer == null) {
             return;
         }
 
         if (peer.isLocalOffer()) {
-            controlledConnectService.onConnectionLost(peer);
+            controlledConnectService.onConnectionLost(peer, clearIceState);
         } else {
-            notControlledConnectService.onConnectionLost(peer);
+            notControlledConnectService.onConnectionLost(peer, clearIceState);
         }
     }
 

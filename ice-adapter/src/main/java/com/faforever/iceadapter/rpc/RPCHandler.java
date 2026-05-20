@@ -94,7 +94,7 @@ public class RPCHandler {
             log.error("Peer not found for id: {}. IceMsg ignored. {}", remotePlayerId, message);
             return;
         }
-        gameSession.onIceMessageFromRPC(peer, message);
+        peer.iceMessageFromRPC(message);
     }
 
     public void sendToGpgNet(String header, Object... args) {

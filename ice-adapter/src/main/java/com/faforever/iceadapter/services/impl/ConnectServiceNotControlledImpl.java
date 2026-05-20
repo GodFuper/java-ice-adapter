@@ -6,6 +6,7 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,8 @@ import static com.faforever.iceadapter.ice.IceState.*;
 @Slf4j
 public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implements ConnectService {
 
-    public ConnectServiceNotControlledImpl(IceGameSession iceGameSession, IceAsync iceAsync) {
-        super(iceGameSession, iceAsync);
+    public ConnectServiceNotControlledImpl(MessageService messageService, IceGameSession iceGameSession, IceAsync iceAsync) {
+        super(messageService, iceGameSession, iceAsync);
     }
 
     void onIceStateNew(Peer peer) {
@@ -56,16 +57,16 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
     }
 
     @Override
-    public void onConnectionLost(Peer peer) {
+    public void onConnectionLost(Peer peer, boolean clearIceState) {
         if (peer == null) {
             return;
         }
-        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false));
+        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false, clearIceState));
     }
 
     @Override
     public void onMessageFromRPC(Peer peer, CandidatesMessage message) {
-        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> {
+        LockUtil.tryExecuteWithLock(peer.getLock(LOCK_CONNECT), () -> {
             logicOnIceMessageReceived(peer, message);
         });
     }
@@ -94,6 +95,7 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
 
         for (Component component : mediaStream.getComponents()) {
             CandidateUtil.unpackCandidates(
+                    peer,
                     message,
                     agent,
                     component,

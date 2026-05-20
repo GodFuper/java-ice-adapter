@@ -8,6 +8,7 @@ import com.google.common.primitives.Longs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -61,6 +62,35 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         });
     }
 
+
+    @Override
+    public void onConnectingChange(Peer peer, boolean connecting) {
+        if (connecting) {
+            start();
+        } else {
+            stop();
+        }
+    }
+
+    @Override
+    public void onHandleData(Peer peer, byte[] data) {
+        if (data[0] != COMMAND_ECHO) {
+            return;
+        }
+        int length = data.length;
+        if (!peer.isLocalOffer()) {
+            peer.sendToPeer(data);
+        }
+        if (length == 9) {
+            peer.setLastEcho(Longs.fromByteArray(Arrays.copyOfRange(data, 1, length)));
+            peer.getEchosReceived().incrementAndGet();
+        } else {
+            peer.getInvalidPacket().incrementAndGet();
+            log.error("Invalid Echo received. length={}", length);
+        }
+
+    }
+
     @Override
     public Boolean isRunning() {
         return scheduledFuture != null && !scheduledFuture.isDone();
@@ -97,7 +127,7 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
         System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, data, 1, 8);
 
-        peer.sendToPeer(data, 0, data.length);
+        peer.sendToPeer(data);
 
         long lastPacketReceived = peer.getLastPacketReceived();
         long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;

@@ -1,9 +1,12 @@
 package com.faforever.iceadapter.ice.peer.modules;
 
+import com.faforever.iceadapter.dto.command.CommandBase;
+import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.ServerPeer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Agent;
@@ -35,6 +38,20 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
                 () -> l.onIceStateChange(peer, oldState, newState)));
     }
 
+    @Override
+    public void onConnectingChange(Peer peer, boolean connecting) {
+        log.trace("Peer {} change connecting -> {}", peer.getPeerIdentifier(), connecting);
+        listeners.forEach(l -> callMethod(peer, "onConnectingChange",
+                () -> l.onConnectingChange(peer, connecting)));
+    }
+
+    @Override
+    public void onCombinationChange(Peer peer, AllowCombination combination) {
+        log.info("Peer {} change combination -> {}", peer.getPeerIdentifier(), combination);
+        listeners.forEach(l -> callMethod(peer, "onCombinationChange",
+                () -> l.onCombinationChange(peer, combination)));
+    }
+
     public void onAgentChange(Peer peer, Agent newAgent) {
         log.trace("Peer {} agent changed. now = {}", peer.getPeerIdentifier(), newAgent);
         listeners.forEach(l -> callMethod(peer, "onAgentChange",
@@ -54,6 +71,41 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
+    public void onRelayPeerChange(Peer peer, Peer relay) {
+        log.info("Peer {} relayPeer changed. now = {}", peer.getPeerIdentifier(), relay);
+        listeners.forEach(l -> callMethod(peer, "onRelayPeerChange",
+                () -> l.onRelayPeerChange(peer, relay)));
+    }
+
+    @Override
+    public void onAddServerPeer(Peer peer, ServerPeer serverPeer) {
+        log.info("Peer {} add server peer {}", peer.getPeerIdentifier(), serverPeer.getPeerIdentifier());
+        listeners.forEach(l -> callMethod(peer, "onAddServerPeer",
+                () -> l.onAddServerPeer(peer, serverPeer)));
+    }
+
+    @Override
+    public void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
+        log.info("Peer {} on ice message from rpc {}", peer.getPeerIdentifier(), message);
+        listeners.forEach(l -> callMethod(peer, "onIceMessageFromRPC",
+                () -> l.onIceMessageFromRPC(peer, message)));
+    }
+
+    @Override
+    public void onSendToRpc(Peer peer, CandidatesMessage message) {
+        log.trace("Peer {} on send to rpc {}", peer.getPeerIdentifier(), message);
+        listeners.forEach(l -> callMethod(peer, "onSendToRpc",
+                () -> l.onSendToRpc(peer, message)));
+    }
+
+    @Override
+    public void onHandleData(Peer peer, byte[] data) {
+        log.trace("Peer {} handle data. data.length={}", peer.getPeerIdentifier(), data.length);
+        listeners.forEach(l -> callMethod(peer, "onHandleData",
+                () -> l.onHandleData(peer, data)));
+    }
+
+    @Override
     public void onChangeEcho(Peer peer, Long lastEcho, long echo) {
         listeners.forEach(l -> callMethod(peer, "onChangeEcho",
                 () -> l.onChangeEcho(peer, lastEcho, echo)));
@@ -66,23 +118,23 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
-        log.trace("Peer {} onSendToFaSocket data with length {}", peer.getPeerIdentifier(), length);
-        listeners.forEach(l -> callMethod(peer, "onSendToFaSocket",
-                () -> l.onSendToFaSocket(peer, data, offset, length)));
-    }
-
-    @Override
-    public void onSendToPeer(Peer peer, byte[] data, int offset, int length) {
-        log.trace("Peer {} onSendToPeer data with length {}", peer.getPeerIdentifier(), length);
+    public void onSendToPeer(Peer peer, byte[] data) {
+        log.trace("Peer {} onSendToPeer data with length {}", peer.getPeerIdentifier(), data.length);
         listeners.forEach(l -> callMethod(peer, "onSendToPeer",
-                () -> l.onSendToPeer(peer, data, offset, length)));
+                () -> l.onSendToPeer(peer, data)));
     }
 
     @Override
-    public void onConnectionLost(Peer peer) {
-        log.info("Peer onConnectionLost: {}", peer.getPeerIdentifier());
-        listeners.forEach(l -> callMethod(peer, "onConnectionLost", () -> l.onConnectionLost(peer)));
+    public void onSendCommand(Peer peer, CommandBase command, boolean force) {
+        log.info("Peer {} onSendCommand {} {}", peer.getPeerIdentifier(), command, force);
+        listeners.forEach(l -> callMethod(peer, "onSendCommand",
+                () -> l.onSendCommand(peer, command, force)));
+    }
+
+    @Override
+    public void onConnectionLost(Peer peer, boolean clearIceState) {
+        log.info("Peer onConnectionLost: {} {}", peer.getPeerIdentifier(), clearIceState);
+        listeners.forEach(l -> callMethod(peer, "onConnectionLost", () -> l.onConnectionLost(peer, clearIceState)));
     }
 
     @Override

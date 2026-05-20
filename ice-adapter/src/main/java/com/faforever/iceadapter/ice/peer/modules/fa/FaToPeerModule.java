@@ -125,6 +125,6 @@ public class FaToPeerModule implements ModuleBase {
         byte[] data = new byte[length + 1];
         data[0] = COMMAND_FA;
         System.arraycopy(faData, 0, data, 1, length);
-        peer.sendToPeer(data, 0, data.length);
+        peer.sendToPeer(data);
     }
 }

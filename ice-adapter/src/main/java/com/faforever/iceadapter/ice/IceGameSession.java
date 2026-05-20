@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.ServerPeer;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,8 @@ public interface IceGameSession {
 
     Map<Integer, Peer> getPeers();
 
+    List<ServerPeer> getServerPeers();
+
     Optional<Peer> getPeer(int peerId);
 
     List<IceServer> getIceServers();
@@ -17,12 +20,4 @@ public interface IceGameSession {
     boolean isGameEnded();
 
     int getLobbyPort();
-
-    int getMyId();
-
-    void sendToRpc(CandidatesMessage message);
-
-    void onConnected(Peer peer, boolean connected);
-
-    void showMessage(String message);
 }

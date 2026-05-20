@@ -2,6 +2,7 @@ package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.dto.IceServerView;
 import com.faforever.iceadapter.dto.PeerView;
+import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.collections.ObservableList;
@@ -89,6 +90,8 @@ public interface UIAdapter {
      */
     String getGameState();
 
+    ObservableList<ServerPeerView> getServerPeerInfoList();
+
     /**
      * Returns an observable list of peer connection details.
      * This list can be bound to UI components for real-time updates.
@@ -96,6 +99,12 @@ public interface UIAdapter {
      * @return observable list of peer info objects
      */
     ObservableList<PeerView> getPeerInfoList();
+
+
+    ObservableList<PeerView> getRelayPeersInfoList(int id);
+
+    PeerView getPeerInfo(int id);
+
 
     /**
      * Returns an observable list of ICE server configurations used by the adapter.
@@ -131,6 +140,8 @@ public interface UIAdapter {
      * @param newStrategy the new strategy to apply
      */
     void setStrategy(PeerView peer, IceAgentStrategy newStrategy);
+
+    void setRelayPeer(PeerView peer, PeerView relayPeer);
 
     boolean isEnabledManualCombinationConnection();
 

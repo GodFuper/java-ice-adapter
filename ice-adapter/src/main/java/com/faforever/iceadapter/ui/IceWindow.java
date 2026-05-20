@@ -42,7 +42,6 @@ public class IceWindow extends Application {
 
             controller = loader.getController();
             controller.setAdapter(new UIAdapterImpl(IceAdapter.INSTANCE));
-            controller.initialize();
         } catch (IOException e) {
             log.error("Could not load debugger window fxml", e);
         }

@@ -19,4 +19,10 @@ public interface ModuleBase {
         return null;
     }
 
+    default void enable() {
+    }
+
+    default void disable() {
+    }
+
 }

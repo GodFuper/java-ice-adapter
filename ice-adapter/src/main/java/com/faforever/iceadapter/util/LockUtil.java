@@ -16,6 +16,16 @@ public class LockUtil {
         }
     }
 
+    public void tryExecuteWithLock(Lock lock, Runnable task) {
+        if (lock.tryLock()) {
+            try {
+                task.run();
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+
     public <T> T executeWithLock(Lock lock, Callable<T> task) {
         lock.lock();
         try {

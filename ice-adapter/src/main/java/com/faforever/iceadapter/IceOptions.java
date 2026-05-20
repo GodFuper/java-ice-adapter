@@ -60,12 +60,12 @@ public class IceOptions {
     private String telemetryServer;
 
     @Option(names = "--manual-combination-connection",
-            defaultValue = "false",
+            defaultValue = "true",
             description = "Manually editing the connection combination in the UI")
     private boolean manualCombinationConnection;
 
     @Option(names = "--manual-strategy-connection",
-            defaultValue = "false",
+            defaultValue = "true",
             description = "Manually editing the connection strategy in the UI")
     private boolean manualStrategyConnection;
 
@@ -73,4 +73,9 @@ public class IceOptions {
             defaultValue = "false",
             description = "Additional information about Peer in the UI")
     private boolean additionalInfoPeer;
+
+    @Option(names = "--host-mode",
+            defaultValue = "true",
+            description = "Enable host-based P2P connection mode where one player acts as a host and others connect through them")
+    private boolean hostMode;
 }

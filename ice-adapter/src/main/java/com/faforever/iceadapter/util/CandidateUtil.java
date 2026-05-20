@@ -2,6 +2,7 @@ package com.faforever.iceadapter.util;
 
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
+import com.faforever.iceadapter.ice.peer.Peer;
 import org.ice4j.Transport;
 import org.ice4j.TransportAddress;
 import org.ice4j.ice.*;
@@ -11,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class CandidateUtil {
+    public static final int ICE_VERSION = 2;
 
     public static int candidateIDFactory = 0;
 
@@ -61,6 +63,7 @@ public class CandidateUtil {
     }
 
     public static void unpackCandidates(
+            Peer peer,
             CandidatesMessage remoteCandidatesMessage,
             Agent agent,
             Component component,

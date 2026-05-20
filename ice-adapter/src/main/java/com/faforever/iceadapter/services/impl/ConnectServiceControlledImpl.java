@@ -6,6 +6,7 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.ConnectService;
 import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,8 @@ import static com.faforever.iceadapter.ice.IceState.*;
 @Slf4j
 public class ConnectServiceControlledImpl extends ConnectServiceCommon implements ConnectService {
 
-    public ConnectServiceControlledImpl(IceGameSession iceGameSession, IceAsync iceAsync) {
-        super(iceGameSession, iceAsync);
+    public ConnectServiceControlledImpl(MessageService messageService, IceGameSession iceGameSession, IceAsync iceAsync) {
+        super(messageService, iceGameSession, iceAsync);
     }
 
     void onIceStateNew(Peer peer) {
@@ -62,11 +63,11 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
     }
 
     @Override
-    public void onConnectionLost(Peer peer) {
+    public void onConnectionLost(Peer peer, boolean clearIceState) {
         if (peer == null) {
             return;
         }
-        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false));
+        LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false, clearIceState));
     }
 
     private void tryReInitState(Peer peer, IceState oldState) {
@@ -98,6 +99,7 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
 
         for (Component component : mediaStream.getComponents()) {
             CandidateUtil.unpackCandidates(
+                    peer,
                     message,
                     agent,
                     component,

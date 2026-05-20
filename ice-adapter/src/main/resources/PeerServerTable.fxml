@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
+<VBox fx:id="root" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.faforever.iceadapter.ui.controller.InfoServerPeerController"
+      prefHeight="400.0">
+    <TableView fx:id="tableView" editable="true" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="main" text="main"/>
+            <TableColumn fx:id="remote" text="remote"/>
+            <TableColumn fx:id="hostColumn" text="host"/>
+            <TableColumn fx:id="reflexiveColumn" text="reflexive"/>
+            <TableColumn fx:id="relayColumn" text="relay"/>
+            <TableColumn fx:id="stateColumn" text="state"/>
+            <TableColumn fx:id="pairConColumn" text="pair" prefWidth="100"/>
+            <TableColumn fx:id="agentStateColumn" text="agent"/>
+            <TableColumn fx:id="offerColumn" text="localOffer"/>
+        </columns>
+    </TableView>
+
+    <stylesheets>
+        <URL value="@infoWindowStyle.css"/>
+    </stylesheets>
+</VBox>

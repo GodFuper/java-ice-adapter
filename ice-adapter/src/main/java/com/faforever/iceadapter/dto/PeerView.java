@@ -26,6 +26,7 @@ public class PeerView implements PeerEventListener {
     private final StringProperty rtt = new SimpleStringProperty();
     private final StringProperty lastRecv = new SimpleStringProperty();
     private final StringProperty echosReceived = new SimpleStringProperty();
+    private final BooleanProperty peerRelaySupport = new SimpleBooleanProperty();
     private final AdditionalInfo additionalInfo = new AdditionalInfo();
 
     @Data
@@ -36,6 +37,7 @@ public class PeerView implements PeerEventListener {
         private AllowCombination combination;
         private IceAgentStrategy agentStrategy;
         private Supplier<String> getFullCandidateInfo;
+        private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
     }
 
     public PeerView(int id, String login) {
@@ -49,6 +51,11 @@ public class PeerView implements PeerEventListener {
     }
 
     @Override
+    public void onConnectingChange(Peer peer, boolean connecting) {
+        update(peer);
+    }
+
+    @Override
     public void onAgentChange(Peer peer, Agent agent) {
         update(peer);
     }
@@ -56,6 +63,10 @@ public class PeerView implements PeerEventListener {
     @Override
     public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
         update(peer);
+    }
+
+    public String prettyPrint() {
+        return "%s (ID: %d)".formatted(login.get(), id.get());
     }
 
     public void update(Peer peer) {
@@ -77,12 +88,14 @@ public class PeerView implements PeerEventListener {
                 .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
                 .orElse("never"));
         getEchosReceived().set("%s/%s".formatted(String.valueOf(peer.countEchosReceived()), String.valueOf(peer.countInvalidEchosReceived())));
+        getPeerRelaySupport().set(peer.isSupportRelay());
 
         AllowCombination combination = peer.getCombination();
         getAdditionalInfo().getAllowHost().set(combination.isAllowHost());
         getAdditionalInfo().getAllowReflexive().set(combination.isAllowReflexive());
         getAdditionalInfo().getAllowRelay().set(combination.isAllowRelay());
         getAdditionalInfo().setAgentStrategy(peer.getAgentStrategy());
+        getAdditionalInfo().getRelayPeerId().set(peer.getRelayPeerId().orElse(-1));
         getAdditionalInfo().setCombination(combination);
 
         getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);

@@ -1,12 +1,18 @@
 package com.faforever.iceadapter.ice.peer;
 
+import com.faforever.iceadapter.dto.command.CommandBase;
+import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import org.ice4j.ice.Agent;
 import org.ice4j.ice.Component;
 import org.ice4j.ice.IceMediaStream;
 
 public interface PeerEventListener {
     default void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
+    }
+
+    default void onConnectingChange(Peer peer, boolean connecting) {
     }
 
     default void onAgentChange(Peer peer, Agent agent) {
@@ -18,21 +24,39 @@ public interface PeerEventListener {
     default void onIceComponentChange(Peer peer, Component component) {
     }
 
+    default void onCombinationChange(Peer peer, AllowCombination combination) {
+    }
+
+    default void onRelayPeerChange(Peer peer, Peer relay) {
+    }
+
+    default void onAddServerPeer(Peer peer, ServerPeer serverPeer) {
+    }
+
     default void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
     }
 
     default void onChangeEcho(Peer peer, Long lastEcho, long echo) {
     }
 
-    default void onSendToFaSocket(Peer peer, byte[] data, int offset, int length) {
+    default void onHandleData(Peer peer, byte[] data) {
     }
 
-    default void onSendToPeer(Peer peer, byte[] data, int offset, int length) {
+    default void onSendToPeer(Peer peer, byte[] data) {
     }
 
-    default void onConnectionLost(Peer peer) {
+    default void onSendCommand(Peer peer, CommandBase command, boolean force) {
+    }
+
+    default void onConnectionLost(Peer peer, boolean clearIceState) {
     }
 
     default void onClose(Peer peer, boolean hasClosed) {
+    }
+
+    default void onSendToRpc(Peer peer, CandidatesMessage message) {
+    }
+
+    default void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
     }
 }

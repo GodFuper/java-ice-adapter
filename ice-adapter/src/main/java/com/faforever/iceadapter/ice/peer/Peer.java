@@ -1,9 +1,12 @@
 package com.faforever.iceadapter.ice.peer;
 
+import com.faforever.iceadapter.dto.command.CommandBase;
+import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
+import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
 import com.faforever.iceadapter.util.CandidateUtil;
 import kotlin.Pair;
 import lombok.Data;
@@ -28,7 +31,7 @@ import static com.faforever.iceadapter.debug.Debug.debug;
 @Data
 @Slf4j
 @RequiredArgsConstructor
-public class Peer {
+public abstract class Peer {
     private final int remoteId;
     private final String remoteLogin;
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
@@ -46,22 +49,36 @@ public class Peer {
     private AtomicInteger echosReceived = new AtomicInteger(0);
     private AtomicInteger invalidPacket = new AtomicInteger(0);
 
-    public volatile boolean closing = false;
+    private volatile boolean closing = false;
 
     private volatile DatagramSocket faSocket;
 
+    private volatile boolean connected = false;
     private volatile KeepAliveStrategy keepAliveStrategy;
     private volatile Agent agent;
     private volatile IceMediaStream mediaStream;
     private volatile Component component;
     private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
     private AllowCombination combination = AllowCombination.ALL;
+    private boolean disableConnectService = false;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
 
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
     private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
+
+    private int version = 1;
+
+    public abstract int getFromId();
+
+    public Optional<Integer> getRelayPeerId() {
+        return Optional.empty();
+    }
+
+    public boolean isAllowRelay() {
+        return false;
+    }
 
     public Integer getLocalPort() {
         return faSocket != null ? faSocket.getLocalPort() : 0;
@@ -93,7 +110,7 @@ public class Peer {
     }
 
     public boolean isConnected() {
-        return iceState == IceState.CONNECTED && component != null;
+        return iceState == IceState.CONNECTED && component != null || connected;
     }
 
     public void startInitPeer() {
@@ -168,6 +185,41 @@ public class Peer {
         event(bus -> bus.onIceComponentChange(this, component));
     }
 
+    public void setRelayPeer(Peer relay) {
+        event(bus -> bus.onRelayPeerChange(this, relay));
+    }
+
+    public void setCombination(AllowCombination combination) {
+        setCombination(combination, false);
+    }
+
+    public void setCombination(AllowCombination combination, boolean disableAutomatic) {
+        this.combination = combination;
+        event(bus -> bus.onCombinationChange(this, combination));
+
+        if (disableAutomatic) {
+            getModule(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE, AutoSettingAllowCandidates.class)
+                    .ifPresent(ModuleBase::disable);
+        }
+    }
+
+    public void addServerPeer(ServerPeer serverPeer) {
+        event(bus -> bus.onAddServerPeer(this, serverPeer));
+    }
+
+    public void sendToRpc(CandidatesMessage message) {
+        event(bus -> bus.onSendToRpc(this, message));
+    }
+
+    public void iceMessageFromRPC(CandidatesMessage message) {
+        event(bus -> bus.onIceMessageFromRPC(this, message));
+    }
+
+    public void setConnected(boolean connected) {
+        this.connected = connected;
+        event(bus -> bus.onConnectingChange(this, connected));
+    }
+
     public CandidatePair getSelectedPair() {
         return getActiveComponent()
                 .map(Component::getSelectedPair)
@@ -234,16 +286,28 @@ public class Peer {
         return invalidPacket.get();
     }
 
-    public void sendToFaSocket(byte[] data, int offset, int length) {
-        event(bus -> bus.onSendToFaSocket(this, data, offset, length));
+    public void handleData(byte[] data) {
+        event(bus -> bus.onHandleData(this, data));
     }
 
-    public void sendToPeer(byte[] data, int offset, int length) {
-        event(bus -> bus.onSendToPeer(this, data, offset, length));
+    public void sendToPeer(byte[] data) {
+        event(bus -> bus.onSendToPeer(this, data));
+    }
+
+    public void sendCommand(CommandBase command) {
+        sendCommand(command, false);
+    }
+
+    public void sendCommand(CommandBase command, boolean force) {
+        event(bus -> bus.onSendCommand(this, command, force));
+    }
+
+    public void lostConnect(boolean clearIceState) {
+        event(bus -> bus.onConnectionLost(this, clearIceState));
     }
 
     public void lostConnect() {
-        event(bus -> bus.onConnectionLost(this));
+        lostConnect(false);
     }
 
     public void reconnect() {
@@ -254,6 +318,18 @@ public class Peer {
         Long lastEcho = this.lastEcho;
         this.lastEcho = echo;
         event(bus -> bus.onChangeEcho(this, lastEcho, echo));
+    }
+
+    public boolean isSupportCommand() {
+        return version >= 2;
+    }
+
+    public boolean isSupportRelay() {
+        return version >= 2 && isAllowRelay();
+    }
+
+    public boolean isCanSelectForRelayPeerById(int id) {
+        return id != remoteId && isSupportRelay() && getRelayPeerId().isEmpty();
     }
 
     public void close() {
