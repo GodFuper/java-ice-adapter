@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.dto.command.info;
+package com.faforever.iceadapter.dto.command.relay.manual.info;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.peer.MainPeer;

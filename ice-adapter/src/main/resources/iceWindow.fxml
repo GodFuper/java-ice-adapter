@@ -59,6 +59,7 @@
                             <TableColumn fx:id="offerColumn" text="localOffer"/>
                             <TableColumn fx:id="rttColumn" text="rtt"/>
                             <TableColumn fx:id="lastColumn" text="last recv"/>
+                            <TableColumn fx:id="lastRelayColumn" text="last relay recv"/>
                             <TableColumn fx:id="echosRcvColumn" text="echos s/f"/>
                             <TableColumn fx:id="relaySupport" text="PeerRelay"/>
                             <TableColumn fx:id="selectedRelayPeerColumn" text="Proxy peer" prefWidth="100"/>

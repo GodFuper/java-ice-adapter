@@ -27,10 +27,10 @@ public class CommandModule implements ModuleBase, PeerEventListener {
             return;
         }
 
-        executeCommand(data);
+        handleCommand(data);
     }
 
-    private void executeCommand(byte[] data) {
+    private void handleCommand(byte[] data) {
         CommandBase command = CommandBase.initCommand(data);
 
         if (command == null) {
@@ -38,11 +38,25 @@ public class CommandModule implements ModuleBase, PeerEventListener {
             return;
         }
 
+        peer.handleCommand(command);
+    }
+
+    @Override
+    public void onHandleCommand(Peer peer, CommandBase command) {
+        if (command == null) {
+            return;
+        }
+
+        executeCommand(command);
+    }
+
+    private void executeCommand(CommandBase command) {
         try {
-            log.info("Executing command {} from {}", command, peer.getPeerIdentifier());
             command.execute(peer);
+            log.info("Executing command {} from {}", command, peer.getPeerIdentifier());
         } catch (Exception e) {
             log.error("Error while executing command {} from {}", command, peer.getPeerIdentifier(), e);
         }
     }
+
 }

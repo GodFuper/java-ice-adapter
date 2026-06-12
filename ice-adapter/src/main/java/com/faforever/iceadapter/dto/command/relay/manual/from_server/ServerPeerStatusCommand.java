@@ -1,8 +1,8 @@
-package com.faforever.iceadapter.dto.command.from_server;
+package com.faforever.iceadapter.dto.command.relay.manual.from_server;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
-import com.faforever.iceadapter.dto.command.from_client.SetIceStateCommand;
-import com.faforever.iceadapter.dto.command.from_client.StopRelayServerCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_client.SetIceStateCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_client.StopRelayServerCommand;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;

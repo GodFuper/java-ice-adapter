@@ -81,6 +81,7 @@ public class GameSession implements IceGameSession {
         Peer peer = new MainPeer(options.getId(), remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort(), options.isHostMode(), getDisabledModules());
         peer.init();
         peer.setCombination(combination);
+        peer.setGameSession(this);
         peer.initModules();
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();

@@ -42,6 +42,9 @@ public interface PeerEventListener {
     default void onHandleData(Peer peer, byte[] data) {
     }
 
+    default void onHandleCommand(Peer peer, CommandBase command) {
+    }
+
     default void onSendToPeer(Peer peer, byte[] data) {
     }
 

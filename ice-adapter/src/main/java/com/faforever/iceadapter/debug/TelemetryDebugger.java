@@ -79,7 +79,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
             @Override
             public void onClose(int code, String reason, boolean remote) {
-                log.info("Telemetry websocket closed (code: {}, reason: {})", code, reason);
+                log.debug("Telemetry websocket closed (code: {}, reason: {})", code, reason);
             }
 
             @Override
@@ -95,7 +95,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
 
     private void sendMessage(OutgoingMessageV1 message) {
         if (!messageQueue.offer(message)) {
-            log.warn("Telemetry message queue is full. Dropping message: {}", message.getType());
+            log.trace("Telemetry message queue is full. Dropping message: {}", message.getType());
         }
     }
 
@@ -143,7 +143,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
             delay = delay.plusMillis(ThreadLocalRandom.current().nextLong(0, 1000));
             delay = Duration.ofMillis(Math.min(delay.toMillis(), MAX_RECONNECT_DELAY.toMillis()));
 
-            log.info("Attempting to connect to telemetry server... Attempt {}/{}", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
+            log.debug("Attempting to connect to telemetry server... Attempt {}/{}", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
 
             Thread.sleep(delay.toMillis());
 

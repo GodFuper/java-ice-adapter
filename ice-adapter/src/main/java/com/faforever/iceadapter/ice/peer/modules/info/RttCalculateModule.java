@@ -32,12 +32,11 @@ public class RttCalculateModule implements ModuleBase, PeerEventListener {
     private void calculateRttWhenAgentControlling(long echo) {
         long rttMs = System.currentTimeMillis() - echo;
         int rtt = (int) (rttMs);
-        calculateRtt(rtt);
+        peer.setRtt(calculateRtt(rtt));
     }
 
-    private void calculateRtt(int rtt) {
+    private float calculateRtt(int rtt) {
         float oldRtt = peer.getRtt();
-        float calcRtt = oldRtt == 0 ? rtt : oldRtt * 0.8f + (float) rtt * 0.2f;
-        peer.setRtt(calcRtt);
+        return oldRtt == 0 ? rtt : oldRtt * 0.8f + (float) rtt * 0.2f;
     }
 }

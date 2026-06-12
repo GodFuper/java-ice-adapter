@@ -2,12 +2,16 @@ package com.faforever.iceadapter.ice.peer;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.CandidatesMessage;
+import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
 import com.faforever.iceadapter.util.CandidateUtil;
+import com.faforever.iceadapter.util.CollectionUtils;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -38,14 +42,23 @@ public abstract class Peer {
     private final int preferredPort;
     private final int lobbyPort;
     private final Set<PeerModule> disabledModules;
+    private IceGameSession gameSession;
 
     private String peerIdentifier;
 
     private volatile long lastLostConnect = 0;
 
+    private final Cache<Integer, List<Integer>> cacheBestRelays = CacheBuilder.newBuilder()
+            .maximumSize(1)
+            .build();
+
+    private final Map<Integer, RelayPing> rtts = new ConcurrentHashMap<>();
+    private boolean sendDirectAndRelay = true;
+
     private volatile float rtt = 0.0f;
     private volatile Long lastEcho;
     private volatile Long lastPacketReceived;
+    private volatile Long relayLastPacketReceived;
     private AtomicInteger echosReceived = new AtomicInteger(0);
     private AtomicInteger invalidPacket = new AtomicInteger(0);
 
@@ -53,6 +66,7 @@ public abstract class Peer {
 
     private volatile DatagramSocket faSocket;
 
+    private volatile boolean autoRelay = false;
     private volatile boolean connected = false;
     private volatile KeepAliveStrategy keepAliveStrategy;
     private volatile Agent agent;
@@ -278,6 +292,10 @@ public abstract class Peer {
         return Optional.ofNullable(getLastPacketReceived());
     }
 
+    public Optional<Long> getRelayLastReceived() {
+        return Optional.ofNullable(getRelayLastPacketReceived());
+    }
+
     public Integer countEchosReceived() {
         return echosReceived.get();
     }
@@ -288,6 +306,10 @@ public abstract class Peer {
 
     public void handleData(byte[] data) {
         event(bus -> bus.onHandleData(this, data));
+    }
+
+    public void handleCommand(CommandBase command) {
+        event(bus -> bus.onHandleCommand(this, command));
     }
 
     public void sendToPeer(byte[] data) {
@@ -332,6 +354,18 @@ public abstract class Peer {
         return id != remoteId && isSupportRelay() && getRelayPeerId().isEmpty();
     }
 
+    public List<Integer> getBestRelays() {
+        return cacheBestRelays.getIfPresent(remoteId);
+    }
+
+    public boolean existBestRelays() {
+        return !CollectionUtils.isEmpty(getBestRelays());
+    }
+
+    public void setBestRelays(List<Integer> bestRelays) {
+        cacheBestRelays.put(remoteId, bestRelays);
+    }
+
     public void close() {
         if (closing) {
             return;
@@ -348,6 +382,15 @@ public abstract class Peer {
         log.info("Peer closed: {}", getPeerIdentifier());
     }
 
+    @Override
+    public boolean equals(Object object) {
+        if (!(object instanceof Peer peer)) return false;
+        return getRemoteId() == peer.getRemoteId() && getFromId() == peer.getFromId();
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(getRemoteId(), getFromId());
+    }
 }
 

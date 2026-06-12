@@ -1,7 +1,7 @@
-package com.faforever.iceadapter.dto.command.from_client;
+package com.faforever.iceadapter.dto.command.relay.manual.from_client;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
-import com.faforever.iceadapter.dto.command.from_server.ServerPeerStatusCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.ServerPeerStatusCommand;
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.ServerPeer;

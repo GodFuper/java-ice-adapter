@@ -1,12 +1,14 @@
 package com.faforever.iceadapter.dto.command;
 
-import com.faforever.iceadapter.dto.command.from_client.*;
-import com.faforever.iceadapter.dto.command.from_server.RpcMessageFromServerPeerCommand;
-import com.faforever.iceadapter.dto.command.from_server.ServerPeerConnectingCommand;
-import com.faforever.iceadapter.dto.command.from_server.ServerPeerStatusCommand;
-import com.faforever.iceadapter.dto.command.info.InfoRelayStatusCommand;
+import com.faforever.iceadapter.dto.command.relay.auto.info.RelayPingCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_client.*;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.RpcMessageFromServerPeerCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.ServerPeerConnectingCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.ServerPeerStatusCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.info.InfoRelayStatusCommand;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.util.ObjectMapperUtil;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -30,11 +32,18 @@ import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMM
         @JsonSubTypes.Type(value = ServerPeerStatusCommand.class, name = "server_peer_status"),
 
         @JsonSubTypes.Type(value = InfoRelayStatusCommand.class, name = "info_relay_status"),
+
+        @JsonSubTypes.Type(value = RelayPingCommand.class, name = "relay_ping")
 })
 public abstract class CommandBase {
     private static final boolean COMPRESSION = true;
 
     public abstract void execute(Peer peer);
+
+    @JsonIgnore
+    public boolean isOnlyDirect() {
+        return false;
+    }
 
     public byte[] bytes() {
         return ObjectMapperUtil.toBytesAndAddFirstByte((byte) COMMAND_BASE, this, COMPRESSION);

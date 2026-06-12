@@ -1,9 +1,9 @@
-package com.faforever.iceadapter.ice.peer.modules.relay;
+package com.faforever.iceadapter.ice.peer.modules.relay.manual;
 
 import com.faforever.iceadapter.dto.RelayMessage;
-import com.faforever.iceadapter.dto.command.from_server.RpcMessageFromServerPeerCommand;
-import com.faforever.iceadapter.dto.command.from_server.ServerPeerConnectingCommand;
-import com.faforever.iceadapter.dto.command.from_server.ServerPeerStatusCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.RpcMessageFromServerPeerCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.ServerPeerConnectingCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.ServerPeerStatusCommand;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
@@ -65,14 +65,9 @@ public class RelayServerModule implements ModuleBase, PeerEventListener {
 
         RelayMessage relayMessage = new RelayMessage(targetId, peerData);
         log.warn("(server) send relayMessage to {}. {}", from.getPeerIdentifier(), relayMessage);
-        byte[] messageBytes = relayMessage.toBytes();
-        int length = messageBytes.length;
+        byte[] messageBytes = relayMessage.toBytes((byte) COMMAND_SERVER);
 
-        byte[] clientData = new byte[length + 1];
-        System.arraycopy(messageBytes, 0, clientData, 1, length);
-        clientData[0] = COMMAND_SERVER;
-
-        from.sendToPeer(clientData);
+        from.sendToPeer(messageBytes);
     }
 
 }

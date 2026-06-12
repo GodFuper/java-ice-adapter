@@ -6,7 +6,8 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
-import com.faforever.iceadapter.ice.peer.modules.relay.RelayServerModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.RequiredArgsConstructor;
@@ -105,7 +106,8 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 || data[0] == PeerConnectivityCheckerModule.COMMAND_ECHO
                 || data[0] == RelayServerModule.COMMAND_CLIENT
                 || data[0] == RelayServerModule.COMMAND_SERVER
-                || data[0] == CommandModule.COMMAND_BASE) {
+                || data[0] == CommandModule.COMMAND_BASE
+                || data[0] == RelayPeerToPeerSenderModule.COMMAND_AUTO_RELAY) {
 
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);

@@ -1,6 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.other;
 
-import com.faforever.iceadapter.dto.command.info.InfoRelayStatusCommand;
+import com.faforever.iceadapter.dto.command.relay.manual.info.InfoRelayStatusCommand;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;

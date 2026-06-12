@@ -1,6 +1,7 @@
-package com.faforever.iceadapter.dto.command.from_client;
+package com.faforever.iceadapter.dto.command.relay.manual.from_client;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
+import com.faforever.iceadapter.dto.command.relay.manual.from_server.ServerPeerStatusCommand;
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
@@ -13,8 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class StopRelayServerCommand extends CommandBase {
+public class ConnectionLostRelayServerCommand extends CommandBase {
     private int remoteId;
+    private boolean clearIceState;
 
     @Override
     public void execute(Peer peer) {
@@ -24,12 +26,14 @@ public class StopRelayServerCommand extends CommandBase {
     }
 
     public void removeServer(MainPeer peer) {
-        ServerPeer server = peer.getRelays().remove(remoteId);
+        ServerPeer server = peer.getRelays().get(remoteId);
         if (server == null) {
+            peer.sendCommand(new ServerPeerStatusCommand(remoteId, false, null));
             return;
         }
 
-        server.close();
+        server.lostConnect(clearIceState);
+        peer.sendCommand(new ServerPeerStatusCommand(remoteId, true, server.getIceState()));
     }
 
 }

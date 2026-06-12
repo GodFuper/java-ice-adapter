@@ -106,6 +106,13 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
+    public void onHandleCommand(Peer peer, CommandBase command) {
+        log.trace("Peer {} onHandleCommand {}", peer.getPeerIdentifier(), command);
+        listeners.forEach(l -> callMethod(peer, "onHandleCommand",
+                () -> l.onHandleCommand(peer, command)));
+    }
+
+    @Override
     public void onChangeEcho(Peer peer, Long lastEcho, long echo) {
         listeners.forEach(l -> callMethod(peer, "onChangeEcho",
                 () -> l.onChangeEcho(peer, lastEcho, echo)));

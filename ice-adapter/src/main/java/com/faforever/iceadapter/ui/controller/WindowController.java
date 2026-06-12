@@ -64,6 +64,8 @@ public class WindowController {
     @FXML
     private TableColumn<PeerView, String> lastColumn;
     @FXML
+    private TableColumn<PeerView, String> lastRelayColumn;
+    @FXML
     private TableColumn<PeerView, String> echosRcvColumn;
     @FXML
     private TableColumn<PeerView, Boolean> hostColumn;
@@ -175,6 +177,7 @@ public class WindowController {
         offerColumn.setCellValueFactory(cellData -> cellData.getValue().getOffer());
         rttColumn.setCellValueFactory(cellData -> cellData.getValue().getRtt());
         lastColumn.setCellValueFactory(cellData -> cellData.getValue().getLastRecv());
+        lastRelayColumn.setCellValueFactory(cellData -> cellData.getValue().getLastRelayRecv());
         echosRcvColumn.setCellValueFactory(cellData -> cellData.getValue().getEchosReceived());
 
         hostColumn.setCellValueFactory(param -> param.getValue().getAdditionalInfo().getAllowHost());
@@ -342,7 +345,6 @@ public class WindowController {
             pairCandidateInfoArea.setText("No candidate information available.");
         } else if (!Objects.equals(info, pairCandidateInfoArea.getText())) {
             pairCandidateInfoArea.setText(info);
-            pairCandidateInfoArea.setScrollTop(0);
         }
     }
 

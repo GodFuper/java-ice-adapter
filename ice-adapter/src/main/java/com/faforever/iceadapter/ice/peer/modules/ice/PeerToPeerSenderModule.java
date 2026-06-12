@@ -15,9 +15,9 @@ import java.util.concurrent.locks.Lock;
 @Slf4j
 @RequiredArgsConstructor
 public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
-    private static final String LOCK_COMPONENT = "LockComponent";
+    protected static final String LOCK_COMPONENT = "LockComponent";
 
-    private final Peer peer;
+    protected final Peer peer;
 
     @Setter
     private Component component;
@@ -51,32 +51,34 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
         sendDirect(data);
     }
 
-    private void sendDirect(byte[] data) {
+    protected boolean sendDirect(byte[] data) {
         if (!isEnabled()) {
-            return;
+            return false;
         }
 
         Component currentComponent = LockUtil.executeWithLock(lockComponent, () -> this.component);
         if (currentComponent == null) {
             log.warn("Cannot send: component is null");
-            return;
+            return false;
         }
-        send(peer, currentComponent, data, 0, data.length);
+        return send(peer, currentComponent, data, 0, data.length);
     }
 
-    private void send(Peer peer, Component component, byte[] data, int offset, int length) {
+    private boolean send(Peer peer, Component component, byte[] data, int offset, int length) {
         if (peer.isClosing()) {
-            return;
+            return false;
         }
         try {
             component.send(data, offset, length);
             log.trace("Send to {} {} {}", peer.getPeerIdentifier(), offset, length);
+            return true;
         } catch (Exception e) {
             if (!peer.isClosing()) {
                 log.error("Send failed", e);
                 peer.lostConnect();
             }
         }
+        return false;
     }
 
     @Override

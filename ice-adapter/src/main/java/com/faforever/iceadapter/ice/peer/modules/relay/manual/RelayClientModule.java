@@ -1,8 +1,8 @@
-package com.faforever.iceadapter.ice.peer.modules.relay;
+package com.faforever.iceadapter.ice.peer.modules.relay.manual;
 
 import com.faforever.iceadapter.dto.RelayMessage;
 import com.faforever.iceadapter.dto.command.CommandBase;
-import com.faforever.iceadapter.dto.command.from_client.*;
+import com.faforever.iceadapter.dto.command.relay.manual.from_client.*;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.MainPeer;
@@ -20,8 +20,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.faforever.iceadapter.ice.peer.modules.relay.RelayServerModule.COMMAND_CLIENT;
-import static com.faforever.iceadapter.ice.peer.modules.relay.RelayServerModule.COMMAND_SERVER;
+import static com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule.COMMAND_CLIENT;
+import static com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule.COMMAND_SERVER;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -241,13 +241,9 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
         int targetId = mainPeer.getRemoteId();
         RelayMessage relayMessage = new RelayMessage(targetId, data);
         log.warn("(client) send relayMessage to {}. {}", relayPeer.getPeerIdentifier(), relayMessage);
-        byte[] messageBytes = relayMessage.toBytes();
-        int length = messageBytes.length;
+        byte[] messageBytes = relayMessage.toBytes((byte) COMMAND_CLIENT);
 
-        byte[] clientData = new byte[length + 1];
-        System.arraycopy(messageBytes, 0, clientData, 1, length);
-        clientData[0] = COMMAND_CLIENT;
-        sendRelay(mainPeer, relayPeer, clientData);
+        sendRelay(mainPeer, relayPeer, messageBytes);
     }
 
     private void sendRelay(MainPeer mainPeer, Peer relayPeer, byte[] data) {

@@ -5,11 +5,12 @@ import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
 import com.faforever.iceadapter.ice.peer.modules.other.*;
-import com.faforever.iceadapter.ice.peer.modules.relay.RelayClientModule;
-import com.faforever.iceadapter.ice.peer.modules.relay.RelayServerModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayBestRttPeerCheckerModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayClientModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -36,13 +37,14 @@ public enum PeerModule implements Comparator<PeerModule> {
         return module;
     }),
     CALCULATE_RTT(RttCalculateModule::new),
-    PEER_TO_PEER_SENDER(PeerToPeerSenderModule::new),
+    PEER_TO_PEER_SENDER(RelayPeerToPeerSenderModule::new),
     PEER_LISTENER_MODULE(PeerToPeerListenerModule::new),
     CONNECTION_CHECKER_MODULE(PeerConnectivityCheckerModule::new),
     AUTO_SETTING_ALLOW_CANDIDATE(AutoSettingAllowCandidates::new),
     COMMAND_EXECUTE(CommandModule::new),
     RELAY_CLIENT_MODULE(RelayClientModule::new),
     RELAY_SERVER_MODULE(RelayServerModule::new),
+    AUTO_RELAY_CALCULATE_RTT(RelayBestRttPeerCheckerModule::new),
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
     PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new);
