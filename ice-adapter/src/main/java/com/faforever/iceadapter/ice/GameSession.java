@@ -7,10 +7,8 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.*;
 import com.faforever.iceadapter.services.impl.*;
-import com.faforever.iceadapter.services.impl.rpc.RpcConnectionImpl;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import kotlin.Pair;
@@ -55,8 +53,7 @@ public class GameSession implements IceGameSession {
     @Setter
     private volatile boolean gameEnded = false;
 
-    public GameSession(RPCService rpcService, IceOptions options) {
-        RpcConnection rpcConnection = new RpcConnectionImpl(rpcService);
+    public GameSession(RpcConnection rpcConnection, IceOptions options) {
         this.iceTrigger = new IceTrigger(iceAsync, connectServiceHandler, rpcConnection);
         this.options = options;
         iceServerChecker = new IceServerChecker(options, this);

@@ -7,6 +7,8 @@ import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
+import com.faforever.iceadapter.services.RpcConnection;
+import com.faforever.iceadapter.services.impl.rpc.RpcConnectionImpl;
 import com.faforever.iceadapter.util.TrayIcon;
 import lombok.Getter;
 import lombok.Setter;
@@ -145,7 +147,8 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
                 log.warn("Error closing previous GAME_SESSION", e);
             }
         }
-        GameSession gameSession = new GameSession(rpcService, iceOptions);
+        RpcConnection rpcConnection = new RpcConnectionImpl(rpcService);
+        GameSession gameSession = new GameSession(rpcConnection, iceOptions);
         setGameSession(gameSession);
         return gameSession;
     }
