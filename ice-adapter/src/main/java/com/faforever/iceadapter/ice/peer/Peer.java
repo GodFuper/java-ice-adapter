@@ -53,7 +53,7 @@ public abstract class Peer {
             .build();
 
     private final Map<Integer, RelayPing> rtts = new ConcurrentHashMap<>();
-    private boolean sendDirectAndRelay = true;
+    private volatile boolean sendDirectAndRelay = true;
 
     private volatile float rtt = 0.0f;
     private volatile Long lastEcho;

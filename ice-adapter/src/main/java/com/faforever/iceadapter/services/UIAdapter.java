@@ -143,6 +143,8 @@ public interface UIAdapter {
 
     void setRelayPeer(PeerView peer, PeerView relayPeer);
 
+    void setSendDirectAndRelay(PeerView peer, boolean sendDirectAndRelay);
+
     boolean isEnabledManualCombinationConnection();
 
     boolean isEnabledManualStrategyConnection();

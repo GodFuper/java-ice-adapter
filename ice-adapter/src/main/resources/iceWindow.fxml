@@ -115,6 +115,10 @@
                                       VBox.vgrow="ALWAYS"
                                       prefHeight="150"/>
                         </VBox>
+
+                        <CheckBox fx:id="sendDirectAndRelayCheckbox"
+                                  text="Send Direct and Relay"
+                                  selected="true"/>
                     </VBox>
                 </VBox>
 

@@ -44,6 +44,7 @@ public class PeerView implements PeerEventListener {
         private IceAgentStrategy agentStrategy;
         private Supplier<String> getFullCandidateInfo;
         private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
+        private final BooleanProperty sendDirectAndRelay = new SimpleBooleanProperty(true);
     }
 
     public PeerView(int id, String login) {
@@ -105,6 +106,7 @@ public class PeerView implements PeerEventListener {
         getAdditionalInfo().setCombination(combination);
 
         getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);
+        getAdditionalInfo().getSendDirectAndRelay().set(peer.isSendDirectAndRelay());
     }
 
     private static String rttStr(Peer peer) {

@@ -103,6 +103,9 @@ public class WindowController {
     @FXML
     private ComboBox<PeerView> relayPeerComboBox;
 
+    @FXML
+    private CheckBox sendDirectAndRelayCheckbox;
+
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
@@ -264,6 +267,12 @@ public class WindowController {
             }
         });
 
+        sendDirectAndRelayCheckbox.setOnAction(e -> {
+            if (selectedPeer != null && adapter != null) {
+                adapter.setSendDirectAndRelay(selectedPeer, sendDirectAndRelayCheckbox.isSelected());
+            }
+        });
+
         allowCombinationComboBox.getItems().setAll(AllowCombination.values());
         connectionStrategyComboBox.getItems().setAll(IceAgentStrategy.values());
     }
@@ -315,6 +324,7 @@ public class WindowController {
 
         selectComboBox(connectionStrategyComboBox, peer.getAdditionalInfo().getAgentStrategy());
 
+        selectCheckBox(sendDirectAndRelayCheckbox, peer.getAdditionalInfo().getSendDirectAndRelay().get());
         updatePairCandidateInfo(peer.getAdditionalInfo().getGetFullCandidateInfo().get());
     }
 
@@ -324,6 +334,15 @@ public class WindowController {
             comboBox.setOnAction(null);
             comboBox.setItems(items);
             comboBox.setOnAction(oldGetOnAction);
+        }
+    }
+
+    private <T> void selectCheckBox(CheckBox checkBox, boolean select) {
+        var oldGetOnAction = checkBox.getOnAction();
+        if (!Objects.equals(checkBox.isSelected(), select)) {
+            checkBox.setOnAction(null);
+            checkBox.setSelected(select);
+            checkBox.setOnAction(oldGetOnAction);
         }
     }
 

@@ -282,6 +282,17 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
+    public void setSendDirectAndRelay(PeerView peer, boolean sendDirectAndRelay) {
+        if (peer == null) {
+            return;
+        }
+        int id = peer.getId().get();
+        getGameSession()
+                .flatMap(session -> session.getPeer(id))
+                .ifPresent(p -> p.setSendDirectAndRelay(sendDirectAndRelay));
+    }
+
+    @Override
     public boolean isEnabledManualCombinationConnection() {
         return Optional.ofNullable(iceAdapter.getIceOptions())
                 .map(option -> option.isManualCombinationConnection() && !option.isForceRelay())
