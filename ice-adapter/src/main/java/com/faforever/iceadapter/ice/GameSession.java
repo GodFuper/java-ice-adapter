@@ -75,7 +75,9 @@ public class GameSession implements IceGameSession {
             debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
             return peers.get(remotePlayerId).getLocalPort();
         }
-        Peer peer = new MainPeer(options.getId(), remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort(), options.isHostMode(), getDisabledModules());
+        Set<PeerModule> allDisabled = new HashSet<>(getDisabledModules());
+        allDisabled.addAll(getAdditionalDisabledModules());
+        Peer peer = new MainPeer(options.getId(), remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort(), options.isHostMode(), allDisabled);
         peer.init();
         peer.setCombination(combination);
         peer.setGameSession(this);
@@ -155,6 +157,13 @@ public class GameSession implements IceGameSession {
             disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
         }
         return disabledModules;
+    }
+
+    /**
+     * Returns additional disabled modules for test subclasses.
+     */
+    protected Set<PeerModule> getAdditionalDisabledModules() {
+        return Set.of();
     }
 
     public static List<IceServer> createIceServers() {
