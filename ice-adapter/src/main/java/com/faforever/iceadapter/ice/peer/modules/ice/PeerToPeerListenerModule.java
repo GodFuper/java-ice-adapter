@@ -17,6 +17,7 @@ import org.ice4j.socket.MultiplexingDatagramSocket;
 
 import java.net.DatagramPacket;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 
 @Slf4j
@@ -65,6 +66,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
     }
 
     private void createListener(Component component) {
+        Thread.currentThread().setName(threadComponentListenerName());
         running = true;
         MultiplexingDatagramSocket datagramSocket = component.getSocket();
         byte[] buf = new byte[DatagramSocketUtils.MAX_SIZE_PACKET];
@@ -83,7 +85,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
 
                 handlerData(peer, dataCopy, dataCopy.length);
             } catch (Exception e) {
-                if (peer.isClosing()) {
+                if (peer.isClosing() || !Objects.equals(component, peer.getComponent())) {
                     break;
                 }
                 if (!datagramSocket.isClosed()) {
@@ -94,11 +96,9 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
             }
         }
         log.info("Ice Listener closed");
-        running = false;
     }
 
     private void handlerData(Peer peer, byte[] data, int length) {
-        Thread.currentThread().setName(threadComponentListenerName());
         peer.setLastPacketReceived(System.currentTimeMillis());
 
         peer.handleData(data);
@@ -111,7 +111,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
 
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
-            log.debug("STUN-like packet received, type: 0x{}, length: {}", String.format("%04X", type), length);
+            log.trace("STUN-like packet received, type: 0x{}, length: {}", String.format("%04X", type), length);
         } else {
             peer.getInvalidPacket().incrementAndGet();
             log.warn("Received invalid packet, first byte: 0x{}, length: {}, data (hex): {}",

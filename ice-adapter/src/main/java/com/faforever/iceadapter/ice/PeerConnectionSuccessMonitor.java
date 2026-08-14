@@ -77,7 +77,7 @@ public class PeerConnectionSuccessMonitor implements PropertyChangeListener, Age
 
     private void onPairSucceeded(CandidatePair pair) {
         Thread.currentThread().setName(name);
-        log.debug("✅ Successful: Pair is SUCCEEDED: {}", pair);
+        log.debug("✅ Successful with combination {}: Pair is SUCCEEDED: {}", peer.getCombination(), pair);
         future.complete(true);
     }
 
