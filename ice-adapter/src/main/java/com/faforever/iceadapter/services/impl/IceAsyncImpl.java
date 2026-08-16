@@ -63,8 +63,6 @@ public class IceAsyncImpl implements IceAsync {
     }
 
     private String getPeerName(Peer peer) {
-        return Optional.ofNullable(peer)
-                .map(Peer::getPeerIdentifier)
-                .orElse(null);
+        return Optional.ofNullable(peer).map(Peer::getPeerIdentifier).orElse(null);
     }
 }

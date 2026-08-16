@@ -40,8 +40,7 @@ abstract class PeerConnectionIntegrationBase {
                 PeerModule.PEER_TURN_REFRESHER_MODULE,
                 PeerModule.RELAY_CLIENT_MODULE,
                 PeerModule.RELAY_SERVER_MODULE,
-                PeerModule.AUTO_RELAY_CALCULATE_RTT
-        );
+                PeerModule.AUTO_RELAY_CALCULATE_RTT);
     }
 
     @BeforeEach
@@ -52,8 +51,10 @@ abstract class PeerConnectionIntegrationBase {
         socketA = new InMemoryDatagramSocket();
         socketB = new InMemoryDatagramSocket();
 
-        IceOptions optionsA = new IceOptions(1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true);
-        IceOptions optionsB = new IceOptions(2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true);
+        IceOptions optionsA = new IceOptions(
+                1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, false);
+        IceOptions optionsB = new IceOptions(
+                2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, false);
 
         gameA = new TestGameSession(bus, optionsA, getDisabledModules());
         gameA.setLobbyPort(socketA.getLocalPort());
@@ -79,9 +80,11 @@ abstract class PeerConnectionIntegrationBase {
 
         sleep(100);
         try {
-            socketA.connect(InetAddress.getByName(LOCAL_IP_ADDRESS), peerA.getFaSocket().getLocalPort());
+            socketA.connect(
+                    InetAddress.getByName(LOCAL_IP_ADDRESS), peerA.getFaSocket().getLocalPort());
             assertTrue(socketA.isConnected(), "Socket A should be connected");
-            socketB.connect(InetAddress.getByName(LOCAL_IP_ADDRESS), peerB.getFaSocket().getLocalPort());
+            socketB.connect(
+                    InetAddress.getByName(LOCAL_IP_ADDRESS), peerB.getFaSocket().getLocalPort());
             assertTrue(socketB.isConnected(), "Socket B should be connected");
 
             socketA.start();
@@ -122,8 +125,8 @@ abstract class PeerConnectionIntegrationBase {
             Thread.sleep(POLL_INTERVAL_MS);
         }
 
-        Assertions.fail("ICE connection timeout after " + ICE_READY_TIMEOUT_MS + "ms (A=" + peerA.getIceState()
-                + ", B=" + peerB.getIceState() + ")");
+        Assertions.fail("ICE connection timeout after " + ICE_READY_TIMEOUT_MS + "ms (A=" + peerA.getIceState() + ", B="
+                + peerB.getIceState() + ")");
     }
 
     protected void sleep(long ms) {

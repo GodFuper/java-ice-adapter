@@ -69,5 +69,4 @@ public class RelayServerModule implements ModuleBase, PeerEventListener {
 
         from.sendToPeer(messageBytes);
     }
-
 }

@@ -20,7 +20,6 @@ public class CommandModule implements ModuleBase, PeerEventListener {
         peer.addEventListener(this);
     }
 
-
     @Override
     public void onHandleData(Peer p, byte[] data) {
         if (data[0] != COMMAND_BASE) {
@@ -58,5 +57,4 @@ public class CommandModule implements ModuleBase, PeerEventListener {
             log.error("Error while executing command {} from {}", command, peer.getPeerIdentifier(), e);
         }
     }
-
 }

@@ -100,11 +100,9 @@ public interface UIAdapter {
      */
     ObservableList<PeerView> getPeerInfoList();
 
-
     ObservableList<PeerView> getRelayPeersInfoList(int id);
 
     PeerView getPeerInfo(int id);
-
 
     /**
      * Returns an observable list of ICE server configurations used by the adapter.

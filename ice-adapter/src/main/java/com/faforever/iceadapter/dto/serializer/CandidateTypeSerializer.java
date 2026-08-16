@@ -15,7 +15,8 @@ public class CandidateTypeSerializer {
 
     public static class Serializer extends JsonSerializer<CandidateType> {
         @Override
-        public void serialize(CandidateType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(CandidateType value, JsonGenerator gen, SerializerProvider serializers)
+                throws IOException {
             gen.writeString(value != null ? value.name() : null);
         }
     }

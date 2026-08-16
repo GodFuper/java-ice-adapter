@@ -15,6 +15,7 @@ public class MainPeer extends Peer {
 
     @Setter
     private boolean serverMode;
+
     @Setter
     private boolean allowRelay = false;
 
@@ -30,7 +31,15 @@ public class MainPeer extends Peer {
 
     private MainPeer relayPeer;
 
-    public MainPeer(int fromId, int remoteId, String remoteLogin, boolean localOffer, int preferredPort, int lobbyPort, boolean serverMode, Set<PeerModule> disabledModules) {
+    public MainPeer(
+            int fromId,
+            int remoteId,
+            String remoteLogin,
+            boolean localOffer,
+            int preferredPort,
+            int lobbyPort,
+            boolean serverMode,
+            Set<PeerModule> disabledModules) {
         super(remoteId, remoteLogin, localOffer, preferredPort, lobbyPort, disabledModules);
         this.serverMode = serverMode;
         this.fromId = fromId;
@@ -38,8 +47,7 @@ public class MainPeer extends Peer {
 
     @Override
     public Optional<Integer> getRelayPeerId() {
-        return Optional.ofNullable(relayPeer)
-                .map(Peer::getRemoteId);
+        return Optional.ofNullable(relayPeer).map(Peer::getRemoteId);
     }
 
     public void setRelayPeer(MainPeer relay, boolean isEvent) {

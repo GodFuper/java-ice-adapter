@@ -20,8 +20,7 @@ public class Task implements Runnable {
     }
 
     public static Comparator<Runnable> createComparator() {
-        return Comparator
-                .comparingInt((Runnable r) -> {
+        return Comparator.comparingInt((Runnable r) -> {
                     if (r instanceof Task t) {
                         return t.getPriority();
                     }

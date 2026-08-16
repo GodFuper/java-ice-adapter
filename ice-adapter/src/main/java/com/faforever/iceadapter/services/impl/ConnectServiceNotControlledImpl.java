@@ -19,7 +19,8 @@ import static com.faforever.iceadapter.ice.IceState.*;
 @Slf4j
 public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implements ConnectService {
 
-    public ConnectServiceNotControlledImpl(MessageService messageService, IceGameSession iceGameSession, IceAsync iceAsync) {
+    public ConnectServiceNotControlledImpl(
+            MessageService messageService, IceGameSession iceGameSession, IceAsync iceAsync) {
         super(messageService, iceGameSession, iceAsync);
     }
 
@@ -94,18 +95,9 @@ public class ConnectServiceNotControlledImpl extends ConnectServiceCommon implem
         IceMediaStream mediaStream = peer.getMediaStream();
 
         for (Component component : mediaStream.getComponents()) {
-            CandidateUtil.unpackCandidates(
-                    peer,
-                    message,
-                    agent,
-                    component,
-                    mediaStream,
-                    true,
-                    true,
-                    true);
+            CandidateUtil.unpackCandidates(peer, message, agent, component, mediaStream, true, true, true);
         }
 
         onIceStateChecking(peer);
     }
-
 }

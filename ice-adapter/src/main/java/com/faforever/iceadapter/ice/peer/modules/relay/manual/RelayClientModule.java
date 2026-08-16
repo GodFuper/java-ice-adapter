@@ -108,7 +108,8 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
 
     public void enableClient(MainPeer mainPeer, MainPeer newRelayPeer) {
         MainPeer oldRelayPeer = mainPeer.getRelayPeer();
-        if (ObjectUtils.allNotNull(oldRelayPeer, newRelayPeer) && Objects.equals(oldRelayPeer.getRemoteId(), newRelayPeer.getRemoteId())) {
+        if (ObjectUtils.allNotNull(oldRelayPeer, newRelayPeer)
+                && Objects.equals(oldRelayPeer.getRemoteId(), newRelayPeer.getRemoteId())) {
             return;
         }
 
@@ -134,7 +135,8 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
             return;
         }
         if (mainPeer.getIceState() != null) {
-            scheduler.schedule(() -> tryStartRelay(mainPeer, newRelayPeer, iter + 1), TIMEOUT_BEFORE_START, TimeUnit.MILLISECONDS);
+            scheduler.schedule(
+                    () -> tryStartRelay(mainPeer, newRelayPeer, iter + 1), TIMEOUT_BEFORE_START, TimeUnit.MILLISECONDS);
             return;
         }
 
@@ -142,10 +144,8 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
         newRelayPeer.getLinkClient().put(mainPeer.getRemoteId(), mainPeer);
         mainPeer.getModule(PeerModule.PEER_TO_PEER_SENDER, PeerToPeerSenderModule.class)
                 .ifPresent(PeerToPeerSenderModule::disable);
-        newRelayPeer.sendCommand(new StartRelayServerCommand(mainPeer.getRemoteId(),
-                mainPeer.getRemoteLogin(),
-                mainPeer.isLocalOffer(),
-                mainPeer.getCombination()));
+        newRelayPeer.sendCommand(new StartRelayServerCommand(
+                mainPeer.getRemoteId(), mainPeer.getRemoteLogin(), mainPeer.isLocalOffer(), mainPeer.getCombination()));
     }
 
     public void disableClient(MainPeer mainPeer) {
@@ -219,7 +219,11 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
             return;
         }
         targetPeer.sendToPeer(data);
-        log.info("Relay: message = {} from client to peer {}. {}", relayMessage, targetPeer.getPeerIdentifier(), mainPeer.getPeerIdentifier()); //DEBUG
+        log.info(
+                "Relay: message = {} from client to peer {}. {}",
+                relayMessage,
+                targetPeer.getPeerIdentifier(),
+                mainPeer.getPeerIdentifier()); // DEBUG
     }
 
     /**
@@ -234,7 +238,11 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
         }
         clientPeer.setLastPacketReceived(System.currentTimeMillis());
         clientPeer.handleData(serverData);
-        log.info("Relay: message = {} from server to client {}. {}", relayMessage, clientPeer.getPeerIdentifier(), mainPeer.getPeerIdentifier()); //DEBUG
+        log.info(
+                "Relay: message = {} from server to client {}. {}",
+                relayMessage,
+                clientPeer.getPeerIdentifier(),
+                mainPeer.getPeerIdentifier()); // DEBUG
     }
 
     private void sendRelayMessage(MainPeer mainPeer, Peer relayPeer, byte[] data) {
@@ -248,12 +256,14 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
 
     private void sendRelay(MainPeer mainPeer, Peer relayPeer, byte[] data) {
         if (relayPeer.isClosing()) {
-            log.info("Disable client {}. RelayPeer is closing. Main = {}", relayPeer.getPeerIdentifier(), mainPeer.getPeerIdentifier());
+            log.info(
+                    "Disable client {}. RelayPeer is closing. Main = {}",
+                    relayPeer.getPeerIdentifier(),
+                    mainPeer.getPeerIdentifier());
             disableClient(mainPeer);
             return;
         }
 
         relayPeer.sendToPeer(data);
     }
-
 }

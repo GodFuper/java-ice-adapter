@@ -78,4 +78,9 @@ public class IceOptions {
             defaultValue = "true",
             description = "Enable host-based P2P connection mode where one player acts as a host and others connect through them")
     private boolean hostMode;
+
+    @Option(names = "--custom-reliable-udp",
+            defaultValue = "false",
+            description = "Enable custom reliable UDP")
+    private boolean customReliableUdp;
 }

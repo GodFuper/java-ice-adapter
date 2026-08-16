@@ -19,8 +19,10 @@ public class IceServerView {
     public IceServerView(IceServer server) {
         this.server = server;
         this.type = new SimpleStringProperty(server.getType().name());
-        this.transport = new SimpleStringProperty(server.getAddress().getTransport().name());
-        this.address = new SimpleStringProperty(server.getAddress().getHostName() + ":" + server.getAddress().getPort());
+        this.transport =
+                new SimpleStringProperty(server.getAddress().getTransport().name());
+        this.address = new SimpleStringProperty(
+                server.getAddress().getHostName() + ":" + server.getAddress().getPort());
         this.rtt = new SimpleStringProperty(server.strTripTime());
         this.enabled = new SimpleBooleanProperty(server.isEnabled());
     }

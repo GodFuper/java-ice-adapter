@@ -143,7 +143,10 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
             delay = delay.plusMillis(ThreadLocalRandom.current().nextLong(0, 1000));
             delay = Duration.ofMillis(Math.min(delay.toMillis(), MAX_RECONNECT_DELAY.toMillis()));
 
-            log.debug("Attempting to connect to telemetry server... Attempt {}/{}", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
+            log.debug(
+                    "Attempting to connect to telemetry server... Attempt {}/{}",
+                    reconnectAttempt + 1,
+                    MAX_RECONNECT_ATTEMPTS);
 
             Thread.sleep(delay.toMillis());
 
@@ -153,7 +156,10 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
                     reconnectAttempt = 0;
                     return true;
                 } else {
-                    log.warn("Failed to connect to telemetry websocket (attempt {}/{})", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS);
+                    log.warn(
+                            "Failed to connect to telemetry websocket (attempt {}/{})",
+                            reconnectAttempt + 1,
+                            MAX_RECONNECT_ATTEMPTS);
                 }
             } catch (Exception e) {
                 log.warn("Exception during connect attempt {}/{}", reconnectAttempt + 1, MAX_RECONNECT_ATTEMPTS, e);
@@ -247,9 +253,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
                 UUID.randomUUID(),
                 peer.getRemoteId(),
                 peer.getRtt(),
-                peer.getLastReceived()
-                        .map(Instant::ofEpochMilli)
-                        .orElse(null)));
+                peer.getLastReceived().map(Instant::ofEpochMilli).orElse(null)));
     }
 
     @Override

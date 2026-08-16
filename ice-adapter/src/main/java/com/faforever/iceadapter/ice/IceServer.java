@@ -78,7 +78,6 @@ public class IceServer {
 
         for (Map<String, Object> iceServerData : iceServersData) {
 
-
             if (iceServerData.containsKey("urls")) {
                 List<String> urls;
                 Object urlsData = iceServerData.get("urls");
@@ -133,8 +132,6 @@ public class IceServer {
                             coturnServers.add(new CoturnServer("n/a", host, port, null));
                         });
             }
-
-
         }
 
         return new Pair<>(iceServers, coturnServers);

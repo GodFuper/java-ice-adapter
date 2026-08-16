@@ -39,5 +39,4 @@ public class ChangeIceStrategyModule implements ModuleBase, PeerEventListener {
         }
         agent.setNominationStrategy(peer.getAgentStrategy().getStrategy());
     }
-
 }

@@ -36,5 +36,4 @@ public class RpcMessageFromClientPeerCommand extends CommandBase {
         server.iceMessageFromRPC(message);
         peer.sendCommand(new ServerPeerStatusCommand(remoteId, true, server.getIceState()));
     }
-
 }

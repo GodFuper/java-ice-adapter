@@ -12,8 +12,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class CandidateUtil {
-    public static final int ICE_VERSION = 2;
-
     public static int candidateIDFactory = 0;
 
     private static CandidatePacket createCandidatePacket(Agent agent, LocalCandidate localCandidate) {
@@ -48,8 +46,7 @@ public class CandidateUtil {
             boolean allowRelay) {
         final List<CandidatePacket> candidatePackets = new ArrayList<>();
 
-        List<CandidatePacket> prePackets = component.getLocalCandidates()
-                .stream()
+        List<CandidatePacket> prePackets = component.getLocalCandidates().stream()
                 .map(candidate -> createCandidatePacket(agent, candidate))
                 .toList();
         for (CandidatePacket packet : prePackets) {
@@ -101,7 +98,8 @@ public class CandidateUtil {
                         RemoteCandidate remoteCandidate = new RemoteCandidate(
                                 mainAddress,
                                 component,
-                                remoteCandidatePacket.type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
+                                remoteCandidatePacket
+                                        .type(), // Expected to not return LOCAL or STUN (old names for host and srflx)
                                 remoteCandidatePacket.foundation(),
                                 remoteCandidatePacket.priority(),
                                 relatedCandidate,
@@ -125,40 +123,38 @@ public class CandidateUtil {
                   Address: %s:%d
                   Priority: %d
                   Foundation: %s
-                
+
                 Remote Candidate:
                   Type: %s
                   Transport: %s
                   Address: %s:%d
                   Priority: %d
                   Foundation: %s
-                
+
                 Priority: %d
                 Nominated: %s
                 State: %s
-                """.formatted(
-                pair.getLocalCandidate().getType(),
-                pair.getLocalCandidate().getTransport(),
-                pair.getLocalCandidate().getTransportAddress().getHostAddress(),
-                pair.getLocalCandidate().getTransportAddress().getPort(),
-                pair.getLocalCandidate().getPriority(),
-                pair.getLocalCandidate().getFoundation(),
-                pair.getRemoteCandidate().getType(),
-                pair.getLocalCandidate().getTransport(),
-                pair.getRemoteCandidate().getTransportAddress().getHostAddress(),
-                pair.getRemoteCandidate().getTransportAddress().getPort(),
-                pair.getRemoteCandidate().getPriority(),
-                pair.getRemoteCandidate().getFoundation(),
-                pair.getPriority(),
-                pair.isNominated(),
-                pair.getState()
-        );
+                """
+                .formatted(
+                        pair.getLocalCandidate().getType(),
+                        pair.getLocalCandidate().getTransport(),
+                        pair.getLocalCandidate().getTransportAddress().getHostAddress(),
+                        pair.getLocalCandidate().getTransportAddress().getPort(),
+                        pair.getLocalCandidate().getPriority(),
+                        pair.getLocalCandidate().getFoundation(),
+                        pair.getRemoteCandidate().getType(),
+                        pair.getLocalCandidate().getTransport(),
+                        pair.getRemoteCandidate().getTransportAddress().getHostAddress(),
+                        pair.getRemoteCandidate().getTransportAddress().getPort(),
+                        pair.getRemoteCandidate().getPriority(),
+                        pair.getRemoteCandidate().getFoundation(),
+                        pair.getPriority(),
+                        pair.isNominated(),
+                        pair.getState());
     }
 
-    private static boolean isAllowedCandidate(boolean allowHost,
-                                              boolean allowReflexive,
-                                              boolean allowRelay,
-                                              CandidateType candidateType) {
+    private static boolean isAllowedCandidate(
+            boolean allowHost, boolean allowReflexive, boolean allowRelay, CandidateType candidateType) {
         // Candidate types LOCAL and STUN can never occur as they are deprecated and not used
         boolean isAllowedHostCandidate = allowHost && candidateType == CandidateType.HOST_CANDIDATE;
         boolean isAllowedReflexiveCandidate = allowReflexive

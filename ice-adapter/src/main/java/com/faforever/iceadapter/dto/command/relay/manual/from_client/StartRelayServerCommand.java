@@ -46,5 +46,4 @@ public class StartRelayServerCommand extends CommandBase {
         }
         peer.sendCommand(new ServerPeerStatusCommand(remoteId, status, iceState));
     }
-
 }

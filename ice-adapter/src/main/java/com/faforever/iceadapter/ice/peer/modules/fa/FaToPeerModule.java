@@ -37,8 +37,7 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     private void startListeners() {
-        if (listener == null ||
-                listener.isDone()) {
+        if (listener == null || listener.isDone()) {
             listener = executor.submit(this::faListener);
         }
     }
@@ -84,8 +83,7 @@ public class FaToPeerModule implements ModuleBase {
             }
         } catch (IOException e) {
             if (peer.isClosing()) {
-                log.debug(
-                        "Ignoring error while receiving packet because the connection was closed as peer");
+                log.debug("Ignoring error while receiving packet because the connection was closed as peer");
             } else {
                 log.debug("Error while reading from local FA as peer (probably disconnecting from peer)", e);
                 try {
@@ -98,9 +96,7 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     private boolean isNeedReceive() {
-        return peer.isConnected()
-                || (peer.isSendDirectAndRelay() && peer.existBestRelays())
-                || peer.existBestRelays();
+        return peer.isConnected() || (peer.isSendDirectAndRelay() && peer.existBestRelays()) || peer.existBestRelays();
     }
 
     private void receive(DatagramSocket socket) throws IOException {

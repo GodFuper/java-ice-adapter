@@ -31,8 +31,7 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
                 PeerModule.PEER_TURN_REFRESHER_MODULE,
                 PeerModule.RELAY_CLIENT_MODULE,
                 PeerModule.RELAY_SERVER_MODULE,
-                PeerModule.AUTO_RELAY_CALCULATE_RTT
-        );
+                PeerModule.AUTO_RELAY_CALCULATE_RTT);
     }
 
     // =========================================================================
@@ -57,9 +56,13 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
 
         List<byte[]> receivedAtB_round1 = socketB.getReceivedBytes();
         List<byte[]> receivedAtA_round1 = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtB_round1.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtB_round1.size(),
                 "socketB should receive " + NUM_PACKETS_PER_ROUND + " packets from A in round 1");
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtA_round1.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtA_round1.size(),
                 "socketA should receive " + NUM_PACKETS_PER_ROUND + " packets from B in round 1");
 
         // Round 2: Reconnect from controlling side (Peer A) and send data
@@ -77,9 +80,13 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
 
         List<byte[]> receivedAtB_round2 = socketB.getReceivedBytes();
         List<byte[]> receivedAtA_round2 = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtB_round2.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtB_round2.size(),
                 "socketB should receive " + NUM_PACKETS_PER_ROUND + " packets from A in round 2");
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtA_round2.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtA_round2.size(),
                 "socketA should receive " + NUM_PACKETS_PER_ROUND + " packets from B in round 2");
 
         // Round 3: Another reconnect from controlling side and verify data exchange
@@ -97,19 +104,29 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
 
         List<byte[]> receivedAtB_round3 = socketB.getReceivedBytes();
         List<byte[]> receivedAtA_round3 = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtB_round3.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtB_round3.size(),
                 "socketB should receive " + NUM_PACKETS_PER_ROUND + " packets from A in round 3");
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtA_round3.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtA_round3.size(),
                 "socketA should receive " + NUM_PACKETS_PER_ROUND + " packets from B in round 3");
 
         // Verify packet content
         for (int i = 0; i < NUM_PACKETS_PER_ROUND; i++) {
             String fromB = new String(receivedAtB_round1.get(i), StandardCharsets.UTF_8);
-            assertTrue(fromB.startsWith("round1-A"), "Round 1 A->B packet " + i + " should start with 'round1-A', got: " + fromB);
+            assertTrue(
+                    fromB.startsWith("round1-A"),
+                    "Round 1 A->B packet " + i + " should start with 'round1-A', got: " + fromB);
             fromB = new String(receivedAtB_round2.get(i), StandardCharsets.UTF_8);
-            assertTrue(fromB.startsWith("round2-A"), "Round 2 A->B packet " + i + " should start with 'round2-A', got: " + fromB);
+            assertTrue(
+                    fromB.startsWith("round2-A"),
+                    "Round 2 A->B packet " + i + " should start with 'round2-A', got: " + fromB);
             fromB = new String(receivedAtB_round3.get(i), StandardCharsets.UTF_8);
-            assertTrue(fromB.startsWith("round3-A"), "Round 3 A->B packet " + i + " should start with 'round3-A', got: " + fromB);
+            assertTrue(
+                    fromB.startsWith("round3-A"),
+                    "Round 3 A->B packet " + i + " should start with 'round3-A', got: " + fromB);
         }
     }
 
@@ -135,9 +152,13 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
 
         List<byte[]> receivedAtB_round1 = socketB.getReceivedBytes();
         List<byte[]> receivedAtA_round1 = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtB_round1.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtB_round1.size(),
                 "socketB should receive " + NUM_PACKETS_PER_ROUND + " packets from A in round 1");
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtA_round1.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtA_round1.size(),
                 "socketA should receive " + NUM_PACKETS_PER_ROUND + " packets from B in round 1");
 
         // Round 2: Reconnect from controlled side (Peer B) and send data
@@ -155,9 +176,13 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
 
         List<byte[]> receivedAtB_round2 = socketB.getReceivedBytes();
         List<byte[]> receivedAtA_round2 = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtB_round2.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtB_round2.size(),
                 "socketB should receive " + NUM_PACKETS_PER_ROUND + " packets from A in round 2");
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtA_round2.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtA_round2.size(),
                 "socketA should receive " + NUM_PACKETS_PER_ROUND + " packets from B in round 2");
 
         // Round 3: Another reconnect from controlled side and verify data exchange
@@ -175,19 +200,29 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
 
         List<byte[]> receivedAtB_round3 = socketB.getReceivedBytes();
         List<byte[]> receivedAtA_round3 = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtB_round3.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtB_round3.size(),
                 "socketB should receive " + NUM_PACKETS_PER_ROUND + " packets from A in round 3");
-        assertEquals(NUM_PACKETS_PER_ROUND, receivedAtA_round3.size(),
+        assertEquals(
+                NUM_PACKETS_PER_ROUND,
+                receivedAtA_round3.size(),
                 "socketA should receive " + NUM_PACKETS_PER_ROUND + " packets from B in round 3");
 
         // Verify packet content
         for (int i = 0; i < NUM_PACKETS_PER_ROUND; i++) {
             String fromA = new String(receivedAtA_round1.get(i), StandardCharsets.UTF_8);
-            assertTrue(fromA.startsWith("round1-B"), "Round 1 B->A packet " + i + " should start with 'round1-B', got: " + fromA);
+            assertTrue(
+                    fromA.startsWith("round1-B"),
+                    "Round 1 B->A packet " + i + " should start with 'round1-B', got: " + fromA);
             fromA = new String(receivedAtA_round2.get(i), StandardCharsets.UTF_8);
-            assertTrue(fromA.startsWith("round2-B"), "Round 2 B->A packet " + i + " should start with 'round2-B', got: " + fromA);
+            assertTrue(
+                    fromA.startsWith("round2-B"),
+                    "Round 2 B->A packet " + i + " should start with 'round2-B', got: " + fromA);
             fromA = new String(receivedAtA_round3.get(i), StandardCharsets.UTF_8);
-            assertTrue(fromA.startsWith("round3-B"), "Round 3 B->A packet " + i + " should start with 'round3-B', got: " + fromA);
+            assertTrue(
+                    fromA.startsWith("round3-B"),
+                    "Round 3 B->A packet " + i + " should start with 'round3-B', got: " + fromA);
         }
     }
 
@@ -234,8 +269,8 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
             }
             Thread.sleep(50);
         }
-        fail("Expected state " + expectedState + " for peer " + peer.getPeerIdentifier()
-                + " but got " + peer.getIceState() + " after " + timeoutMs + "ms");
+        fail("Expected state " + expectedState + " for peer " + peer.getPeerIdentifier() + " but got "
+                + peer.getIceState() + " after " + timeoutMs + "ms");
     }
 
     /**
@@ -260,8 +295,8 @@ class ReconnectIntegrationTest extends PeerConnectionIntegrationBase {
         StringBuilder sb = new StringBuilder("Peers not all connected after reconnect timeout: ");
         for (Peer p : peers) {
             if (p != null) {
-                sb.append(String.format("%s(state=%s, connected=%s) ",
-                        p.getPeerIdentifier(), p.getIceState(), p.isConnected()));
+                sb.append(String.format(
+                        "%s(state=%s, connected=%s) ", p.getPeerIdentifier(), p.getIceState(), p.isConnected()));
             }
         }
         fail(sb.toString());

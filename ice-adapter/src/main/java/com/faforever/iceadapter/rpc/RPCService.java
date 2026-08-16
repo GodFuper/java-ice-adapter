@@ -83,7 +83,10 @@ public class RPCService implements AutoCloseable {
                 getPeerOrWait()
                         .sendNotification(
                                 "onIceMsg",
-                                List.of(candidatesMessage.srcId(), candidatesMessage.destId(), objectMapper.writeValueAsString(candidatesMessage)));
+                                List.of(
+                                        candidatesMessage.srcId(),
+                                        candidatesMessage.destId(),
+                                        objectMapper.writeValueAsString(candidatesMessage)));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -93,8 +96,7 @@ public class RPCService implements AutoCloseable {
     public void onIceConnectionStateChanged(long localPlayerId, long remotePlayerId, String state) {
         if (!skipRPCMessages) {
             getPeerOrWait()
-                    .sendNotification(
-                            "onIceConnectionStateChanged", List.of(localPlayerId, remotePlayerId, state));
+                    .sendNotification("onIceConnectionStateChanged", List.of(localPlayerId, remotePlayerId, state));
         }
     }
 

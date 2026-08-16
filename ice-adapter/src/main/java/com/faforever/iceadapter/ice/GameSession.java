@@ -42,10 +42,14 @@ public class GameSession implements IceGameSession {
     private final IceOptions options;
 
     private final MessageService messageService = new MessageServiceImpl();
-    private final IceAsync iceAsync = new IceAsyncImpl(ExecutorHolder.getExecutor(), ExecutorHolder.getScheduledExecutor());
-    private final ConnectService controlledConnectService = new ConnectServiceControlledImpl(messageService, this, iceAsync);
-    private final ConnectService notControlledConnectService = new ConnectServiceNotControlledImpl(messageService, this, iceAsync);
-    private final ConnectService connectServiceHandler = new ConnectServiceHandler(controlledConnectService, notControlledConnectService);
+    private final IceAsync iceAsync =
+            new IceAsyncImpl(ExecutorHolder.getExecutor(), ExecutorHolder.getScheduledExecutor());
+    private final ConnectService controlledConnectService =
+            new ConnectServiceControlledImpl(messageService, this, iceAsync);
+    private final ConnectService notControlledConnectService =
+            new ConnectServiceNotControlledImpl(messageService, this, iceAsync);
+    private final ConnectService connectServiceHandler =
+            new ConnectServiceHandler(controlledConnectService, notControlledConnectService);
     private final IceTrigger iceTrigger;
     private final IceServerChecker iceServerChecker;
 
@@ -65,11 +69,12 @@ public class GameSession implements IceGameSession {
      *
      * @return the port the ice adapter will be listening/sending for FA
      */
-    public int connectToPeer(String remotePlayerLogin,
-                             int remotePlayerId,
-                             boolean offer,
-                             int preferredPort,
-                             AllowCombination combination) {
+    public int connectToPeer(
+            String remotePlayerLogin,
+            int remotePlayerId,
+            boolean offer,
+            int preferredPort,
+            AllowCombination combination) {
         if (peers.containsKey(remotePlayerId)) {
             reCreatePeer(remotePlayerId);
             debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
@@ -77,10 +82,19 @@ public class GameSession implements IceGameSession {
         }
         Set<PeerModule> allDisabled = new HashSet<>(getDisabledModules());
         allDisabled.addAll(getAdditionalDisabledModules());
-        Peer peer = new MainPeer(options.getId(), remotePlayerId, remotePlayerLogin, offer, preferredPort, getLobbyPort(), options.isHostMode(), allDisabled);
+        Peer peer = new MainPeer(
+                options.getId(),
+                remotePlayerId,
+                remotePlayerLogin,
+                offer,
+                preferredPort,
+                getLobbyPort(),
+                options.isHostMode(),
+                allDisabled);
         peer.init();
         peer.setCombination(combination);
         peer.setGameSession(this);
+        peer.setCustomUdpTransport(options.isCustomReliableUdp());
         peer.initModules();
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();
@@ -125,7 +139,6 @@ public class GameSession implements IceGameSession {
         iceServerChecker.stop();
     }
 
-
     public List<IceServer> getIceServers() {
         return iceServers;
     }
@@ -156,6 +169,7 @@ public class GameSession implements IceGameSession {
         if (options.isForceRelay()) {
             disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
         }
+
         return disabledModules;
     }
 
@@ -163,7 +177,11 @@ public class GameSession implements IceGameSession {
      * Returns additional disabled modules for test subclasses.
      */
     protected Set<PeerModule> getAdditionalDisabledModules() {
-        return Set.of();
+        Set<PeerModule> additional = new HashSet<>();
+        if (options.isCustomReliableUdp()) {
+            additional.add(PeerModule.PEER_TO_PEER_SENDER);
+        }
+        return additional;
     }
 
     public static List<IceServer> createIceServers() {
@@ -192,7 +210,6 @@ public class GameSession implements IceGameSession {
 
         iceServers.addAll(pair.getFirst());
         debug().updateCoturnList(pair.getSecond());
-
 
         log.info("Ice Servers set, total addresses: {}", iceServers.size());
     }

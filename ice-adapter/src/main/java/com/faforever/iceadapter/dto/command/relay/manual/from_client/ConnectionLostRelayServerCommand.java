@@ -35,5 +35,4 @@ public class ConnectionLostRelayServerCommand extends CommandBase {
         server.lostConnect(clearIceState);
         peer.sendCommand(new ServerPeerStatusCommand(remoteId, true, server.getIceState()));
     }
-
 }

@@ -17,7 +17,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 class InMemoryDatagramSocket extends DatagramSocket {
@@ -97,9 +96,7 @@ class InMemoryDatagramSocket extends DatagramSocket {
      * Returns all received byte payloads in order.
      */
     public List<byte[]> getReceivedBytes() {
-        return receivedPackets.stream()
-                .map(pkt -> pkt.data)
-                .toList();
+        return receivedPackets.stream().map(pkt -> pkt.data).toList();
     }
 
     /**

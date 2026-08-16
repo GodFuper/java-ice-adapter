@@ -27,12 +27,17 @@ public class DatagramSocketUtils {
             return false;
         }
         int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
-        return (type == 0x0000) || // Maybe keep-alive/misfire
-                (type == 0x0001) || // Binding Request
-                (type == 0x0101) || // Binding Response
-                (type == 0x0115) || // Shared Secret Request
-                (type == 0x0116) || // Shared Secret Response
-                (type == 0x0002);   // Binding Indication
+        return (type == 0x0000)
+                || // Maybe keep-alive/misfire
+                (type == 0x0001)
+                || // Binding Request
+                (type == 0x0101)
+                || // Binding Response
+                (type == 0x0115)
+                || // Shared Secret Request
+                (type == 0x0116)
+                || // Shared Secret Response
+                (type == 0x0002); // Binding Indication
     }
 
     public static String bytesToHex(byte[] bytes) {
@@ -42,5 +47,4 @@ public class DatagramSocketUtils {
         }
         return sb.toString().trim();
     }
-
 }

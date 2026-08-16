@@ -19,7 +19,8 @@ import static com.faforever.iceadapter.ice.IceState.*;
 @Slf4j
 public class ConnectServiceControlledImpl extends ConnectServiceCommon implements ConnectService {
 
-    public ConnectServiceControlledImpl(MessageService messageService, IceGameSession iceGameSession, IceAsync iceAsync) {
+    public ConnectServiceControlledImpl(
+            MessageService messageService, IceGameSession iceGameSession, IceAsync iceAsync) {
         super(messageService, iceGameSession, iceAsync);
     }
 
@@ -36,8 +37,10 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
     void onIceAwaitingCandidates(Peer peer) {
         // Make sure to abort the connection process and reinitiate when we haven't received an answer to our offer in 6
         // seconds, candidate packet was probably lost
-        final int currentAwaitingCandidatesEventId = peer.getAwaitingCandidatesEventId().incrementAndGet();
-        iceAsync.runAsyncDelay(peer, () -> asyncTimeoutAwaitingCandidates(currentAwaitingCandidatesEventId, peer), 5000);
+        final int currentAwaitingCandidatesEventId =
+                peer.getAwaitingCandidatesEventId().incrementAndGet();
+        iceAsync.runAsyncDelay(
+                peer, () -> asyncTimeoutAwaitingCandidates(currentAwaitingCandidatesEventId, peer), 5000);
     }
 
     void onIceStateDisconnected(Peer peer, IceState oldState) {
@@ -71,8 +74,7 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
     }
 
     private void tryReInitState(Peer peer, IceState oldState) {
-        iceAsync.runAsyncDelay(peer, () -> peer.setIceState(NEW),
-                oldState == CONNECTED ? 1000 : 5000);
+        iceAsync.runAsyncDelay(peer, () -> peer.setIceState(NEW), oldState == CONNECTED ? 1000 : 5000);
     }
 
     @Override
@@ -98,15 +100,7 @@ public class ConnectServiceControlledImpl extends ConnectServiceCommon implement
         IceMediaStream mediaStream = peer.getMediaStream();
 
         for (Component component : mediaStream.getComponents()) {
-            CandidateUtil.unpackCandidates(
-                    peer,
-                    message,
-                    agent,
-                    component,
-                    mediaStream,
-                    true,
-                    true,
-                    true);
+            CandidateUtil.unpackCandidates(peer, message, agent, component, mediaStream, true, true, true);
         }
 
         peer.setIceState(CHECKING);

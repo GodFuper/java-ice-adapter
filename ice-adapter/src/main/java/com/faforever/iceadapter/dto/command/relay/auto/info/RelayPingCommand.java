@@ -38,22 +38,20 @@ public class RelayPingCommand extends CommandBase {
         long myId = peer.getFromId();
 
         if (fromId == myId && !toTarget) {
-            gameSession
-                    .getPeer(targetId)
-                    .ifPresent(p -> commandOnFrom(peer, p));
+            gameSession.getPeer(targetId).ifPresent(p -> commandOnFrom(peer, p));
             return;
         } else if (targetId == myId && toTarget) {
             commandOnTarget(peer);
             return;
         }
 
-        gameSession.getPeer(toTarget ? targetId : fromId)
-                .ifPresent(target -> commandOnRelayPeer(peer, target));
+        gameSession.getPeer(toTarget ? targetId : fromId).ifPresent(target -> commandOnRelayPeer(peer, target));
     }
 
     private void commandOnFrom(Peer remotePeer, Peer peer) {
         Map<Integer, RelayPing> rtts = peer.getRtts();
-        RelayPing relayPing = rtts.computeIfAbsent(remotePeer.getRemoteId(), k -> new RelayPing(remotePeer.getRemoteLogin()));
+        RelayPing relayPing =
+                rtts.computeIfAbsent(remotePeer.getRemoteId(), k -> new RelayPing(remotePeer.getRemoteLogin()));
         float oldRtt = relayPing.getRtt();
         long rttMs = System.currentTimeMillis() - echo;
         relayPing.updateRtt(calculateRtt(oldRtt, rttMs));

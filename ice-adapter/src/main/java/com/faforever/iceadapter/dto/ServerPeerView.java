@@ -63,9 +63,7 @@ public class ServerPeerView implements PeerEventListener {
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         getState().set(String.valueOf(peer.getState()));
-        getAgent().set(peer.getAgentState()
-                .map(String::valueOf)
-                .orElse("-"));
+        getAgent().set(peer.getAgentState().map(String::valueOf).orElse("-"));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         AllowCombination combination = peer.getCombination();

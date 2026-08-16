@@ -4,6 +4,7 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.CustomUdpTransportSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
 import com.faforever.iceadapter.ice.peer.modules.other.*;
@@ -45,16 +46,17 @@ public enum PeerModule implements Comparator<PeerModule> {
     RELAY_CLIENT_MODULE(RelayClientModule::new),
     RELAY_SERVER_MODULE(RelayServerModule::new),
     AUTO_RELAY_CALCULATE_RTT(RelayBestRttPeerCheckerModule::new),
+    CUSTOM_UDP_TRANSPORT(CustomUdpTransportSenderModule::new),
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
     PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new);
 
     @Getter
-    private static final List<PeerModule> sortedModules = Stream.of(PeerModule.values())
-            .sorted()
-            .toList();
+    private static final List<PeerModule> sortedModules =
+            Stream.of(PeerModule.values()).sorted().toList();
 
-    private static final Set<PeerModule> MODULES_FOR_SERVER = Set.of(EVENT_BUS, RELAY_SERVER_MODULE, PEER_LISTENER_MODULE, PEER_TO_PEER_SENDER, PEER_TURN_REFRESHER_MODULE);
+    private static final Set<PeerModule> MODULES_FOR_SERVER = Set.of(
+            EVENT_BUS, RELAY_SERVER_MODULE, PEER_LISTENER_MODULE, PEER_TO_PEER_SENDER, PEER_TURN_REFRESHER_MODULE);
 
     @Getter
     private static final Set<PeerModule> modulesDisableForServer = Stream.of(PeerModule.values())
@@ -77,6 +79,7 @@ public enum PeerModule implements Comparator<PeerModule> {
     @Override
     public int compare(PeerModule o1, PeerModule o2) {
         return Comparator.comparingInt(PeerModule::getPriority)
-                .thenComparing(PeerModule::getPriority).compare(o1, o2);
+                .thenComparing(PeerModule::getPriority)
+                .compare(o1, o2);
     }
 }

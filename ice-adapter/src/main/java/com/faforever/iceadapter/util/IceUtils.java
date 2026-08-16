@@ -14,8 +14,6 @@ public class IceUtils {
             return Optional.empty();
         }
 
-        return mediaStream.getComponents()
-                .stream()
-                .findFirst();
+        return mediaStream.getComponents().stream().findFirst();
     }
 }

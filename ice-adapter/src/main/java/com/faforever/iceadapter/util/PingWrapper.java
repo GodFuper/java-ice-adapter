@@ -62,7 +62,8 @@ public class PingWrapper {
                         } catch (InterruptedException | IOException | RuntimeException e) {
                             throw new CompletionException(e);
                         }
-                    }, executor);
+                    },
+                    executor);
         } catch (IOException e) {
             CompletableFuture<Double> future = new CompletableFuture<>();
             future.completeExceptionally(e);

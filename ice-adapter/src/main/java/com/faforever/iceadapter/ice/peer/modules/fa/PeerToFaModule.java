@@ -44,7 +44,8 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
 
     private void send(DatagramSocket socket, byte[] data, int offset, int length) {
         try {
-            DatagramPacket packet = new DatagramPacket(data, offset, length, InetAddress.getByName(LOCALHOST), peer.getLobbyPort());
+            DatagramPacket packet =
+                    new DatagramPacket(data, offset, length, InetAddress.getByName(LOCALHOST), peer.getLobbyPort());
             socket.send(packet);
         } catch (UnknownHostException e) {
             // should never happen for 127.0.0.1 but log at debug if it does
@@ -52,7 +53,8 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
         } catch (IOException e) {
             if (peer.isClosing()) {
                 log.debug(
-                        "Ignoring error while sending packet because the connection was closed {}", peer.getPeerIdentifier());
+                        "Ignoring error while sending packet because the connection was closed {}",
+                        peer.getPeerIdentifier());
             } else {
                 log.error(
                         "Error while writing to local FA as peer (probably disconnecting from peer) {}",
@@ -62,6 +64,4 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
             }
         }
     }
-
-
 }

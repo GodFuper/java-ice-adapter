@@ -21,6 +21,7 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     @Setter
     private Component component;
+
     private Lock lockComponent;
 
     private boolean enabled = true;
@@ -38,11 +39,17 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data) {
+        if (peer.isCustomUdpTransport()) {
+            return;
+        }
         sendDirect(data);
     }
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
+        if (peer.isCustomUdpTransport()) {
+            return;
+        }
         if (!peer.isSupportCommand() && !force) {
             return;
         }

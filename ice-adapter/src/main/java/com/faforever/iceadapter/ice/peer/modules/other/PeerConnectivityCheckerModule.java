@@ -55,13 +55,10 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
             }
 
             log.debug("Starting connectivity checker for peer");
-            scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::checkerThread,
-                    0,
-                    ECHO_INTERVAL,
-                    TimeUnit.MILLISECONDS);
+            scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
+                    this::checkerThread, 0, ECHO_INTERVAL, TimeUnit.MILLISECONDS);
         });
     }
-
 
     @Override
     public void onConnectingChange(Peer peer, boolean connecting) {
@@ -88,7 +85,6 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
             peer.getInvalidPacket().incrementAndGet();
             log.error("Invalid Echo received. length={}", length);
         }
-
     }
 
     @Override
@@ -133,8 +129,11 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;
 
         if (sinceLastReal > TIMEOUT_BEFORE_LOST_CONNECT) {
-            log.warn("{} No traffic (echo or game) for {} ms (> {} ms timeout). Closing connection.",
-                    peer.getPeerIdentifier(), lastPacketReceived, TIMEOUT_BEFORE_LOST_CONNECT);
+            log.warn(
+                    "{} No traffic (echo or game) for {} ms (> {} ms timeout). Closing connection.",
+                    peer.getPeerIdentifier(),
+                    lastPacketReceived,
+                    TIMEOUT_BEFORE_LOST_CONNECT);
             peer.lostConnect();
             return;
         }

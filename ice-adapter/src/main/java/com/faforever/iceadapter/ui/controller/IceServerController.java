@@ -29,12 +29,16 @@ public class IceServerController {
 
     @FXML
     private TableColumn<IceServerView, String> typeColumn;
+
     @FXML
     private TableColumn<IceServerView, String> transportColumn;
+
     @FXML
     private TableColumn<IceServerView, String> addressColumn;
+
     @FXML
     private TableColumn<IceServerView, String> rttColumn;
+
     @FXML
     private TableColumn<IceServerView, Boolean> enabledColumn;
 
@@ -96,7 +100,8 @@ public class IceServerController {
         }
 
         Platform.runLater(() -> {
-            if (!Objects.equals(adapter.getIceServersList().size(), tableView.getItems().size())) {
+            if (!Objects.equals(
+                    adapter.getIceServersList().size(), tableView.getItems().size())) {
                 tableView.getItems().setAll(adapter.getIceServersList());
             }
         });
@@ -104,9 +109,6 @@ public class IceServerController {
 
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
-        updateScheduler.scheduleAtFixedRate(() -> {
-            Platform.runLater(this::updateAllInfo);
-        }, 2, 30, TimeUnit.SECONDS);
+        updateScheduler.scheduleAtFixedRate(() -> Platform.runLater(this::updateAllInfo), 2, 30, TimeUnit.SECONDS);
     }
-
 }

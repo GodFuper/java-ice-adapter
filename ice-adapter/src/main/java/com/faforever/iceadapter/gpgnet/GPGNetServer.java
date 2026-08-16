@@ -37,8 +37,10 @@ public class GPGNetServer implements AutoCloseable {
 
     @Getter
     private final int gpgNetPort;
+
     @Getter
     private final int lobbyPort;
+
     private IceAdapter iceAdapter;
     private RPCService rpcService;
     private ServerSocket serverSocket;
@@ -91,8 +93,7 @@ public class GPGNetServer implements AutoCloseable {
         log.debug("Dropping GPGNet message because no client ready: {} {}", header, formatArgs(args));
     }
 
-    public void init(IceAdapter iceAdapter,
-                     RPCService rpcService) {
+    public void init(IceAdapter iceAdapter, RPCService rpcService) {
         synchronized (INSTANCE_LOCK) {
             INSTANCE = this;
         }
@@ -198,7 +199,8 @@ public class GPGNetServer implements AutoCloseable {
 
         private void listenerLoop() {
             log.debug("Listening for GPG messages from {}", socket.getRemoteSocketAddress());
-            try (InputStream in = socket.getInputStream(); var gpgnetIn = new FaDataInputStream(in)) {
+            try (InputStream in = socket.getInputStream();
+                 var gpgnetIn = new FaDataInputStream(in)) {
                 while (!stopping) {
                     String command = gpgnetIn.readString();
                     List<Object> args = gpgnetIn.readChunks();
@@ -206,7 +208,9 @@ public class GPGNetServer implements AutoCloseable {
                     // If this client is no longer the current active one, stop listening
                     GPGNetClient active = currentClient.get();
                     if (active != this) {
-                        log.info("Listener noticing it's no longer active client, stopping listener: {}", socket.getRemoteSocketAddress());
+                        log.info(
+                                "Listener noticing it's no longer active client, stopping listener: {}",
+                                socket.getRemoteSocketAddress());
                         break;
                     }
 
@@ -307,9 +311,7 @@ public class GPGNetServer implements AutoCloseable {
     }
 
     public static Optional<GameState> getGameState() {
-        return Optional.ofNullable(INSTANCE)
-                .map(s -> s.currentClient.get())
-                .map(GPGNetClient::getGameState);
+        return Optional.ofNullable(INSTANCE).map(s -> s.currentClient.get()).map(GPGNetClient::getGameState);
     }
 
     /**

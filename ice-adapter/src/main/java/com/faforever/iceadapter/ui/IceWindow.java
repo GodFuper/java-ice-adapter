@@ -70,7 +70,6 @@ public class IceWindow extends Application {
         });
     }
 
-
     private static void runOnUIThread(Runnable runnable) {
         if (Platform.isFxApplicationThread()) {
             runnable.run();

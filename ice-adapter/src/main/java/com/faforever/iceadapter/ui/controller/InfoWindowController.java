@@ -41,7 +41,6 @@ public class InfoWindowController {
         } else {
             IceWindow.INSTANCE.showWindow();
         }
-
     }
 
     @SneakyThrows
@@ -52,14 +51,13 @@ public class InfoWindowController {
                         IceAdapter.getGameId(),
                         IceAdapter.getId());
 
-        CompletableFuture.runAsync(
-                () -> {
-                    try {
-                        Desktop.getDesktop().browse(URI.create(url));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        CompletableFuture.runAsync(() -> {
+            try {
+                Desktop.getDesktop().browse(URI.create(url));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public void onMinimizeToTrayClicked(ActionEvent actionEvent) {

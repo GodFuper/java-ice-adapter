@@ -23,6 +23,9 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data) {
+        if (peer.isCustomUdpTransport()) {
+            return;
+        }
         if (data[0] == COMMAND_AUTO_RELAY || data[0] == COMMAND_ECHO) {
             if (peer.isConnected()) {
                 sendDirect(data);
@@ -49,6 +52,10 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
+        if (peer.isCustomUdpTransport()) {
+            return;
+        }
+
         if (!peer.isSupportCommand() && !force) {
             return;
         }

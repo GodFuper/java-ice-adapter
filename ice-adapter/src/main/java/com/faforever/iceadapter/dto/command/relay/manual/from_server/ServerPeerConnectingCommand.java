@@ -41,5 +41,4 @@ public class ServerPeerConnectingCommand extends CommandBase {
             client.stopModules();
         }
     }
-
 }

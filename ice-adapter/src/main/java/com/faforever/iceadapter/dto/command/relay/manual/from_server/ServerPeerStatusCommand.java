@@ -49,5 +49,4 @@ public class ServerPeerStatusCommand extends CommandBase {
             client.setIceState(iceState);
         }
     }
-
 }

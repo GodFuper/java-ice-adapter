@@ -27,10 +27,7 @@ public class TrayIcon {
         }
 
         Dimension dimension = SystemTray.getSystemTray().getTrayIconSize();
-        fafLogo = fafLogo.getScaledInstance(
-                dimension.width,
-                dimension.height,
-                Image.SCALE_SMOOTH);
+        fafLogo = fafLogo.getScaledInstance(dimension.width, dimension.height, Image.SCALE_SMOOTH);
 
         trayIcon = new java.awt.TrayIcon(fafLogo, "FAForever Connection ICE Adapter");
 

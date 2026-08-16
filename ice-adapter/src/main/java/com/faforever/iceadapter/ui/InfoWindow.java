@@ -41,7 +41,6 @@ public class InfoWindow {
             log.error("Could not load debugger window fxml", e);
         }
 
-
         setUserAgentStylesheet(STYLESHEET_MODENA);
 
         scene = new Scene(root, WIDTH, HEIGHT);

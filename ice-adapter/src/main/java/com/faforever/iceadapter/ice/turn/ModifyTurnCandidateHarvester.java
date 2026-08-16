@@ -10,9 +10,7 @@ import org.ice4j.security.LongTermCredential;
 @Slf4j
 public class ModifyTurnCandidateHarvester extends TurnCandidateHarvester {
 
-    public ModifyTurnCandidateHarvester(
-            TransportAddress turnServer,
-            LongTermCredential longTermCredential) {
+    public ModifyTurnCandidateHarvester(TransportAddress turnServer, LongTermCredential longTermCredential) {
         super(turnServer, longTermCredential);
     }
 

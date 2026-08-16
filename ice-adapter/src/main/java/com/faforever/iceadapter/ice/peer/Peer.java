@@ -48,9 +48,8 @@ public abstract class Peer {
 
     private volatile long lastLostConnect = 0;
 
-    private final Cache<Integer, List<Integer>> cacheBestRelays = CacheBuilder.newBuilder()
-            .maximumSize(1)
-            .build();
+    private final Cache<Integer, List<Integer>> cacheBestRelays =
+            CacheBuilder.newBuilder().maximumSize(1).build();
 
     private final Map<Integer, RelayPing> rtts = new ConcurrentHashMap<>();
     private volatile boolean sendDirectAndRelay = true;
@@ -75,6 +74,7 @@ public abstract class Peer {
     private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
     private AllowCombination combination = AllowCombination.ALL;
     private boolean disableConnectService = false;
+    private boolean customUdpTransport = false;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
@@ -103,8 +103,7 @@ public abstract class Peer {
     }
 
     public void initModules() {
-        PeerModule.getSortedModules()
-                .stream()
+        PeerModule.getSortedModules().stream()
                 .filter(Predicate.not(disabledModules::contains))
                 .forEach((module) -> {
                     modules.putIfAbsent(module, module.createModule(this));
@@ -128,12 +127,15 @@ public abstract class Peer {
     }
 
     public void startInitPeer() {
-        log.debug("Peer created: {}, localOffer: {}, preferredPort: {}",
-                getPeerIdentifier(),
-                localOffer,
-                preferredPort);
+        log.debug(
+                "Peer created: {}, localOffer: {}, preferredPort: {}", getPeerIdentifier(), localOffer, preferredPort);
 
         setIceState(IceState.NEW);
+    }
+
+    public void setCustomUdpTransport(boolean customUdpTransport) {
+        this.customUdpTransport = customUdpTransport;
+        event(bus -> bus.onCustomUdpTransportChange(this, customUdpTransport));
     }
 
     public void setIceState(IceState iceState) {
@@ -235,9 +237,7 @@ public abstract class Peer {
     }
 
     public CandidatePair getSelectedPair() {
-        return getActiveComponent()
-                .map(Component::getSelectedPair)
-                .orElse(null);
+        return getActiveComponent().map(Component::getSelectedPair).orElse(null);
     }
 
     public String getFullInfoSelectedPair() {
@@ -261,7 +261,9 @@ public abstract class Peer {
     public List<Pair<String, String>> getCandidateTypes() {
         List<Pair<String, String>> candidates = new ArrayList<>();
         for (CandidatePair pair : getCandidatePairs()) {
-            candidates.add(new Pair<>(String.valueOf(pair.getLocalCandidate().getType()), String.valueOf(pair.getRemoteCandidate().getType())));
+            candidates.add(new Pair<>(
+                    String.valueOf(pair.getLocalCandidate().getType()),
+                    String.valueOf(pair.getRemoteCandidate().getType())));
         }
 
         return candidates;
@@ -280,8 +282,7 @@ public abstract class Peer {
     }
 
     public Optional<IceProcessingState> getAgentState() {
-        return Optional.ofNullable(agent)
-                .map(Agent::getState);
+        return Optional.ofNullable(agent).map(Agent::getState);
     }
 
     public Optional<Float> getAverageRtt() {
@@ -393,4 +394,3 @@ public abstract class Peer {
         return Objects.hash(getRemoteId(), getFromId());
     }
 }
-

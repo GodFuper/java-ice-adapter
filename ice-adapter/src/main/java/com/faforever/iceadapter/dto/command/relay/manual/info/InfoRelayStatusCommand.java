@@ -32,5 +32,4 @@ public class InfoRelayStatusCommand extends CommandBase {
             }
         }
     }
-
 }

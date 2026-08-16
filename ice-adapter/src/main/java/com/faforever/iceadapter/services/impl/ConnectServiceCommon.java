@@ -101,23 +101,25 @@ public abstract class ConnectServiceCommon {
                     agent.addCandidateHarvester(new StunCandidateHarvester(address));
                 });
 
-        servers.stream()
-                .filter(IceServer::isTurn)
-                .filter(IceServer::isEnabled)
-                .forEach(iceServer -> {
-                    var address = iceServer.getAddress();
-                    var harvester = new ModifyTurnCandidateHarvester(address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
-                    log.info("Add TURN harvester for {}", address.getHostName());
-                    agent.addCandidateHarvester(harvester);
-                });
+        servers.stream().filter(IceServer::isTurn).filter(IceServer::isEnabled).forEach(iceServer -> {
+            var address = iceServer.getAddress();
+            var harvester = new ModifyTurnCandidateHarvester(
+                    address, new LongTermCredential(iceServer.getTurnUsername(), iceServer.getTurnCredential()));
+            log.info("Add TURN harvester for {}", address.getHostName());
+            agent.addCandidateHarvester(harvester);
+        });
 
-        CompletableFuture<Void> gatheringFuture = iceAsync.runAsync(peer, () -> createComponent(peer, agent, mediaStream));
+        CompletableFuture<Void> gatheringFuture =
+                iceAsync.runAsync(peer, () -> createComponent(peer, agent, mediaStream));
 
-        iceAsync.runAsyncDelay(peer, () -> {
-            if (!gatheringFuture.isDone()) {
-                gatheringFuture.cancel(true);
-            }
-        }, 10000);
+        iceAsync.runAsyncDelay(
+                peer,
+                () -> {
+                    if (!gatheringFuture.isDone()) {
+                        gatheringFuture.cancel(true);
+                    }
+                },
+                10000);
 
         boolean success = true;
         try {
@@ -184,7 +186,9 @@ public abstract class ConnectServiceCommon {
         long now = System.currentTimeMillis();
         long lastLostConnect = peer.getLastLostConnect();
         if (now - lastLostConnect < LOST_CONNECT_DURATION && !force) {
-            log.debug("Skipping the lost connection, since the last connection loss was less than {}ms ago", LOST_CONNECT_DURATION);
+            log.debug(
+                    "Skipping the lost connection, since the last connection loss was less than {}ms ago",
+                    LOST_CONNECT_DURATION);
             return;
         }
         peer.setLastLostConnect(now);
@@ -252,8 +256,14 @@ public abstract class ConnectServiceCommon {
 
     protected void createComponent(Peer peer, Agent agent, IceMediaStream mediaStream) {
         try {
-            KeepAliveStrategy strategy = peer.getKeepAliveStrategy() != null ? peer.getKeepAliveStrategy() : KeepAliveStrategy.SELECTED_ONLY;
-            Component component = agent.createComponent(mediaStream, ThreadLocalRandom.current().nextInt(MINIMUM_PORT, MAXIMUM_PORT), MINIMUM_PORT, MAXIMUM_PORT, strategy);
+            KeepAliveStrategy strategy =
+                    peer.getKeepAliveStrategy() != null ? peer.getKeepAliveStrategy() : KeepAliveStrategy.SELECTED_ONLY;
+            Component component = agent.createComponent(
+                    mediaStream,
+                    ThreadLocalRandom.current().nextInt(MINIMUM_PORT, MAXIMUM_PORT),
+                    MINIMUM_PORT,
+                    MAXIMUM_PORT,
+                    strategy);
             DatagramSocketUtils.resizeBuffer(component.getSocket());
         } catch (Exception e) {
             throw new RuntimeException(e);

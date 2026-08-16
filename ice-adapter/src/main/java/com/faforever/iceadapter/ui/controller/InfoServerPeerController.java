@@ -28,20 +28,28 @@ public class InfoServerPeerController {
 
     @FXML
     private TableColumn<ServerPeerView, String> main;
+
     @FXML
     private TableColumn<ServerPeerView, String> remote;
+
     @FXML
     private TableColumn<ServerPeerView, String> pairConColumn;
+
     @FXML
     private TableColumn<ServerPeerView, String> stateColumn;
+
     @FXML
     private TableColumn<ServerPeerView, String> agentStateColumn;
+
     @FXML
     private TableColumn<ServerPeerView, String> offerColumn;
+
     @FXML
     private TableColumn<ServerPeerView, Boolean> hostColumn;
+
     @FXML
     private TableColumn<ServerPeerView, Boolean> reflexiveColumn;
+
     @FXML
     private TableColumn<ServerPeerView, Boolean> relayColumn;
 
@@ -92,9 +100,12 @@ public class InfoServerPeerController {
 
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
-        updateScheduler.scheduleAtFixedRate(() -> {
-            Platform.runLater(this::updateAllInfo);
-        }, 0, 500, TimeUnit.MILLISECONDS);
+        updateScheduler.scheduleAtFixedRate(
+                () -> {
+                    Platform.runLater(this::updateAllInfo);
+                },
+                0,
+                500,
+                TimeUnit.MILLISECONDS);
     }
-
 }

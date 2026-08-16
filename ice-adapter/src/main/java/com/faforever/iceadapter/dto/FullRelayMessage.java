@@ -32,8 +32,7 @@ public record FullRelayMessage(int fromId, int targetId, byte[] data) {
 
     public byte[] toBytes(byte first) {
         int dataLength = data == null ? 0 : data.length;
-        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4 + 4 + dataLength)
-                .order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4 + 4 + dataLength).order(ByteOrder.BIG_ENDIAN);
 
         buffer.put(first);
         buffer.putInt(fromId);
@@ -47,9 +46,6 @@ public record FullRelayMessage(int fromId, int targetId, byte[] data) {
 
     @Override
     public String toString() {
-        return "FullRelayMessage{" +
-                "fromId=" + fromId +
-                "targetId=" + targetId +
-                '}';
+        return "FullRelayMessage{" + "fromId=" + fromId + "targetId=" + targetId + '}';
     }
 }

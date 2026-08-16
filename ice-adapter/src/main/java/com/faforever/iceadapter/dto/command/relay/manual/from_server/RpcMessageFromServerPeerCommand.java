@@ -34,6 +34,4 @@ public class RpcMessageFromServerPeerCommand extends CommandBase {
 
         client.sendToRpc(message);
     }
-
-
 }

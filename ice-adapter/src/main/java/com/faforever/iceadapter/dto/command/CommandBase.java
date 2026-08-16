@@ -14,11 +14,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMMAND_BASE;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type"
-)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ConnectionLostRelayServerCommand.class, name = "connect_lost_relay"),
         @JsonSubTypes.Type(value = RpcMessageFromClientPeerCommand.class, name = "rpc_message_from_client"),
@@ -26,13 +22,10 @@ import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMM
         @JsonSubTypes.Type(value = StartRelayServerCommand.class, name = "start_relay"),
         @JsonSubTypes.Type(value = StopRelayServerCommand.class, name = "stop_relay"),
         @JsonSubTypes.Type(value = SetAllowCombinationCommand.class, name = "set_allow_combination"),
-
         @JsonSubTypes.Type(value = RpcMessageFromServerPeerCommand.class, name = "rpc_message_from_server"),
         @JsonSubTypes.Type(value = ServerPeerConnectingCommand.class, name = "server_peer_connecting"),
         @JsonSubTypes.Type(value = ServerPeerStatusCommand.class, name = "server_peer_status"),
-
         @JsonSubTypes.Type(value = InfoRelayStatusCommand.class, name = "info_relay_status"),
-
         @JsonSubTypes.Type(value = RelayPingCommand.class, name = "relay_ping")
 })
 public abstract class CommandBase {
@@ -52,5 +45,4 @@ public abstract class CommandBase {
     public static CommandBase initCommand(byte[] bytes) {
         return ObjectMapperUtil.fromBytesAndWithOutFirstByte(bytes, CommandBase.class, COMPRESSION);
     }
-
 }

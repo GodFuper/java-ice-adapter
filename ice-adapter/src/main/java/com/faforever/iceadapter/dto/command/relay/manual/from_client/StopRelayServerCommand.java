@@ -31,5 +31,4 @@ public class StopRelayServerCommand extends CommandBase {
 
         server.close();
     }
-
 }

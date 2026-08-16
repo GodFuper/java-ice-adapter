@@ -24,10 +24,7 @@ public class IceServerChecker {
         if (scheduledFuture != null) {
             return;
         }
-        scheduledFuture = scheduler.scheduleAtFixedRate(this::checkerThread,
-                0,
-                INTERVAL,
-                TimeUnit.MINUTES);
+        scheduledFuture = scheduler.scheduleAtFixedRate(this::checkerThread, 0, INTERVAL, TimeUnit.MINUTES);
     }
 
     private void checkerThread() {

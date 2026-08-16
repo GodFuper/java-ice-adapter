@@ -18,8 +18,7 @@ public class ModifyTurnCandidateHarvest extends TurnCandidateHarvest {
     }
 
     protected RelayedCandidate createRelayedCandidate(
-            TransportAddress transportAddress,
-            TransportAddress mappedAddress) {
+            TransportAddress transportAddress, TransportAddress mappedAddress) {
         return new ModifyRelayedCandidate(transportAddress, this, mappedAddress);
     }
 

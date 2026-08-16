@@ -35,15 +35,10 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
     @Override
     public void init() {
         peer.addEventListener(this);
-        scheduledFutures.add(scheduledExecutorService.scheduleAtFixedRate(this::checkerThread,
-                0,
-                ECHO_INTERVAL,
-                TimeUnit.MILLISECONDS));
-        scheduledFutures.add(scheduledExecutorService.scheduleAtFixedRate(this::calculateBestRelay,
-                0,
-                BEST_RELAY_CALC,
-                TimeUnit.MILLISECONDS));
-
+        scheduledFutures.add(scheduledExecutorService.scheduleAtFixedRate(
+                this::checkerThread, 0, ECHO_INTERVAL, TimeUnit.MILLISECONDS));
+        scheduledFutures.add(scheduledExecutorService.scheduleAtFixedRate(
+                this::calculateBestRelay, 0, BEST_RELAY_CALC, TimeUnit.MILLISECONDS));
     }
 
     private String getThreadName() {
@@ -76,15 +71,12 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
         Map<Integer, RelayPing> rtts = peer.getRtts();
 
         Set<Integer> idsLast = rtts.keySet();
-        Set<Integer> idsForSend = allPeers.entrySet()
-                .stream()
+        Set<Integer> idsForSend = allPeers.entrySet().stream()
                 .filter(entry -> {
                     Peer p = entry.getValue();
-                    return !p.isClosing()
-                            && p.isConnected()
-                            && p.isSupportCommand()
-                            && !Objects.equals(peer, p);
-                }).map(Map.Entry::getKey)
+                    return !p.isClosing() && p.isConnected() && p.isSupportCommand() && !Objects.equals(peer, p);
+                })
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
         if (!Objects.equals(idsForSend, idsLast)) {
@@ -117,8 +109,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
 
         Map<Integer, RelayPing> rtts = peer.getRtts();
 
-        List<Integer> ids = rtts.entrySet()
-                .stream()
+        List<Integer> ids = rtts.entrySet().stream()
                 .filter(entry -> entry.getValue().isActual())
                 .sorted(Comparator.comparing(entry -> entry.getValue().getRtt()))
                 .map(Map.Entry::getKey)

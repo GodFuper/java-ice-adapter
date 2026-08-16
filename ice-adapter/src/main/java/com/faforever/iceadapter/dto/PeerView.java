@@ -82,19 +82,23 @@ public class PeerView implements PeerEventListener {
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         getState().set(String.valueOf(peer.getState()));
-        getAgent().set(peer.getAgentState()
-                .map(String::valueOf)
-                .orElse("-"));
+        getAgent().set(peer.getAgentState().map(String::valueOf).orElse("-"));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         getRtt().set(rttStr(peer));
-        getLastRecv().set(peer.getLastReceived()
-                .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
-                .orElse("never"));
-        getLastRelayRecv().set(peer.getRelayLastReceived()
-                .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
-                .orElse(""));
-        getEchosReceived().set("%s/%s".formatted(String.valueOf(peer.countEchosReceived()), String.valueOf(peer.countInvalidEchosReceived())));
+        getLastRecv()
+                .set(peer.getLastReceived()
+                        .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
+                        .orElse("never"));
+        getLastRelayRecv()
+                .set(peer.getRelayLastReceived()
+                        .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
+                        .orElse(""));
+        getEchosReceived()
+                .set("%s/%s"
+                        .formatted(
+                                String.valueOf(peer.countEchosReceived()),
+                                String.valueOf(peer.countInvalidEchosReceived())));
         getPeerRelaySupport().set(peer.isSupportRelay());
 
         AllowCombination combination = peer.getCombination();
@@ -111,10 +115,11 @@ public class PeerView implements PeerEventListener {
 
     private static String rttStr(Peer peer) {
         StringJoiner joiner = new StringJoiner("\n");
-        joiner.add("direct: %s".formatted(peer.getAverageRtt()
-                .map(Math::round)
-                .map(String::valueOf)
-                .orElse("–")));
+        joiner.add("direct: %s"
+                .formatted(peer.getAverageRtt()
+                        .map(Math::round)
+                        .map(String::valueOf)
+                        .orElse("–")));
         Map<Integer, RelayPing> rtts = peer.getRtts();
         List<Integer> ids = peer.getBestRelays();
         if (!CollectionUtils.isEmpty(ids)) {
@@ -140,5 +145,4 @@ public class PeerView implements PeerEventListener {
     public int hashCode() {
         return Objects.hashCode(id.get());
     }
-
 }

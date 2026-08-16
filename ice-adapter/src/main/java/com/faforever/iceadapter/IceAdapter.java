@@ -35,8 +35,10 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     @Getter
     private GPGNetServer gpgNetServer;
+
     @Getter
     private RPCService rpcService;
+
     @Getter
     @Setter
     private GameSession gameSession;
@@ -62,7 +64,8 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         gpgNetServer.init(this, rpcService);
         rpcService.init(gpgNetServer, this);
 
-        var telemetryDebugger = new TelemetryDebugger(gpgNetServer, iceOptions.getTelemetryServer(), iceOptions.getGameId(), iceOptions.getId());
+        var telemetryDebugger = new TelemetryDebugger(
+                gpgNetServer, iceOptions.getTelemetryServer(), iceOptions.getGameId(), iceOptions.getId());
         Debug.register(telemetryDebugger);
 
         Debug.DELAY_UI_MS = iceOptions.getDelayUi();
@@ -71,7 +74,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         Debug.init();
 
         TrayIcon.create();
-
 
         debug().startupComplete();
     }
@@ -247,7 +249,9 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     public static double getAcceptableLatency() {
         IceAdapter instance = INSTANCE;
-        return instance != null && instance.iceOptions != null ? instance.iceOptions.getAcceptableLatency() : Double.MAX_VALUE;
+        return instance != null && instance.iceOptions != null
+                ? instance.iceOptions.getAcceptableLatency()
+                : Double.MAX_VALUE;
     }
 
     public static GameSession getGameSessionSafe() {

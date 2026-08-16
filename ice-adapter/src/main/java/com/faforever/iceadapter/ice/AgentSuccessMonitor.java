@@ -7,5 +7,4 @@ public interface AgentSuccessMonitor {
     CompletableFuture<Boolean> start();
 
     void shutdown();
-
 }

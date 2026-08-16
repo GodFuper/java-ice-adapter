@@ -78,5 +78,4 @@ public class FASocketModule implements ModuleBase {
             peer.setFaSocket(null);
         }
     }
-
 }

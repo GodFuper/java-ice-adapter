@@ -40,14 +40,22 @@ class PeerConnectionIntegrationTest extends PeerConnectionIntegrationBase {
         sleep(1000);
 
         List<byte[]> receivedAtSocketB = socketB.getReceivedBytes();
-        assertEquals(NUM_PACKETS, receivedAtSocketB.size(), "socketB should receive " + NUM_PACKETS + " packets from A (sent via peerA), got: " + receivedAtSocketB.size());
+        assertEquals(
+                NUM_PACKETS,
+                receivedAtSocketB.size(),
+                "socketB should receive " + NUM_PACKETS + " packets from A (sent via peerA), got: "
+                        + receivedAtSocketB.size());
         for (int i = 0; i < NUM_PACKETS; i++) {
             String received = new String(receivedAtSocketB.get(i), StandardCharsets.UTF_8);
             assertEquals("message-from-A-" + i, received, "Packet " + i + " content mismatch from A->B");
         }
 
         List<byte[]> receivedAtSocketA = socketA.getReceivedBytes();
-        assertEquals(NUM_PACKETS, receivedAtSocketA.size(), "socketA should receive " + NUM_PACKETS + " packets from B (sent via peerB), got: " + receivedAtSocketA.size());
+        assertEquals(
+                NUM_PACKETS,
+                receivedAtSocketA.size(),
+                "socketA should receive " + NUM_PACKETS + " packets from B (sent via peerB), got: "
+                        + receivedAtSocketA.size());
         for (int i = 0; i < NUM_PACKETS; i++) {
             String received = new String(receivedAtSocketA.get(i), StandardCharsets.UTF_8);
             assertEquals("message-from-B-" + i, received, "Packet " + i + " content mismatch from B->A");

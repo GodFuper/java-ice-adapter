@@ -12,8 +12,10 @@ import java.util.concurrent.*;
 public class ExecutorHolder {
 
     private final ExecutorService executorService = new ThreadPoolExecutor(
-            getCoreForExecutor(10), getCoreForExecutor(20),
-            0L, TimeUnit.MILLISECONDS,
+            getCoreForExecutor(10),
+            getCoreForExecutor(20),
+            0L,
+            TimeUnit.MILLISECONDS,
             new PriorityBlockingQueue<>(1000, Task.createComparator()),
             Executors.defaultThreadFactory());
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
@@ -29,5 +31,4 @@ public class ExecutorHolder {
     private static int getCoreForExecutor(int size) {
         return Math.max(size, Runtime.getRuntime().availableProcessors());
     }
-
 }

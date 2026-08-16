@@ -22,7 +22,8 @@ public class IceTrigger implements PeerEventListener {
             return;
         }
 
-        iceAsync.runAsync(false, "onIceStateChange", peer, () -> connectService.onChangeIceState(peer, oldState, newState));
+        iceAsync.runAsync(
+                false, "onIceStateChange", peer, () -> connectService.onChangeIceState(peer, oldState, newState));
     }
 
     @Override

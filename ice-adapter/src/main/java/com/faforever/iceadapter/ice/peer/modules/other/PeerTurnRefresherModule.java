@@ -45,10 +45,8 @@ public class PeerTurnRefresherModule implements ModuleBase, PeerEventListener {
             }
 
             log.debug("Starting refresher relay for peer");
-            scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::refresher,
-                    1,
-                    REFRESH_INTERVAL,
-                    TimeUnit.MINUTES);
+            scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
+                    this::refresher, 1, REFRESH_INTERVAL, TimeUnit.MINUTES);
         });
     }
 

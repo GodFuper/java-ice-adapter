@@ -39,58 +39,78 @@ public class WindowController {
 
     @FXML
     private Label versionLabel, userLabel, rpcPortLabel, gpgnetPortLabel, lobbyPortLabel;
-
     @FXML
     private Label rpcServerStatus, rpcClientStatus, gpgnetServerStatus, gpgnetClientStatus, gameState;
 
     @FXML
     private TableView<PeerView> peerTable;
+
     @FXML
     private TableColumn<PeerView, Integer> idColumn;
+
     @FXML
     private TableColumn<PeerView, String> loginColumn;
+
     @FXML
     private TableColumn<PeerView, String> pairConColumn;
+
     @FXML
     private TableColumn<PeerView, String> reconnectColumn;
+
     @FXML
     private TableColumn<PeerView, String> stateColumn;
+
     @FXML
     private TableColumn<PeerView, String> agentStateColumn;
+
     @FXML
     private TableColumn<PeerView, String> offerColumn;
+
     @FXML
     private TableColumn<PeerView, String> rttColumn;
+
     @FXML
     private TableColumn<PeerView, String> lastColumn;
+
     @FXML
     private TableColumn<PeerView, String> lastRelayColumn;
+
     @FXML
     private TableColumn<PeerView, String> echosRcvColumn;
+
     @FXML
     private TableColumn<PeerView, Boolean> hostColumn;
+
     @FXML
     private TableColumn<PeerView, Boolean> reflexiveColumn;
+
     @FXML
     private TableColumn<PeerView, Boolean> relayColumn;
 
     @FXML
     private TableColumn<PeerView, Integer> selectedRelayPeerColumn;
+
     @FXML
     private TableColumn<PeerView, Boolean> relaySupport;
 
     @FXML
     private VBox selectPeerActionPane;
+
     @FXML
     private VBox peerActionPane;
+
     @FXML
     private Label peerActionTitle;
+
     @FXML
     private Button reconnectPeerButton;
+
     @FXML
     private Label actionsPeerLabel;
+
     @FXML
     private ComboBox<AllowCombination> allowCombinationComboBox;
+
     @FXML
     private ComboBox<IceAgentStrategy> connectionStrategyComboBox;
 
@@ -112,13 +132,11 @@ public class WindowController {
     private PeerView selectedPeer;
 
     public void openSettingsStunAndTurn() {
-        CompletableFuture.runAsync(
-                () -> runOnUIThread(IceServerWindow::launch));
+        CompletableFuture.runAsync(() -> runOnUIThread(IceServerWindow::launch));
     }
 
     public void openPanelServerPeers() {
-        CompletableFuture.runAsync(
-                () -> runOnUIThread(InfoServerPeerWindow::launch));
+        CompletableFuture.runAsync(() -> runOnUIThread(InfoServerPeerWindow::launch));
     }
 
     public void initialize() {
@@ -183,11 +201,14 @@ public class WindowController {
         lastRelayColumn.setCellValueFactory(cellData -> cellData.getValue().getLastRelayRecv());
         echosRcvColumn.setCellValueFactory(cellData -> cellData.getValue().getEchosReceived());
 
-        hostColumn.setCellValueFactory(param -> param.getValue().getAdditionalInfo().getAllowHost());
+        hostColumn.setCellValueFactory(
+                param -> param.getValue().getAdditionalInfo().getAllowHost());
         hostColumn.setCellFactory(CheckBoxTableCell.forTableColumn(hostColumn));
-        reflexiveColumn.setCellValueFactory(peer -> peer.getValue().getAdditionalInfo().getAllowReflexive());
+        reflexiveColumn.setCellValueFactory(
+                peer -> peer.getValue().getAdditionalInfo().getAllowReflexive());
         reflexiveColumn.setCellFactory(CheckBoxTableCell.forTableColumn(reflexiveColumn));
-        relayColumn.setCellValueFactory(peer -> peer.getValue().getAdditionalInfo().getAllowRelay());
+        relayColumn.setCellValueFactory(
+                peer -> peer.getValue().getAdditionalInfo().getAllowRelay());
         relayColumn.setCellFactory(CheckBoxTableCell.forTableColumn(relayColumn));
 
         // Настройка столбца выбранного пира
@@ -292,7 +313,11 @@ public class WindowController {
 
     private void setSelectedPeer(PeerView peer) {
 
-        setVisible(actionsPeerLabel, adapter == null || adapter.isEnabledManualStrategyConnection() || adapter.isEnabledManualCombinationConnection());
+        setVisible(
+                actionsPeerLabel,
+                adapter == null
+                        || adapter.isEnabledManualStrategyConnection()
+                        || adapter.isEnabledManualCombinationConnection());
         setVisible(connectionStrategyComboBox, adapter == null || adapter.isEnabledManualStrategyConnection());
         setVisible(allowCombinationComboBox, adapter == null || adapter.isEnabledManualCombinationConnection());
         setVisible(pairCandidateInfoAreaPane, adapter == null || adapter.isEnabledAdditionalPeerInfo());
@@ -324,8 +349,11 @@ public class WindowController {
 
         selectComboBox(connectionStrategyComboBox, peer.getAdditionalInfo().getAgentStrategy());
 
-        selectCheckBox(sendDirectAndRelayCheckbox, peer.getAdditionalInfo().getSendDirectAndRelay().get());
-        updatePairCandidateInfo(peer.getAdditionalInfo().getGetFullCandidateInfo().get());
+        selectCheckBox(
+                sendDirectAndRelayCheckbox,
+                peer.getAdditionalInfo().getSendDirectAndRelay().get());
+        updatePairCandidateInfo(
+                peer.getAdditionalInfo().getGetFullCandidateInfo().get());
     }
 
     private <T> void setItems(ComboBox<T> comboBox, ObservableList<T> items) {
@@ -411,9 +439,13 @@ public class WindowController {
 
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
-        updateScheduler.scheduleAtFixedRate(() -> {
-            Platform.runLater(this::updateAllInfo);
-        }, 0, 500, TimeUnit.MILLISECONDS);
+        updateScheduler.scheduleAtFixedRate(
+                () -> {
+                    Platform.runLater(this::updateAllInfo);
+                },
+                0,
+                500,
+                TimeUnit.MILLISECONDS);
     }
 
     public void dispose() {
