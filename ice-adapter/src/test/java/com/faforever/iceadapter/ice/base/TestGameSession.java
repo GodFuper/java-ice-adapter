@@ -1,6 +1,7 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.base;
 
 import com.faforever.iceadapter.IceOptions;
+import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.RpcConnection;
@@ -14,7 +15,7 @@ import java.util.Set;
 public class TestGameSession extends GameSession {
     private int lobbyPort = 0;
     private Set<PeerModule> disabledModules;
-    private boolean customReliableUdpOverride = false;
+    private boolean kcpUdpOverride = false;
 
     public TestGameSession(RpcConnection rpcConnection, IceOptions options, Set<PeerModule> disabledModules) {
         super(rpcConnection, options);
@@ -32,8 +33,8 @@ public class TestGameSession extends GameSession {
     }
 
     /**
-     * Overrides the parent {@link #connectToPeer} to apply {@code customReliableUdpOverride}
-     * after the peer is created. The parent always calls {@code peer.setCustomUdpTransport(options.isCustomReliableUdp())},
+     * Overrides the parent {@link #connectToPeer} to apply {@code kcpUdpOverride}
+     * after the peer is created. The parent always calls {@code peer.setKcpUdpTransport(options.isKcpUdp())},
      * so we override it with the test-controlled flag.
      */
     @Override
@@ -45,7 +46,7 @@ public class TestGameSession extends GameSession {
             AllowCombination combination) {
         int result = super.connectToPeer(remotePlayerLogin, remotePlayerId, offer, preferredPort, combination);
         // Override the custom UDP flag set by the parent with the test-controlled value
-        getPeer(remotePlayerId).ifPresent(peer -> peer.setCustomUdpTransport(customReliableUdpOverride));
+        getPeer(remotePlayerId).ifPresent(peer -> peer.setKcpUdpTransport(kcpUdpOverride));
         return result;
     }
 }

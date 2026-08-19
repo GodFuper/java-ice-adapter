@@ -34,8 +34,7 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
 
     public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
         log.info("Peer {} change iceState {} -> {}", peer.getPeerIdentifier(), oldState, newState);
-        listeners.forEach(
-                l -> callMethod(peer, "onIceStateChange", () -> l.onIceStateChange(peer, oldState, newState)));
+        listeners.forEach(l -> callMethod(peer, "onIceStateChange", () -> l.onIceStateChange(peer, oldState, newState)));
     }
 
     @Override
@@ -57,8 +56,7 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
 
     public void onIceMediaStreamChange(Peer peer, IceMediaStream stream) {
         log.trace("Peer {} iceMediaStream changed. now = {}", peer.getPeerIdentifier(), stream);
-        listeners.forEach(
-                l -> callMethod(peer, "onIceMediaStreamChange", () -> l.onIceMediaStreamChange(peer, stream)));
+        listeners.forEach(l -> callMethod(peer, "onIceMediaStreamChange", () -> l.onIceMediaStreamChange(peer, stream)));
     }
 
     public void onIceComponentChange(Peer peer, Component component) {
@@ -73,10 +71,9 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onCustomUdpTransportChange(Peer peer, boolean enabled) {
-        log.info("Peer {} customUdpTransport changed. now = {}", peer.getPeerIdentifier(), enabled);
-        listeners.forEach(
-                l -> callMethod(peer, "onCustomUdpTransportChange", () -> l.onCustomUdpTransportChange(peer, enabled)));
+    public void onKcpUdpTransportChange(Peer peer, boolean enabled) {
+        log.info("Peer {} kcpUdpTransport changed. now = {}", peer.getPeerIdentifier(), enabled);
+        listeners.forEach(l -> callMethod(peer, "onKcpUdpTransportChange", () -> l.onKcpUdpTransportChange(peer, enabled)));
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceOptions;
+import com.faforever.iceadapter.ice.base.InMemoryRpcBus;
+import com.faforever.iceadapter.ice.base.TestGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;

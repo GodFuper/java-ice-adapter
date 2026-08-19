@@ -79,8 +79,9 @@ public class IceOptions {
             description = "Enable host-based P2P connection mode where one player acts as a host and others connect through them")
     private boolean hostMode;
 
-    @Option(names = "--custom-reliable-udp",
+    @Option(
+            names = "--kcp-udp",
             defaultValue = "false",
-            description = "Enable custom reliable UDP")
-    private boolean customReliableUdp;
+            description = "Enable KCP reliable UDP transport")
+    private boolean kcpUdp;
 }

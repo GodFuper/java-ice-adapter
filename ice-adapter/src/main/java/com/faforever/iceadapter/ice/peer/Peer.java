@@ -7,6 +7,7 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.CollectionUtils;
@@ -74,13 +75,15 @@ public abstract class Peer {
     private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
     private AllowCombination combination = AllowCombination.ALL;
     private boolean disableConnectService = false;
-    private boolean customUdpTransport = false;
+    private boolean kcpUdpTransport = false;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
 
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
     private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
+
+    private final KcpStatistics kcpStatistics = new KcpStatistics();
 
     private int version = 1;
 
@@ -133,9 +136,9 @@ public abstract class Peer {
         setIceState(IceState.NEW);
     }
 
-    public void setCustomUdpTransport(boolean customUdpTransport) {
-        this.customUdpTransport = customUdpTransport;
-        event(bus -> bus.onCustomUdpTransportChange(this, customUdpTransport));
+    public void setKcpUdpTransport(boolean kcpUdpTransport) {
+        this.kcpUdpTransport = kcpUdpTransport;
+        event(bus -> bus.onKcpUdpTransportChange(this, kcpUdpTransport));
     }
 
     public void setIceState(IceState iceState) {

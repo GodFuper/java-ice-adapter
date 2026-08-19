@@ -17,6 +17,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
+/**
+ * In-memory analog for UDP datagram sockets used in tests.
+ * <p>
+ * This class simulates the networking behavior of <em>Supreme Commander: Forged Alliance</em> by providing
+ * an in-memory implementation of {@link DatagramSocket} that routes packets without actual network I/O.
+ * It is primarily used for integration tests that emulate P2P communication between game clients.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 class InMemoryDatagramSocket extends DatagramSocket {

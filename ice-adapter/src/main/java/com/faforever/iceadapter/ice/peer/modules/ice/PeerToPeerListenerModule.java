@@ -4,7 +4,6 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.custom_udp.packet.PacketHeader;
 import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayPeerToPeerSenderModule;
@@ -112,7 +111,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 || data[0] == RelayServerModule.COMMAND_SERVER
                 || data[0] == CommandModule.COMMAND_BASE
                 || data[0] == RelayPeerToPeerSenderModule.COMMAND_AUTO_RELAY
-                || data[0] == PacketHeader.MAGIC) {
+                || data[0] == KcpTransportSenderModule.KCP_PROTOCOL_MARKER) {
 
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);

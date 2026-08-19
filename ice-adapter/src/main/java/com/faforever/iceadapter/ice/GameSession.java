@@ -94,7 +94,7 @@ public class GameSession implements IceGameSession {
         peer.init();
         peer.setCombination(combination);
         peer.setGameSession(this);
-        peer.setCustomUdpTransport(options.isCustomReliableUdp());
+        peer.setKcpUdpTransport(options.isKcpUdp());
         peer.initModules();
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();
@@ -178,7 +178,7 @@ public class GameSession implements IceGameSession {
      */
     protected Set<PeerModule> getAdditionalDisabledModules() {
         Set<PeerModule> additional = new HashSet<>();
-        if (options.isCustomReliableUdp()) {
+        if (options.isKcpUdp()) {
             additional.add(PeerModule.PEER_TO_PEER_SENDER);
         }
         return additional;

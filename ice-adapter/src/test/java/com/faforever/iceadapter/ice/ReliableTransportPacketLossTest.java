@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit-тесты для проверки NACK/ACK/retransmission flow при пакетной потере.
+ * Unit-тесты для проверки доставки пакетов при потере через KCP транспорт.
  * <p>
  * Этот тест НЕ использует полноценную ICE-инфраструктуру. Вместо этого:
  * <ul>
@@ -26,15 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * </ul>
  * <p>
  * Тесты проверяют что при 5%, 10%, 20% потере пакетов:
- * - NACK отправляется корректно
- * - Retransmission отправляется и доходит
- * - Все пакеты доставляются в итоге
+ * - Все пакеты доставляются благодаря KCP reliability
  */
-@DisplayName("Reliable Transport NACK/ACK/Retransmission Tests")
+@DisplayName("KCP Transport Packet Loss Tests")
 class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
 
     private static final int NUM_PACKETS = 100;
-    private static final long DATA_WAIT_MS = 5_000;
+    private static final long DATA_WAIT_MS = 3_000;
 
     @Override
     protected Set<PeerModule> getDisabledModules() {
@@ -52,25 +50,25 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("5% packet loss: все пакеты должны быть доставлены через NACK+retransmission")
+    @DisplayName("5% packet loss: все пакеты должны быть доставлены через KCP")
     void test5PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 20th packet = 5% loss
         replaceModuleListener(peerB, 20);
 
-        peerA.setCustomUdpTransport(true);
-        peerB.setCustomUdpTransport(true);
+        peerA.setKcpUdpTransport(true);
+        peerB.setKcpUdpTransport(true);
 
         socketA.clear();
         socketB.clear();
 
-        sleep(300); // Wait for ReliableUdpTransport to fully initialize
+        sleep(300); // Wait for KCP transport to fully initialize
 
         // Send 100 packets A → B
         for (int i = 0; i < NUM_PACKETS; i++) {
             socketA.sendString("loss5-A-" + i);
         }
 
-        sleep(DATA_WAIT_MS * 5); // 5% loss needs time for NACK + RTO retransmissions
+        sleep(DATA_WAIT_MS); // 5% loss needs time for KCP retransmissions
 
         // Verify: ALL 100 packets should be delivered
         int receivedCount = socketB.getReceivedBytes().size();
@@ -113,13 +111,13 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("10% packet loss: все пакеты должны быть доставлены через NACK+retransmission")
+    @DisplayName("10% packet loss: все пакеты должны быть доставлены через KCP")
     void test10PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 10th packet = 10% loss
         replaceModuleListener(peerB, 10);
 
-        peerA.setCustomUdpTransport(true);
-        peerB.setCustomUdpTransport(true);
+        peerA.setKcpUdpTransport(true);
+        peerB.setKcpUdpTransport(true);
 
         socketA.clear();
         socketB.clear();
@@ -130,7 +128,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("loss10-A-" + i);
         }
 
-        sleep(DATA_WAIT_MS * 3);
+        sleep(DATA_WAIT_MS);
 
         int receivedCount = socketB.getReceivedBytes().size();
         System.out.println("=== 10% LOSS TEST ===");
@@ -159,13 +157,13 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("20% packet loss: все пакеты должны быть доставлены через NACK+retransmission")
+    @DisplayName("20% packet loss: все пакеты должны быть доставлены через KCP")
     void test20PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 5th packet = 20% loss
         replaceModuleListener(peerB, 5);
 
-        peerA.setCustomUdpTransport(true);
-        peerB.setCustomUdpTransport(true);
+        peerA.setKcpUdpTransport(true);
+        peerB.setKcpUdpTransport(true);
 
         socketA.clear();
         socketB.clear();
@@ -176,7 +174,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("loss20-A-" + i);
         }
 
-        sleep(DATA_WAIT_MS * 2);
+        sleep(DATA_WAIT_MS);
 
         int receivedCount = socketB.getReceivedBytes().size();
         System.out.println("=== 20% LOSS TEST ===");
@@ -198,8 +196,8 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
         replaceModuleListener(peerA, 20);
         replaceModuleListener(peerB, 20);
 
-        peerA.setCustomUdpTransport(true);
-        peerB.setCustomUdpTransport(true);
+        peerA.setKcpUdpTransport(true);
+        peerB.setKcpUdpTransport(true);
 
         socketA.clear();
         socketB.clear();
@@ -215,7 +213,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketB.sendString("bidir-B-" + i);
         }
 
-        sleep(DATA_WAIT_MS * 5);
+        sleep(DATA_WAIT_MS);
 
         int receivedA = socketA.getReceivedBytes().size();
         int receivedB = socketB.getReceivedBytes().size();
@@ -235,12 +233,12 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     @Test
     @Timeout(value = 60)
-    @DisplayName("Debug: проверить что retransmissions отправляются при 5% loss")
+    @DisplayName("Debug: проверить что пакеты восстанавливаются при 5% loss")
     void testDebugRetransmissionsHappen() throws IOException, InterruptedException {
         replaceModuleListener(peerB, 20);
 
-        peerA.setCustomUdpTransport(true);
-        peerB.setCustomUdpTransport(true);
+        peerA.setKcpUdpTransport(true);
+        peerB.setKcpUdpTransport(true);
 
         socketA.clear();
         socketB.clear();
@@ -252,7 +250,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("debug-" + i);
         }
 
-        sleep(DATA_WAIT_MS * 2);
+        sleep(DATA_WAIT_MS);
 
         int receivedCount = socketB.getReceivedBytes().size();
         System.out.println("=== DEBUG 20 PACKETS ===");
@@ -264,7 +262,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             System.out.println("  [" + i + "] " + received);
         }
 
-        // С 5% потерей (каждый 20-й), пакет seq=19 должен быть потерян и восстановлен
+        // С 5% потерей (каждый 20-й), пакет должен быть потерян и восстановлен
         // В итоге должно прийти 20/20
         assertEquals(20, receivedCount,
                 "All 20 packets should be delivered via retransmission");

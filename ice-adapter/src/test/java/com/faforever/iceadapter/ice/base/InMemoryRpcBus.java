@@ -1,5 +1,6 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.base;
 
+import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.RpcConnection;
 
@@ -14,13 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * in an internal map keyed by {@code peerId}. Messages are routed using
  * {@code CandidatesMessage.destId}.
  */
-class InMemoryRpcBus implements RpcConnection {
+public class InMemoryRpcBus implements RpcConnection {
 
     private final Map<Integer, Peer> peersById = new ConcurrentHashMap<>();
     private final Map<Integer, Boolean> peersConnected = new ConcurrentHashMap<>();
     private volatile boolean running;
 
-    InMemoryRpcBus() {
+    public InMemoryRpcBus() {
         running = true;
     }
 
@@ -28,14 +29,14 @@ class InMemoryRpcBus implements RpcConnection {
      * Register a peer with this bus. The peer will receive CandidatesMessages
      * addressed to its {@code peerId}.
      */
-    void registerPeer(int peerId, Peer peer) {
+    public void registerPeer(int peerId, Peer peer) {
         peersById.put(peerId, peer);
     }
 
     /**
      * Unregister a peer.
      */
-    void unregisterPeer(int peerId) {
+    public void unregisterPeer(int peerId) {
         peersById.remove(peerId);
     }
 
@@ -43,14 +44,14 @@ class InMemoryRpcBus implements RpcConnection {
      * Start the bus. For InMemoryRpcBus this is a no-op as delivery is synchronous,
      * but kept for API compatibility with planned async variants.
      */
-    void start() {
+    public void start() {
         // Synchronous delivery — no thread needed
     }
 
     /**
      * Stop the bus. No-op for synchronous implementation.
      */
-    void stop() {
+    public void stop() {
         running = false;
         peersById.clear();
     }
