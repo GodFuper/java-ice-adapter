@@ -10,7 +10,6 @@ import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.PeerKcpOutput;
 import com.faforever.iceadapter.util.LockUtil;
 import io.jpower.kcp.netty.Kcp;
-import io.netty.buffer.ByteBuf;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
@@ -113,11 +112,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         LockUtil.executeWithLock(lockTransport, () -> {
             if (component != null && kcpAdapter == null && isEnabled()) {
                 kcpOutput = new PeerKcpOutput(peer);
-                Consumer<ByteBuf> handle = (buf) -> {
-                    byte[] data = new byte[buf.readableBytes()];
-                    buf.getBytes(0, data);
-                    peer.handleData(data);
-                };
+                Consumer<byte[]> handle = peer::handleData;
                 int conv = peer.isLocalOffer() ? peer.getRemoteId() : peer.getFromId();
                 kcpAdapter = new KcpAdapter(conv, peer.getPeerIdentifier(), kcpOutput, handle);
                 kcpAdapter.start();
@@ -126,7 +121,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
                 if (statisticTask != null && !statisticTask.isDone()) {
                     statisticTask.cancel(false);
                 }
-                statisticTask = scheduler.scheduleAtFixedRate(this::updateStatistic, 0, PERIOD_GET_STATISTIC, TimeUnit.MILLISECONDS);
+                statisticTask = scheduler.scheduleAtFixedRate(this::doStatistic, 0, PERIOD_GET_STATISTIC, TimeUnit.MILLISECONDS);
             }
         });
     }
@@ -136,6 +131,10 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
             if (kcpAdapter != null) {
                 kcpAdapter.stop();
                 kcpAdapter = null;
+                kcpOutput.getKcp().ifPresent(kcp -> {
+                    kcp.setState(-1);
+                    kcp.release();
+                });
                 kcpOutput = null;
                 log.info("KCP transport stopped for peer {}", peer.getPeerIdentifier());
                 if (statisticTask != null) {
@@ -157,21 +156,27 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         } else {
             stopAdapter();
         }
+        updateStatistic(null);
     }
 
-    private void updateStatistic() {
+    private void doStatistic() {
         PeerKcpOutput kcpOutput = this.kcpOutput;
         if (kcpOutput == null) {
             return;
         }
         Optional<Kcp> kcpOptional = kcpOutput.getKcp();
 
-        kcpOptional.ifPresent(kcp -> {
-                    KcpStatistics statistics = peer.getKcpStatistics();
-                    if (statistics != null) {
-                        statistics.update(kcp);
-                    }
-                }
-        );
+        kcpOptional.ifPresent(this::updateStatistic);
+    }
+
+    private void updateStatistic(Kcp kcp) {
+        KcpStatistics statistics = peer.getKcpStatistics();
+        if (statistics != null) {
+            if (kcp != null) {
+                statistics.update(kcp);
+            } else {
+                statistics.reset();
+            }
+        }
     }
 }

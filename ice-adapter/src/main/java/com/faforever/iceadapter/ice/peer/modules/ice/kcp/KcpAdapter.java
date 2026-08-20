@@ -35,14 +35,14 @@ public class KcpAdapter {
 
     private final String name;
     private final KcpOutput output;
-    private final Consumer<ByteBuf> handleData;
+    private final Consumer<byte[]> handleData;
     private final Ukcp ukcp;
     private volatile boolean running = false;
     private volatile long nextUpdateTimestamp = 0;
     private ScheduledExecutorService updateExecutor;
     private final Lock lock = new ReentrantLock();
 
-    public KcpAdapter(int conv, String name, KcpOutput output, Consumer<ByteBuf> handleData) {
+    public KcpAdapter(int conv, String name, KcpOutput output, Consumer<byte[]> handleData) {
         this.name = name;
         this.output = output;
         this.handleData = handleData;
@@ -115,13 +115,12 @@ public class KcpAdapter {
                         ukcp.receive(buf);
                     } catch (IOException e) {
                         log.error("KCP receive failed for {}", name, e);
-                        buf.release();
                         break;
                     }
 
                     byte[] data = new byte[buf.readableBytes()];
-                    buf.getBytes(0, data);
-                    handleData.accept(buf);
+                    buf.getBytes(buf.readerIndex(), data);
+                    handleData.accept(data);
                 } finally {
                     buf.release();
                 }

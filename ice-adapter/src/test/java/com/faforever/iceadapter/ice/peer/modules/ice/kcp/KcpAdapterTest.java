@@ -60,10 +60,8 @@ class KcpAdapterTest {
                 CONV,
                 "A",
                 outputA,
-                buf -> {
-                    byte[] bytes = new byte[buf.readableBytes()];
-                    buf.getBytes(buf.readerIndex(), bytes);
-                    decodedDataOnA.add(new String(bytes, StandardCharsets.UTF_8));
+                data -> {
+                    decodedDataOnA.add(new String(data, StandardCharsets.UTF_8));
                 }
         );
 
@@ -71,10 +69,8 @@ class KcpAdapterTest {
                 CONV,
                 "B",
                 outputB,
-                buf -> {
-                    byte[] bytes = new byte[buf.readableBytes()];
-                    buf.getBytes(buf.readerIndex(), bytes);
-                    decodedDataOnB.add(new String(bytes, StandardCharsets.UTF_8));
+                data -> {
+                    decodedDataOnB.add(new String(data, StandardCharsets.UTF_8));
                 }
         );
 

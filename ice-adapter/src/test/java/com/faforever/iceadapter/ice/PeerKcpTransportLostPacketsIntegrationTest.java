@@ -66,7 +66,7 @@ class PeerKcpTransportLostPacketsIntegrationTest extends PeerConnectionIntegrati
     private void runPacketLossTest(int dropEveryN, String packetPrefix) throws IOException {
         dropEveryNPacketsForPeerB = dropEveryN;
         addPeerModuleListener(peerA, new PeerToPeerListenerModule(peerA));
-        DroppingPeerToPeerListenerModule dropModule = addPeerModuleListener(peerB, new DroppingPeerToPeerListenerModule(peerB, dropEveryNPacketsForPeerB));
+        addPeerModuleListener(peerB, new DroppingPeerToPeerListenerModule(peerB, dropEveryNPacketsForPeerB));
 
         peerA.setSendMode(PeerSendMode.KCP_ONLY);
         peerB.setSendMode(PeerSendMode.KCP_ONLY);

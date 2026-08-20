@@ -106,6 +106,28 @@ public class KcpStatistics {
      */
     private long timestampMs = 0;
 
+    /**
+     * Resets all statistics to their default (zero) values.
+     * Use this to clear accumulated counters when starting a new connection or session.
+     */
+    public void reset() {
+        this.srttMs = 0;
+        this.rttvarMs = 0;
+        this.rtoMs = 0;
+        this.cwnd = 0;
+        this.sndNxt = 0;
+        this.sndUna = 0;
+        this.rcvNxt = 0;
+        this.sndWnd = 0;
+        this.rcvWnd = 0;
+        this.waitSnd = 0;
+        this.xmit = 0;
+        this.maxSegXmit = 0;
+        this.deadLink = 0;
+        this.state = 0;
+        this.timestampMs = 0;
+    }
+
     public void update(Kcp kcp) {
         KcpMetric metric = kcp.getMetric();
         this.srttMs = metric.srtt();
