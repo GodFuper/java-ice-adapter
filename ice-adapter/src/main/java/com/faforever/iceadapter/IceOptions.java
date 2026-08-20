@@ -1,5 +1,6 @@
 package com.faforever.iceadapter;
 
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -80,8 +81,8 @@ public class IceOptions {
     private boolean hostMode;
 
     @Option(
-            names = "--kcp-udp",
-            defaultValue = "false",
-            description = "Enable KCP reliable UDP transport")
-    private boolean kcpUdp;
+            names = "--send-mode",
+            defaultValue = "DIRECT_ONLY",
+            description = "Peer send mode: DIRECT_ONLY, BOTH, KCP_ONLY")
+    private PeerSendMode sendMode;
 }

@@ -3,6 +3,7 @@ package com.faforever.iceadapter.services.impl;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.dto.IceServerView;
+import com.faforever.iceadapter.dto.KcpPeerView;
 import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
@@ -10,6 +11,7 @@ import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceServer;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
@@ -34,6 +36,7 @@ public class UIAdapterImpl implements UIAdapter {
 
     private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
     private final Map<Pair<Integer, Integer>, ServerPeerView> uiServerPeers = new ConcurrentHashMap<>();
+    private final Map<Integer, KcpPeerView> uiKcpPeers = new ConcurrentHashMap<>();
 
     private Optional<IceGameSession> getGameSession() {
         return Optional.ofNullable(iceAdapter.getGameSession());
@@ -128,6 +131,25 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
+    public ObservableList<KcpPeerView> getKcpPeerInfoList() {
+        Map<Integer, Peer> peers =
+                getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
+
+        Set<Integer> kcpPeerIds = peers.values().stream()
+                .map(Peer::getRemoteId)
+                .collect(Collectors.toSet());
+
+        uiKcpPeers.keySet().stream()
+                .filter(id -> !kcpPeerIds.contains(id))
+                .forEach(uiKcpPeers::remove);
+
+        return FXCollections.observableArrayList(peers.values().stream()
+                .sorted((p1, p2) -> Comparator.comparingInt(Peer::getRemoteId).compare(p1, p2))
+                .map(this::toKcpPeerInfo)
+                .collect(Collectors.toList()));
+    }
+
+    @Override
     public ObservableList<PeerView> getPeerInfoList() {
         Map<Integer, Peer> peers =
                 getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
@@ -213,6 +235,14 @@ public class UIAdapterImpl implements UIAdapter {
         return info;
     }
 
+    private KcpPeerView toKcpPeerInfo(Peer peer) {
+        KcpPeerView info = uiKcpPeers.computeIfAbsent(peer.getRemoteId(), id ->
+                new KcpPeerView(peer.getRemoteId(), peer.getRemoteLogin()));
+        info.update(peer);
+
+        return info;
+    }
+
     @Override
     public void reconnect(PeerView peer) {
         if (peer == null) {
@@ -262,14 +292,25 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public void setSendDirectAndRelay(PeerView peer, boolean sendDirectAndRelay) {
+    public void setAdditionalPacketForwarding(PeerView peer, boolean enabled) {
         if (peer == null) {
             return;
         }
         int id = peer.getId().get();
         getGameSession()
                 .flatMap(session -> session.getPeer(id))
-                .ifPresent(p -> p.setSendDirectAndRelay(sendDirectAndRelay));
+                .ifPresent(p -> p.setAdditionalPacketForwarding(enabled));
+    }
+
+    @Override
+    public void setPeerSendMode(PeerView peer, PeerSendMode peerSendMode) {
+        if (peer == null || peerSendMode == null) {
+            return;
+        }
+        int id = peer.getId().get();
+        getGameSession()
+                .flatMap(session -> session.getPeer(id))
+                .ifPresent(p -> p.setSendMode(peerSendMode));
     }
 
     @Override

@@ -40,11 +40,12 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     private final ObjectMapper objectMapper;
 
     private final Map<Integer, RateLimiter> peerRateLimiter = new ConcurrentHashMap<>();
-    private final BlockingQueue<OutgoingMessageV1> messageQueue = new LinkedBlockingQueue<>(1000);
+    private final BlockingQueue<OutgoingMessageV1> messageQueue = new LinkedBlockingQueue<>(100);
 
     private final Thread sendingLoopThread;
 
-    private volatile boolean shouldRun = true;
+    private volatile boolean shouldRun = false;
+    private volatile boolean disabled = true;
     private int reconnectAttempt = 0;
 
     public TelemetryDebugger(GPGNetServer gpgNetServer, String telemetryServer, int gameId, int playerId) {
@@ -94,7 +95,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     }
 
     private void sendMessage(OutgoingMessageV1 message) {
-        if (!messageQueue.offer(message)) {
+        if (!disabled && !messageQueue.offer(message)) {
             log.trace("Telemetry message queue is full. Dropping message: {}", message.getType());
         }
     }

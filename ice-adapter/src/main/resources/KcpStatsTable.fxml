@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
+<VBox fx:id="root" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.faforever.iceadapter.ui.controller.InfoKcpPeerController"
+      prefHeight="500.0">
+    <TableView fx:id="tableView" editable="false" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="peerIdColumn" text="Peer ID" prefWidth="80"/>
+            <TableColumn fx:id="loginColumn" text="Login" prefWidth="150"/>
+            <TableColumn fx:id="srttMsColumn" text="SRTT (ms)" prefWidth="90"/>
+            <TableColumn fx:id="rttvarMsColumn" text="RTTVAR (ms)" prefWidth="100"/>
+            <TableColumn fx:id="rtoMsColumn" text="RTO (ms)" prefWidth="90"/>
+            <TableColumn fx:id="cwndColumn" text="CWND" prefWidth="80"/>
+            <TableColumn fx:id="sndWndColumn" text="SndWnd" prefWidth="80"/>
+            <TableColumn fx:id="rcvWndColumn" text="RcvWnd" prefWidth="80"/>
+            <TableColumn fx:id="waitSndColumn" text="WaitSnd" prefWidth="80"/>
+            <TableColumn fx:id="xmitColumn" text="Xmit" prefWidth="80"/>
+            <TableColumn fx:id="maxSegXmitColumn" text="MaxXmit" prefWidth="90"/>
+            <TableColumn fx:id="stateColumn" text="State" prefWidth="80"/>
+        </columns>
+    </TableView>
+
+    <stylesheets>
+        <URL value="@infoWindowStyle.css"/>
+    </stylesheets>
+</VBox>

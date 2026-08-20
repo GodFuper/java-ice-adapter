@@ -4,6 +4,7 @@ import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpAdapter;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.PeerKcpOutput;
@@ -23,18 +24,18 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
 /**
- * KCP transport sender module.
+ * KCP peer-to-peer sender module.
  * <p>
  * Replaces CustomUdpTransportSenderModule. Intercepts send operations
  * and routes them through KCP protocol instead of plain UDP or the
  * old ReliableUdpTransport.
  * <p>
  * Enabled via --kcp-udp command line option or by calling enable().
- * When enabled, replaces PeerToPeerSenderModule/RelayPeerToPeerSenderModule functionality.
+ * When enabled, replaces PeerToPeerSenderModule/RelayPeerToPeerSenderModule/AutoRelayPeerToPeerSenderModule functionality.
  */
 @Slf4j
 @RequiredArgsConstructor
-public class KcpTransportSenderModule implements ModuleBase, PeerEventListener {
+public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     private static final int PERIOD_GET_STATISTIC = 100;
     private static final String LOCK_TRANSPORT = "KcpTransport";
     public static final byte KCP_PROTOCOL_MARKER = 'u';
@@ -60,7 +61,7 @@ public class KcpTransportSenderModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onKcpUdpTransportChange(Peer peer, boolean enabled) {
+    public void onPeerSendModeChange(Peer peer, PeerSendMode oldMode, PeerSendMode newMode) {
         refresh();
     }
 
@@ -146,7 +147,7 @@ public class KcpTransportSenderModule implements ModuleBase, PeerEventListener {
 
     @Override
     public Boolean isEnabled() {
-        return peer.isKcpUdpTransport();
+        return peer.isKcpTransportEnabled();
     }
 
     @Override

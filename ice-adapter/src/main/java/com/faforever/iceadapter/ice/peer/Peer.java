@@ -11,8 +11,6 @@ import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.CollectionUtils;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -49,11 +47,10 @@ public abstract class Peer {
 
     private volatile long lastLostConnect = 0;
 
-    private final Cache<Integer, List<Integer>> cacheBestRelays =
-            CacheBuilder.newBuilder().maximumSize(1).build();
+    private List<Integer> bestRelays = List.of();
 
     private final Map<Integer, RelayPing> rtts = new ConcurrentHashMap<>();
-    private volatile boolean sendDirectAndRelay = true;
+    private volatile boolean additionalPacketForwarding = false;
 
     private volatile float rtt = 0.0f;
     private volatile Long lastEcho;
@@ -75,7 +72,7 @@ public abstract class Peer {
     private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
     private AllowCombination combination = AllowCombination.ALL;
     private boolean disableConnectService = false;
-    private boolean kcpUdpTransport = false;
+    private PeerSendMode sendMode = PeerSendMode.DIRECT_ONLY;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
@@ -136,9 +133,21 @@ public abstract class Peer {
         setIceState(IceState.NEW);
     }
 
-    public void setKcpUdpTransport(boolean kcpUdpTransport) {
-        this.kcpUdpTransport = kcpUdpTransport;
-        event(bus -> bus.onKcpUdpTransportChange(this, kcpUdpTransport));
+    public void setSendMode(PeerSendMode sendMode) {
+        PeerSendMode oldMode = this.sendMode;
+        if (Objects.equals(oldMode, sendMode)) {
+            return;
+        }
+        this.sendMode = sendMode;
+        event(bus -> bus.onPeerSendModeChange(this, oldMode, sendMode));
+    }
+
+    public boolean isKcpTransportEnabled() {
+        return sendMode == PeerSendMode.BOTH || sendMode == PeerSendMode.KCP_ONLY;
+    }
+
+    public boolean isDirectTransportEnabled() {
+        return sendMode == PeerSendMode.DIRECT_ONLY || sendMode == PeerSendMode.BOTH;
     }
 
     public void setIceState(IceState iceState) {
@@ -358,16 +367,8 @@ public abstract class Peer {
         return id != remoteId && isSupportRelay() && getRelayPeerId().isEmpty();
     }
 
-    public List<Integer> getBestRelays() {
-        return cacheBestRelays.getIfPresent(remoteId);
-    }
-
     public boolean existBestRelays() {
         return !CollectionUtils.isEmpty(getBestRelays());
-    }
-
-    public void setBestRelays(List<Integer> bestRelays) {
-        cacheBestRelays.put(remoteId, bestRelays);
     }
 
     public void close() {

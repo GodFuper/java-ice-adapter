@@ -6,6 +6,7 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,9 +72,9 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onKcpUdpTransportChange(Peer peer, boolean enabled) {
-        log.info("Peer {} kcpUdpTransport changed. now = {}", peer.getPeerIdentifier(), enabled);
-        listeners.forEach(l -> callMethod(peer, "onKcpUdpTransportChange", () -> l.onKcpUdpTransportChange(peer, enabled)));
+    public void onPeerSendModeChange(Peer peer, PeerSendMode oldMode, PeerSendMode newMode) {
+        log.info("Peer {} sendMode changed: {} -> {}", peer.getPeerIdentifier(), oldMode, newMode);
+        listeners.forEach(l -> callMethod(peer, "onPeerSendModeChange", () -> l.onPeerSendModeChange(peer, oldMode, newMode)));
     }
 
     @Override

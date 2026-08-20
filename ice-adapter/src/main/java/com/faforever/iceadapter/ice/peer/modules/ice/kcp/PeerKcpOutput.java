@@ -13,7 +13,7 @@ import org.ice4j.ice.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static com.faforever.iceadapter.ice.peer.modules.ice.KcpTransportSenderModule.KCP_PROTOCOL_MARKER;
+import static com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule.KCP_PROTOCOL_MARKER;
 
 
 @Slf4j

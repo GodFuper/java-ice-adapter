@@ -30,7 +30,7 @@ public interface PeerEventListener {
     default void onRelayPeerChange(Peer peer, Peer relay) {
     }
 
-    default void onKcpUdpTransportChange(Peer peer, boolean enabled) {
+    default void onPeerSendModeChange(Peer peer, PeerSendMode oldMode, PeerSendMode newMode) {
     }
 
     default void onAddServerPeer(Peer peer, ServerPeer serverPeer) {

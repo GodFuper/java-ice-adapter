@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.ice.peer.PeerModule;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -9,7 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Integration test that verifies packet delivery through both normal UDP and KCP transport.
@@ -22,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>In both cases data flows: socket → ice4j Component → Peer listener → ... → Peer sender → ice4j Component → socket.
  * In KCP mode, PeerToPeerSenderModule and RelayPeerToPeerSenderModule return early
- * (they check {@code peer.isCustomUdpTransport()}), and KcpTransportSenderModule takes over
+ * (they check {@code peer.isKcpUdpTransport()}), and KcpPeerToPeerSenderModule takes over
  * by sending data through the KCP protocol.
  */
 @DisplayName("Custom UDP Transport Integration (KCP)")
@@ -46,8 +47,8 @@ class PeerCustomUdpTransportIntegrationTest extends PeerConnectionIntegrationBas
     @DisplayName("Packets should be delivered in normal mode (kcpUdp = false)")
     void testNormalMode() throws IOException {
         // Verify default mode
-        assertFalse(peerA.isKcpUdpTransport(), "Peer A should start in normal mode");
-        assertFalse(peerB.isKcpUdpTransport(), "Peer B should start in normal mode");
+        assertEquals(PeerSendMode.DIRECT_ONLY, peerA.getSendMode(), "Peer A should start in DIRECT_ONLY mode");
+        assertEquals(PeerSendMode.DIRECT_ONLY, peerB.getSendMode(), "Peer B should start in DIRECT_ONLY mode");
 
         socketA.clear();
         socketB.clear();
@@ -91,12 +92,12 @@ class PeerCustomUdpTransportIntegrationTest extends PeerConnectionIntegrationBas
     @Test
     @Timeout(value = 30)
     void testKcpMode() throws IOException {
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         // Verify KCP mode is enabled
-        assertTrue(peerA.isKcpUdpTransport(), "Peer A should be in KCP mode");
-        assertTrue(peerB.isKcpUdpTransport(), "Peer B should be in KCP mode");
+        assertEquals(PeerSendMode.KCP_ONLY, peerA.getSendMode(), "Peer A should be in KCP_ONLY mode");
+        assertEquals(PeerSendMode.KCP_ONLY, peerB.getSendMode(), "Peer B should be in KCP_ONLY mode");
 
         socketA.clear();
         socketB.clear();
@@ -134,8 +135,8 @@ class PeerCustomUdpTransportIntegrationTest extends PeerConnectionIntegrationBas
                         + socketA.getReceivedBytes().size());
         for (int i = 0; i < NUM_PACKETS; i++) {
             String received = new String(socketA.getReceivedBytes().get(i), StandardCharsets.UTF_8);
-            String msg = "Packet " + i + " B→A in custom mode: expected=custom-B-" + i + " actual=" + received;
-            assertEquals("custom-B-" + i, received, msg);
+            String msg = "Packet " + i + " B→A in KCP mode: expected=kcp-B-" + i + " actual=" + received;
+            assertEquals("kcp-B-" + i, received, msg);
         }
     }
 }

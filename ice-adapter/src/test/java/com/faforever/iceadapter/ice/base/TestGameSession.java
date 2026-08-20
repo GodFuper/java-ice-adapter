@@ -3,6 +3,7 @@ package com.faforever.iceadapter.ice.base;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.PeerModule;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.RpcConnection;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import java.util.Set;
 public class TestGameSession extends GameSession {
     private int lobbyPort = 0;
     private Set<PeerModule> disabledModules;
-    private boolean kcpUdpOverride = false;
+    private PeerSendMode sendModeOverride = PeerSendMode.DIRECT_ONLY;
 
     public TestGameSession(RpcConnection rpcConnection, IceOptions options, Set<PeerModule> disabledModules) {
         super(rpcConnection, options);
@@ -45,8 +46,8 @@ public class TestGameSession extends GameSession {
             int preferredPort,
             AllowCombination combination) {
         int result = super.connectToPeer(remotePlayerLogin, remotePlayerId, offer, preferredPort, combination);
-        // Override the custom UDP flag set by the parent with the test-controlled value
-        getPeer(remotePlayerId).ifPresent(peer -> peer.setKcpUdpTransport(kcpUdpOverride));
+        // Override the send mode set by the parent with the test-controlled value
+        getPeer(remotePlayerId).ifPresent(peer -> peer.setSendMode(sendModeOverride));
         return result;
     }
 }

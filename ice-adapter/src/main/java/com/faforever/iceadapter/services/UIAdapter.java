@@ -1,9 +1,11 @@
 package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.dto.IceServerView;
+import com.faforever.iceadapter.dto.KcpPeerView;
 import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.collections.ObservableList;
 
@@ -93,6 +95,13 @@ public interface UIAdapter {
     ObservableList<ServerPeerView> getServerPeerInfoList();
 
     /**
+     * Returns an observable list of KCP statistics for peers using KCP UDP transport.
+     *
+     * @return observable list of KCP peer info objects
+     */
+    ObservableList<KcpPeerView> getKcpPeerInfoList();
+
+    /**
      * Returns an observable list of peer connection details.
      * This list can be bound to UI components for real-time updates.
      *
@@ -141,7 +150,9 @@ public interface UIAdapter {
 
     void setRelayPeer(PeerView peer, PeerView relayPeer);
 
-    void setSendDirectAndRelay(PeerView peer, boolean sendDirectAndRelay);
+    void setAdditionalPacketForwarding(PeerView peer, boolean enabled);
+
+    void setPeerSendMode(PeerView peer, PeerSendMode peerSendMode);
 
     boolean isEnabledManualCombinationConnection();
 

@@ -96,7 +96,7 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     private boolean isNeedReceive() {
-        return peer.isConnected() || (peer.isSendDirectAndRelay() && peer.existBestRelays()) || peer.existBestRelays();
+        return peer.isConnected() || (peer.isAdditionalPacketForwarding() && peer.existBestRelays()) || peer.existBestRelays();
     }
 
     private void receive(DatagramSocket socket) throws IOException {

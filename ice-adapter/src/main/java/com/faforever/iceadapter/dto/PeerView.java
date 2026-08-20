@@ -1,10 +1,7 @@
 package com.faforever.iceadapter.dto;
 
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
-import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.PeerEventListener;
-import com.faforever.iceadapter.ice.peer.RelayPing;
+import com.faforever.iceadapter.ice.peer.*;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CollectionUtils;
 import javafx.beans.property.*;
@@ -45,6 +42,7 @@ public class PeerView implements PeerEventListener {
         private Supplier<String> getFullCandidateInfo;
         private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
         private final BooleanProperty sendDirectAndRelay = new SimpleBooleanProperty(true);
+        private PeerSendMode peerSendMode;
     }
 
     public PeerView(int id, String login) {
@@ -110,7 +108,8 @@ public class PeerView implements PeerEventListener {
         getAdditionalInfo().setCombination(combination);
 
         getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);
-        getAdditionalInfo().getSendDirectAndRelay().set(peer.isSendDirectAndRelay());
+        getAdditionalInfo().getSendDirectAndRelay().set(peer.isAdditionalPacketForwarding());
+        getAdditionalInfo().setPeerSendMode(peer.getSendMode());
     }
 
     private static String rttStr(Peer peer) {

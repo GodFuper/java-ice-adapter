@@ -2,6 +2,7 @@ package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,18 +16,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit-тесты для проверки доставки пакетов при потере через KCP транспорт.
+ * Unit tests for packet delivery over KCP transport under packet loss conditions.
  * <p>
- * Этот тест НЕ использует полноценную ICE-инфраструктуру. Вместо этого:
+ * This test does NOT use the full ICE infrastructure. Instead:
  * <ul>
- *   <li>Создаётся два Peer'а через TestGameSession</li>
- *   <li>ICE-соединение устанавливается через InMemoryDatagramSocket</li>
- *   <li>DroppingPeerToPeerListenerModule заменяет PEER_LISTENER_MODULE у peerB</li>
- *   <li>Данные отправляются через socketA → socketB</li>
+ *   <li>Two Peers are created via TestGameSession</li>
+ *   <li>ICE connection is established through InMemoryDatagramSocket</li>
+ *   <li>DroppingPeerToPeerListenerModule replaces PEER_LISTENER_MODULE on peerB</li>
+ *   <li>Data is sent through socketA → socketB</li>
  * </ul>
  * <p>
- * Тесты проверяют что при 5%, 10%, 20% потере пакетов:
- * - Все пакеты доставляются благодаря KCP reliability
+ * Tests verify that with 5%, 10%, 20% packet loss:
+ * - All packets are delivered thanks to KCP reliability
  */
 @DisplayName("KCP Transport Packet Loss Tests")
 class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
@@ -46,17 +47,17 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     }
 
     // =========================================================================
-    // Test 1: 5% packet loss — должно доставиться 100/100
+    // Test 1: 5% packet loss — 100/100 should be delivered
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("5% packet loss: все пакеты должны быть доставлены через KCP")
+    @DisplayName("5% packet loss: all packets should be delivered via KCP")
     void test5PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 20th packet = 5% loss
         replaceModuleListener(peerB, 20);
 
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         socketA.clear();
         socketB.clear();
@@ -107,17 +108,17 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     }
 
     // =========================================================================
-    // Test 2: 10% packet loss — должно доставиться 100/100
+    // Test 2: 10% packet loss — 100/100 should be delivered
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("10% packet loss: все пакеты должны быть доставлены через KCP")
+    @DisplayName("10% packet loss: all packets should be delivered via KCP")
     void test10PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 10th packet = 10% loss
         replaceModuleListener(peerB, 10);
 
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         socketA.clear();
         socketB.clear();
@@ -153,17 +154,17 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     }
 
     // =========================================================================
-    // Test 3: 20% packet loss — должно доставиться 100/100
+    // Test 3: 20% packet loss — 100/100 should be delivered
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("20% packet loss: все пакеты должны быть доставлены через KCP")
+    @DisplayName("20% packet loss: all packets should be delivered via KCP")
     void test20PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 5th packet = 20% loss
         replaceModuleListener(peerB, 5);
 
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         socketA.clear();
         socketB.clear();
@@ -190,14 +191,14 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     @Test
     @Timeout(value = 120)
-    @DisplayName("Bidirectional 5% packet loss: все пакеты в обоих направлениях")
+    @DisplayName("Bidirectional 5% packet loss: all packets in both directions")
     void testBidirectional5PercentPacketLoss() throws IOException, InterruptedException {
         // Drop packets in BOTH directions
         replaceModuleListener(peerA, 20);
         replaceModuleListener(peerB, 20);
 
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         socketA.clear();
         socketB.clear();
@@ -233,19 +234,19 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     @Test
     @Timeout(value = 60)
-    @DisplayName("Debug: проверить что пакеты восстанавливаются при 5% loss")
+    @DisplayName("Debug: verify packets are recovered at 5% loss")
     void testDebugRetransmissionsHappen() throws IOException, InterruptedException {
         replaceModuleListener(peerB, 20);
 
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         socketA.clear();
         socketB.clear();
 
         sleep(300);
 
-        // Send only 20 packets — это даст ровно 1 потерянный пакет (seq=19)
+        // Send only 20 packets — this will drop exactly 1 packet (seq=19)
         for (int i = 0; i < 20; i++) {
             socketA.sendString("debug-" + i);
         }
@@ -262,8 +263,8 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             System.out.println("  [" + i + "] " + received);
         }
 
-        // С 5% потерей (каждый 20-й), пакет должен быть потерян и восстановлен
-        // В итоге должно прийти 20/20
+        // With 5% loss (every 20th), one packet should be dropped and recovered
+        // Result: 20/20 should arrive
         assertEquals(20, receivedCount,
                 "All 20 packets should be delivered via retransmission");
     }

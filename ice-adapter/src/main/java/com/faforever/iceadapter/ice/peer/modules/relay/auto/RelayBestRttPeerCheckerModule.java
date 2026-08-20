@@ -6,6 +6,7 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.RelayPing;
+import com.faforever.iceadapter.util.CollectionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,7 +98,9 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
                     .echo(System.currentTimeMillis())
                     .build());
         }
-        log.info("Relay Ping send to {}", idsForSend);
+        if (!CollectionUtils.isEmpty(idsForSend)) {
+            log.info("Relay Ping send to {}", idsForSend);
+        }
     }
 
     private void calculateBestRelay() {

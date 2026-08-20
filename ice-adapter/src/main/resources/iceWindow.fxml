@@ -15,6 +15,7 @@
                         HBox.hgrow="ALWAYS"/>
                 <Button text="STUN/TURN" HBox.hgrow="ALWAYS" onAction="#openSettingsStunAndTurn"/>
                 <Button text="Server peers" HBox.hgrow="ALWAYS" onAction="#openPanelServerPeers"/>
+                <Button text="KCP" HBox.hgrow="ALWAYS" onAction="#openPanelKcpPeers"/>
             </HBox>
 
             <HBox spacing="25">
@@ -116,9 +117,15 @@
                                       prefHeight="150"/>
                         </VBox>
 
-                        <CheckBox fx:id="sendDirectAndRelayCheckbox"
-                                  text="Send Direct and Relay"
-                                  selected="true"/>
+                        <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
+                            <ComboBox fx:id="peerSendModeComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+
+                            <CheckBox fx:id="additionalPacketForwardingCheckbox"
+                                      text="Additional packet forwarding"
+                                      selected="true"/>
+                        </VBox>
                     </VBox>
                 </VBox>
 

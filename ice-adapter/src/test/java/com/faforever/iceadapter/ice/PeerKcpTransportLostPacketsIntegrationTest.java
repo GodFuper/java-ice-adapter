@@ -3,6 +3,7 @@ package com.faforever.iceadapter.ice;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.PeerModule;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -67,8 +68,8 @@ class PeerKcpTransportLostPacketsIntegrationTest extends PeerConnectionIntegrati
         addPeerModuleListener(peerA, new PeerToPeerListenerModule(peerA));
         DroppingPeerToPeerListenerModule dropModule = addPeerModuleListener(peerB, new DroppingPeerToPeerListenerModule(peerB, dropEveryNPacketsForPeerB));
 
-        peerA.setKcpUdpTransport(true);
-        peerB.setKcpUdpTransport(true);
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
 
         socketA.clear();
         socketB.clear();

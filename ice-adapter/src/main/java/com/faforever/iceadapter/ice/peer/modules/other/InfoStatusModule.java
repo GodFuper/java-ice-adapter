@@ -22,7 +22,12 @@ public class InfoStatusModule implements ModuleBase, PeerEventListener {
     @Override
     public void start() {
         if (peer instanceof MainPeer mainPeer) {
-            peer.sendCommand(new InfoRelayStatusCommand(mainPeer.isServerMode()), true);
+            peer.sendCommand(createStatusCommand(mainPeer), true);
         }
+    }
+
+
+    private InfoRelayStatusCommand createStatusCommand(MainPeer peer) {
+        return new InfoRelayStatusCommand(peer.isServerMode());
     }
 }

@@ -16,7 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 @EqualsAndHashCode(callSuper = false)
 public class InfoRelayStatusCommand extends CommandBase {
 
-    private boolean status;
+    private static final int MARKER_CUSTOM_ICE = 3;
+
+    private boolean allowRelay;
 
     @Override
     public void execute(Peer peer) {
@@ -26,9 +28,9 @@ public class InfoRelayStatusCommand extends CommandBase {
         }
 
         if (peer instanceof MainPeer mainPeer) {
-            mainPeer.setAllowRelay(status);
+            mainPeer.setAllowRelay(allowRelay);
             if (mainPeer.getVersion() <= 1) {
-                mainPeer.setVersion(2);
+                mainPeer.setVersion(MARKER_CUSTOM_ICE);
             }
         }
     }

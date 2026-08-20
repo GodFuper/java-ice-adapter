@@ -23,9 +23,7 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data) {
-        if (peer.isKcpUdpTransport()) {
-            return;
-        }
+
         if (data[0] == COMMAND_AUTO_RELAY || data[0] == COMMAND_ECHO) {
             if (peer.isConnected()) {
                 sendDirect(data);
@@ -33,7 +31,7 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
             return;
         }
 
-        if (peer.isSendDirectAndRelay()) {
+        if (peer.isAdditionalPacketForwarding()) {
             if (peer.isConnected() && peer.existBestRelays()) {
                 sendDirect(data);
                 trySendRelay(data);
@@ -52,10 +50,6 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
-        if (peer.isKcpUdpTransport()) {
-            return;
-        }
-
         if (!peer.isSupportCommand() && !force) {
             return;
         }

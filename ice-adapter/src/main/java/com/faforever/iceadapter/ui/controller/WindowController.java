@@ -2,9 +2,11 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.ui.IceServerWindow;
+import com.faforever.iceadapter.ui.InfoKcpPeerWindow;
 import com.faforever.iceadapter.ui.InfoServerPeerWindow;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
@@ -124,7 +126,10 @@ public class WindowController {
     private ComboBox<PeerView> relayPeerComboBox;
 
     @FXML
-    private CheckBox sendDirectAndRelayCheckbox;
+    private ComboBox<PeerSendMode> peerSendModeComboBox;
+
+    @FXML
+    private CheckBox additionalPacketForwardingCheckbox;
 
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
@@ -137,6 +142,10 @@ public class WindowController {
 
     public void openPanelServerPeers() {
         CompletableFuture.runAsync(() -> runOnUIThread(InfoServerPeerWindow::launch));
+    }
+
+    public void openPanelKcpPeers() {
+        CompletableFuture.runAsync(() -> runOnUIThread(InfoKcpPeerWindow::launch));
     }
 
     public void initialize() {
@@ -288,14 +297,22 @@ public class WindowController {
             }
         });
 
-        sendDirectAndRelayCheckbox.setOnAction(e -> {
+        additionalPacketForwardingCheckbox.setOnAction(e -> {
             if (selectedPeer != null && adapter != null) {
-                adapter.setSendDirectAndRelay(selectedPeer, sendDirectAndRelayCheckbox.isSelected());
+                adapter.setAdditionalPacketForwarding(selectedPeer, additionalPacketForwardingCheckbox.isSelected());
+            }
+        });
+
+        peerSendModeComboBox.setOnAction(event -> {
+            PeerSendMode newValue = peerSendModeComboBox.getValue();
+            if (newValue != null && adapter != null) {
+                adapter.setPeerSendMode(selectedPeer, newValue);
             }
         });
 
         allowCombinationComboBox.getItems().setAll(AllowCombination.values());
         connectionStrategyComboBox.getItems().setAll(IceAgentStrategy.values());
+        peerSendModeComboBox.getItems().setAll(PeerSendMode.values());
     }
 
     @FXML
@@ -349,8 +366,10 @@ public class WindowController {
 
         selectComboBox(connectionStrategyComboBox, peer.getAdditionalInfo().getAgentStrategy());
 
+        selectComboBox(peerSendModeComboBox, peer.getAdditionalInfo().getPeerSendMode());
+
         selectCheckBox(
-                sendDirectAndRelayCheckbox,
+                additionalPacketForwardingCheckbox,
                 peer.getAdditionalInfo().getSendDirectAndRelay().get());
         updatePairCandidateInfo(
                 peer.getAdditionalInfo().getGetFullCandidateInfo().get());

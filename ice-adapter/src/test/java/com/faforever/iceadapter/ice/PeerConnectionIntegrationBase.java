@@ -5,6 +5,7 @@ import com.faforever.iceadapter.ice.base.InMemoryRpcBus;
 import com.faforever.iceadapter.ice.base.TestGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -54,9 +55,9 @@ abstract class PeerConnectionIntegrationBase {
         socketB = new InMemoryDatagramSocket();
 
         IceOptions optionsA = new IceOptions(
-                1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, false);
+                1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY);
         IceOptions optionsB = new IceOptions(
-                2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, false);
+                2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY);
 
         gameA = new TestGameSession(bus, optionsA, getDisabledModules());
         gameA.setLobbyPort(socketA.getLocalPort());

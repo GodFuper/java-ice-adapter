@@ -39,17 +39,11 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data) {
-        if (peer.isKcpUdpTransport()) {
-            return;
-        }
         sendDirect(data);
     }
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
-        if (peer.isKcpUdpTransport()) {
-            return;
-        }
         if (!peer.isSupportCommand() && !force) {
             return;
         }
@@ -59,6 +53,9 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     }
 
     protected boolean sendDirect(byte[] data) {
+        if (!peer.isDirectTransportEnabled()) {
+            return false;
+        }
         if (!isEnabled()) {
             return false;
         }
