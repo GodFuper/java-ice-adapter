@@ -23,6 +23,7 @@ public class KcpPeerView {
     private final StringProperty xmit = new SimpleStringProperty("-");
     private final StringProperty maxSegXmit = new SimpleStringProperty("-");
     private final StringProperty state = new SimpleStringProperty("-");
+    private final StringProperty nextUpdateMs = new SimpleStringProperty("-");
 
     public KcpPeerView(int peerId, String login) {
         this.peerId.set(peerId);
@@ -44,5 +45,6 @@ public class KcpPeerView {
         xmit.set(String.valueOf(stats.getXmit()));
         maxSegXmit.set(String.valueOf(stats.getMaxSegXmit()));
         state.set(String.valueOf(stats.getState()));
+        nextUpdateMs.set(String.valueOf(stats.getTimeToNextUpdateMs()));
     }
 }

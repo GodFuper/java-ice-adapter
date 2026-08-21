@@ -30,8 +30,8 @@ public class KcpAdapter {
     private static final int SEND_WINDOW = 128;
     private static final int RECV_WINDOW = 256;
     private static final int DEADLINK = 30;
-    private static final int UPDATE_INTERVAL_MS = 20;
-    private static final int MAX_UPDATE_DELAY_MS = 1000; // Cap to prevent hang when send buffer is empty
+    private static final int UPDATE_INTERVAL_MS = 1;
+    private static final int MAX_UPDATE_DELAY_MS = 1000;
 
     private final String name;
     private final KcpOutput output;
@@ -111,19 +111,17 @@ public class KcpAdapter {
                 }
                 ByteBuf buf = Unpooled.buffer(size);
                 try {
-                    try {
-                        ukcp.receive(buf);
-                    } catch (IOException e) {
-                        log.error("KCP receive failed for {}", name, e);
-                        break;
-                    }
-
-                    byte[] data = new byte[buf.readableBytes()];
-                    buf.getBytes(buf.readerIndex(), data);
-                    handleData.accept(data);
-                } finally {
+                    ukcp.receive(buf);
+                } catch (IOException e) {
+                    log.error("KCP receive failed for {}", name, e);
                     buf.release();
+                    break;
                 }
+
+                byte[] data = new byte[buf.readableBytes()];
+                buf.getBytes(buf.readerIndex(), data);
+                buf.release();
+                handleData.accept(data);
             }
         });
     }
@@ -162,24 +160,33 @@ public class KcpAdapter {
     }
 
     /**
+     * Get the current KCP state (0 = normal, -1 = dead-link).
+     */
+    public int getState() {
+        return ukcp.getState();
+    }
+
+    /**
      * Determine when to call update() next, based on KCP internal state.
      * Returns the next timestamp in milliseconds.
-     * Ensures at least UPDATE_INTERVAL_MS and at most MAX_UPDATE_DELAY_MS gap between calls.
-     * Capping prevents scheduling extremely far in the future when send buffer is empty
+     * Ensures at least UPDATE_INTERVAL_MS between updates to maintain stability.
+     * Caps maximum delay to prevent hang when send buffer is empty
      * (ukcp.check() returns Integer.MAX_VALUE for tmPacket in that case).
      */
     private long scheduleNextUpdate(long now) {
         long nextTs = ukcp.check((int) now);
-        // Use check() result as minimum, but cap to prevent extreme delays
         long minNext = now + UPDATE_INTERVAL_MS;
         long maxNext = now + MAX_UPDATE_DELAY_MS;
+
+        // Ensure minimum delay for stability, cap maximum to prevent hang
         if (nextTs < minNext) {
             nextTs = minNext;
-        } else if (nextTs > maxNext) {
+        }
+        if (nextTs > maxNext) {
             nextTs = maxNext;
         }
         nextUpdateTimestamp = nextTs;
-        return nextUpdateTimestamp;
+        return nextTs;
     }
 
     /**

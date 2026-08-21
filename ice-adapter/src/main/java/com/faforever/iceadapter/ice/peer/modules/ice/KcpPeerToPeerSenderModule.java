@@ -171,9 +171,13 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
 
     private void updateStatistic(Kcp kcp) {
         KcpStatistics statistics = peer.getKcpStatistics();
+        KcpAdapter adapter = this.kcpAdapter;
         if (statistics != null) {
             if (kcp != null) {
                 statistics.update(kcp);
+                if (adapter != null) {
+                    statistics.updateNextUpdate(adapter.getNextUpdateTimestamp());
+                }
             } else {
                 statistics.reset();
             }

@@ -46,7 +46,7 @@ public enum PeerModule implements Comparator<PeerModule> {
     RELAY_CLIENT_MODULE(RelayClientModule::new),
     RELAY_SERVER_MODULE(RelayServerModule::new),
     AUTO_RELAY_CALCULATE_RTT(RelayBestRttPeerCheckerModule::new),
-    CUSTOM_PEER_TO_PEER_TRANSPORT(KcpPeerToPeerSenderModule::new),
+    KCP_PEER_TO_PEER_TRANSPORT(KcpPeerToPeerSenderModule::new),
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
     PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new);

@@ -28,6 +28,7 @@ public class PeerKcpOutput implements KcpOutput {
     public void out(ByteBuf data, Kcp kcp) {
         Component component = peer.getComponent();
         if (component == null) {
+            data.release();
             return;
         }
 
@@ -41,6 +42,7 @@ public class PeerKcpOutput implements KcpOutput {
         ByteBuf packet = Unpooled.buffer(totalLength);
         packet.writeByte(KCP_PROTOCOL_MARKER);
         packet.writeBytes(data);
+        data.release();
         try {
             component.send(packet.array(), 0, totalLength);
         } catch (IOException e) {

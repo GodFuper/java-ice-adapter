@@ -61,6 +61,9 @@ public class InfoKcpPeerController {
     @FXML
     private TableColumn<KcpPeerView, String> stateColumn;
 
+    @FXML
+    private TableColumn<KcpPeerView, String> nextUpdateMsColumn;
+
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
@@ -88,6 +91,7 @@ public class InfoKcpPeerController {
         xmitColumn.setCellValueFactory(cellData -> cellData.getValue().getXmit());
         maxSegXmitColumn.setCellValueFactory(cellData -> cellData.getValue().getMaxSegXmit());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
+        nextUpdateMsColumn.setCellValueFactory(cellData -> cellData.getValue().getNextUpdateMs());
     }
 
     private void updateAllInfo() {

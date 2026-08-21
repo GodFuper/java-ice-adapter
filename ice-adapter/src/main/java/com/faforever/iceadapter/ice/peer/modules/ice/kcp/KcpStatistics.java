@@ -107,6 +107,18 @@ public class KcpStatistics {
     private long timestampMs = 0;
 
     /**
+     * Next scheduled update timestamp — epoch milliseconds when the next KCP update cycle is scheduled.
+     * Lower time-to-update values indicate more responsive KCP processing.
+     */
+    private long nextUpdateMs = 0;
+
+    /**
+     * Time until next update in milliseconds — how long until the next KCP update cycle.
+     * Useful for monitoring KCP responsiveness.
+     */
+    private int timeToNextUpdateMs = 0;
+
+    /**
      * Resets all statistics to their default (zero) values.
      * Use this to clear accumulated counters when starting a new connection or session.
      */
@@ -126,6 +138,8 @@ public class KcpStatistics {
         this.deadLink = 0;
         this.state = 0;
         this.timestampMs = 0;
+        this.nextUpdateMs = 0;
+        this.timeToNextUpdateMs = 0;
     }
 
     public void update(Kcp kcp) {
@@ -145,5 +159,13 @@ public class KcpStatistics {
         this.deadLink = kcp.getDeadLink();
         this.state = kcp.getState();
         this.timestampMs = System.currentTimeMillis();
+    }
+
+    /**
+     * Updates the next update timestamp fields from the KcpAdapter.
+     */
+    public void updateNextUpdate(long nextUpdateTimestamp) {
+        this.nextUpdateMs = nextUpdateTimestamp;
+        this.timeToNextUpdateMs = Math.max(0, (int) (nextUpdateTimestamp - System.currentTimeMillis()));
     }
 }
