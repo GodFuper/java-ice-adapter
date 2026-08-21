@@ -11,6 +11,7 @@
         <columns>
             <TableColumn fx:id="peerIdColumn" text="Peer ID" prefWidth="80"/>
             <TableColumn fx:id="loginColumn" text="Login" prefWidth="150"/>
+            <TableColumn fx:id="convColumn" text="Conv" prefWidth="80"/>
             <TableColumn fx:id="srttMsColumn" text="SRTT (ms)" prefWidth="90"/>
             <TableColumn fx:id="rttvarMsColumn" text="RTTVAR (ms)" prefWidth="100"/>
             <TableColumn fx:id="rtoMsColumn" text="RTO (ms)" prefWidth="90"/>
@@ -22,6 +23,8 @@
             <TableColumn fx:id="maxSegXmitColumn" text="MaxXmit" prefWidth="90"/>
             <TableColumn fx:id="stateColumn" text="State" prefWidth="80"/>
             <TableColumn fx:id="nextUpdateMsColumn" text="NextUpdate (ms)" prefWidth="120"/>
+            <TableColumn fx:id="bytesSentColumn" text="Bytes Sent" prefWidth="120"/>
+            <TableColumn fx:id="bytesReceivedColumn" text="Bytes Received" prefWidth="130"/>
         </columns>
     </TableView>
 

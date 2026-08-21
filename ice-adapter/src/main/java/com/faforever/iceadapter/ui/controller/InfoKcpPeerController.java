@@ -32,6 +32,9 @@ public class InfoKcpPeerController {
     private TableColumn<KcpPeerView, String> loginColumn;
 
     @FXML
+    private TableColumn<KcpPeerView, String> convColumn;
+
+    @FXML
     private TableColumn<KcpPeerView, String> srttMsColumn;
 
     @FXML
@@ -64,6 +67,12 @@ public class InfoKcpPeerController {
     @FXML
     private TableColumn<KcpPeerView, String> nextUpdateMsColumn;
 
+    @FXML
+    private TableColumn<KcpPeerView, String> bytesSentColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> bytesReceivedColumn;
+
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
@@ -80,6 +89,7 @@ public class InfoKcpPeerController {
     private void initColumns() {
         peerIdColumn.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
         loginColumn.setCellValueFactory(cellData -> cellData.getValue().getLogin());
+        convColumn.setCellValueFactory(cellData -> cellData.getValue().getConv());
 
         srttMsColumn.setCellValueFactory(cellData -> cellData.getValue().getSrttMs());
         rttvarMsColumn.setCellValueFactory(cellData -> cellData.getValue().getRttvarMs());
@@ -92,6 +102,8 @@ public class InfoKcpPeerController {
         maxSegXmitColumn.setCellValueFactory(cellData -> cellData.getValue().getMaxSegXmit());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
         nextUpdateMsColumn.setCellValueFactory(cellData -> cellData.getValue().getNextUpdateMs());
+        bytesSentColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesSentBytes());
+        bytesReceivedColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesReceivedBytes());
     }
 
     private void updateAllInfo() {

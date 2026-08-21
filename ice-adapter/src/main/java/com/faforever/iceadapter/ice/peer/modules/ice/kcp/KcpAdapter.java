@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.util.LockUtil;
+import io.jpower.kcp.netty.Kcp;
 import io.jpower.kcp.netty.KcpOutput;
 import io.jpower.kcp.netty.Ukcp;
 import io.netty.buffer.ByteBuf;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -41,6 +43,17 @@ public class KcpAdapter {
     private volatile long nextUpdateTimestamp = 0;
     private ScheduledExecutorService updateExecutor;
     private final Lock lock = new ReentrantLock();
+
+    private final AtomicLong bytesSent = new AtomicLong(0);
+    private final AtomicLong bytesReceived = new AtomicLong(0);
+
+    public long getBytesSent() {
+        return bytesSent.get();
+    }
+
+    public long getBytesReceived() {
+        return bytesReceived.get();
+    }
 
     public KcpAdapter(int conv, String name, KcpOutput output, Consumer<byte[]> handleData) {
         this.name = name;
@@ -121,6 +134,7 @@ public class KcpAdapter {
                 byte[] data = new byte[buf.readableBytes()];
                 buf.getBytes(buf.readerIndex(), data);
                 buf.release();
+                bytesReceived.addAndGet(data.length);
                 handleData.accept(data);
             }
         });
@@ -141,10 +155,19 @@ public class KcpAdapter {
         }
     }
 
+    public Kcp getKcp() {
+        if (output instanceof PeerKcpOutput peerOutput) {
+            return peerOutput.getKcp()
+                    .orElse(null);
+        }
+        return null;
+    }
+
     /**
      * Send application data through KCP.
      */
     public void send(byte[] payload) {
+        bytesSent.addAndGet(payload.length);
         try {
             ukcp.send(Unpooled.wrappedBuffer(payload));
         } catch (IOException e) {
@@ -164,6 +187,10 @@ public class KcpAdapter {
      */
     public int getState() {
         return ukcp.getState();
+    }
+
+    public int getConv() {
+        return ukcp.getConv();
     }
 
     /**
@@ -203,6 +230,9 @@ public class KcpAdapter {
             } catch (InterruptedException e) {
                 updateExecutor.shutdownNow();
                 Thread.currentThread().interrupt();
+            }
+            if (output instanceof PeerKcpOutput peerOutput) {
+                peerOutput.close();
             }
         }
     }

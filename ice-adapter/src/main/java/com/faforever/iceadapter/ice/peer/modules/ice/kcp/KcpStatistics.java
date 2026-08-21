@@ -17,6 +17,12 @@ import lombok.NoArgsConstructor;
 public class KcpStatistics {
 
     /**
+     * KCP conversation ID — unique identifier for this KCP session.
+     * Used to distinguish multiple KCP streams; matches the conv parameter passed to Ukcp constructor.
+     */
+    private int conv = 0;
+
+    /**
      * Smoothed round-trip time (SRTT) — average latency estimate in milliseconds.
      * Low values indicate stable connection; sudden spikes suggest packet loss or congestion.
      */
@@ -119,10 +125,23 @@ public class KcpStatistics {
     private int timeToNextUpdateMs = 0;
 
     /**
+     * Total bytes sent through KCP — cumulative count of all application data bytes sent since connection start.
+     * Increments each time send() is called on the KcpAdapter.
+     */
+    private long bytesSentBytes = 0;
+
+    /**
+     * Total bytes received through KCP — cumulative count of all application data bytes received since connection start.
+     * Increments each time data is delivered to the application layer via receive().
+     */
+    private long bytesReceivedBytes = 0;
+
+    /**
      * Resets all statistics to their default (zero) values.
      * Use this to clear accumulated counters when starting a new connection or session.
      */
     public void reset() {
+        this.conv = 0;
         this.srttMs = 0;
         this.rttvarMs = 0;
         this.rtoMs = 0;
@@ -140,6 +159,8 @@ public class KcpStatistics {
         this.timestampMs = 0;
         this.nextUpdateMs = 0;
         this.timeToNextUpdateMs = 0;
+        this.bytesSentBytes = 0;
+        this.bytesReceivedBytes = 0;
     }
 
     public void update(Kcp kcp) {
@@ -162,10 +183,26 @@ public class KcpStatistics {
     }
 
     /**
+     * Updates all KCP statistics from the Kcp instance and sets the conv from the adapter.
+     */
+    public void update(Kcp kcp, int conv) {
+        this.conv = conv;
+        update(kcp);
+    }
+
+    /**
      * Updates the next update timestamp fields from the KcpAdapter.
      */
     public void updateNextUpdate(long nextUpdateTimestamp) {
         this.nextUpdateMs = nextUpdateTimestamp;
         this.timeToNextUpdateMs = Math.max(0, (int) (nextUpdateTimestamp - System.currentTimeMillis()));
+    }
+
+    /**
+     * Sets the byte transfer statistics from the KcpAdapter.
+     */
+    public void updateBytes(long bytesSentBytes, long bytesReceivedBytes) {
+        this.bytesSentBytes = bytesSentBytes;
+        this.bytesReceivedBytes = bytesReceivedBytes;
     }
 }

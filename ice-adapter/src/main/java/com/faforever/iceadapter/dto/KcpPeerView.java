@@ -13,6 +13,8 @@ public class KcpPeerView {
     private final IntegerProperty peerId = new SimpleIntegerProperty(-1);
     private final StringProperty login = new SimpleStringProperty("-");
 
+    private final StringProperty conv = new SimpleStringProperty("-");
+
     private final StringProperty srttMs = new SimpleStringProperty("-");
     private final StringProperty rttvarMs = new SimpleStringProperty("-");
     private final StringProperty rtoMs = new SimpleStringProperty("-");
@@ -24,6 +26,8 @@ public class KcpPeerView {
     private final StringProperty maxSegXmit = new SimpleStringProperty("-");
     private final StringProperty state = new SimpleStringProperty("-");
     private final StringProperty nextUpdateMs = new SimpleStringProperty("-");
+    private final StringProperty bytesSentBytes = new SimpleStringProperty("-");
+    private final StringProperty bytesReceivedBytes = new SimpleStringProperty("-");
 
     public KcpPeerView(int peerId, String login) {
         this.peerId.set(peerId);
@@ -35,6 +39,7 @@ public class KcpPeerView {
      */
     public void update(Peer peer) {
         KcpStatistics stats = peer.getKcpStatistics();
+        conv.set(String.valueOf(stats.getConv()));
         srttMs.set(String.valueOf(stats.getSrttMs()));
         rttvarMs.set(String.valueOf(stats.getRttvarMs()));
         rtoMs.set(String.valueOf(stats.getRtoMs()));
@@ -46,5 +51,19 @@ public class KcpPeerView {
         maxSegXmit.set(String.valueOf(stats.getMaxSegXmit()));
         state.set(String.valueOf(stats.getState()));
         nextUpdateMs.set(String.valueOf(stats.getTimeToNextUpdateMs()));
+        bytesSentBytes.set(formatBytes(stats.getBytesSentBytes()));
+        bytesReceivedBytes.set(formatBytes(stats.getBytesReceivedBytes()));
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        } else if (bytes < 1024 * 1024) {
+            return String.format("%.2f KB", bytes / 1024.0);
+        } else if (bytes < 1024L * 1024 * 1024) {
+            return String.format("%.2f MB", bytes / (1024.0 * 1024));
+        } else {
+            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+        }
     }
 }

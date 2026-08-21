@@ -111,7 +111,7 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
                 || data[0] == RelayServerModule.COMMAND_SERVER
                 || data[0] == CommandModule.COMMAND_BASE
                 || data[0] == RelayPeerToPeerSenderModule.COMMAND_AUTO_RELAY
-                || data[0] == KcpPeerToPeerSenderModule.KCP_PROTOCOL_MARKER) {
+                || data[0] == KcpOffererPeerToPeerSenderModule.KCP_PROTOCOL_MARKER) {
 
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
