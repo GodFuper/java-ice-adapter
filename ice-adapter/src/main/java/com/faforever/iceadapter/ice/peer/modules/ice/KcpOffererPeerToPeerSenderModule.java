@@ -202,6 +202,14 @@ public class KcpOffererPeerToPeerSenderModule implements ModuleBase, PeerEventLi
         updateStatistic(null);
     }
 
+    public void changeConvIfEqualsConv(byte convRq) {
+        if (conv != convRq) {
+            return;
+        }
+        createAdapter();
+        updateStatistic(null);
+    }
+
     private void doStatistic() {
         KcpAdapter adapter = this.kcpAdapter;
         if (adapter == null) {

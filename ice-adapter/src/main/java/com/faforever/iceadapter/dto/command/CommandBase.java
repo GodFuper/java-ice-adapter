@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.dto.command;
 
+import com.faforever.iceadapter.dto.command.kcp.InfoKcpDeadStateCommand;
 import com.faforever.iceadapter.dto.command.relay.auto.info.RelayPingCommand;
 import com.faforever.iceadapter.dto.command.relay.manual.from_client.*;
 import com.faforever.iceadapter.dto.command.relay.manual.from_server.RpcMessageFromServerPeerCommand;
@@ -26,7 +27,8 @@ import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMM
         @JsonSubTypes.Type(value = ServerPeerConnectingCommand.class, name = "server_peer_connecting"),
         @JsonSubTypes.Type(value = ServerPeerStatusCommand.class, name = "server_peer_status"),
         @JsonSubTypes.Type(value = InfoRelayStatusCommand.class, name = "info_relay_status"),
-        @JsonSubTypes.Type(value = RelayPingCommand.class, name = "relay_ping")
+        @JsonSubTypes.Type(value = RelayPingCommand.class, name = "relay_ping"),
+        @JsonSubTypes.Type(value = InfoKcpDeadStateCommand.class, name = "kcp_unactive")
 })
 public abstract class CommandBase {
     private static final boolean COMPRESSION = true;

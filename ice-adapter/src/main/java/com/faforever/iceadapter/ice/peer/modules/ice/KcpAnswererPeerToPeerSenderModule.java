@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.ice.peer.modules.ice;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
+import com.faforever.iceadapter.dto.command.kcp.InfoKcpDeadStateCommand;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -95,7 +97,8 @@ public class KcpAnswererPeerToPeerSenderModule implements ModuleBase, PeerEventL
         }
 
         byte receivedConv = data[1];
-        boolean convEquals = kcpAdapter != null && (byte) kcpAdapter.getConv() == receivedConv;
+        boolean kcpExist = kcpAdapter != null;
+        boolean convEquals = kcpExist && (byte) kcpAdapter.getConv() == receivedConv;
 
         if (!convEquals) {
             LockUtil.executeWithLock(lockTransport, () -> {
@@ -103,9 +106,35 @@ public class KcpAnswererPeerToPeerSenderModule implements ModuleBase, PeerEventL
             });
         }
 
+        boolean stateIsNotActive = kcpExist && kcpAdapter.getState() == -1;
+        if (stateIsNotActive) {
+            LockUtil.executeWithLock(lockTransport, this::sendNotifyAboutNotActiveKcp);
+            return;
+        }
+
         KcpAdapter adapter = this.kcpAdapter;
         if (adapter != null && adapter.isRunning()) {
             adapter.onIncomingPacket(data, 2, len - 2);
+        }
+    }
+
+    private void sendNotifyAboutNotActiveKcp() {
+        KcpAdapter adapter = this.kcpAdapter;
+        if (adapter == null) {
+            return;
+        }
+        Component component = this.component;
+        if (component == null) {
+            return;
+        }
+
+        byte conv = (byte) adapter.getConv();
+        InfoKcpDeadStateCommand command = new InfoKcpDeadStateCommand(conv);
+        byte[] bytes = command.bytes();
+        try {
+            component.send(bytes, 0, bytes.length);
+        } catch (IOException e) {
+            log.error("Failed to send the command about the dead state KCP. Peer {}", peer.getPeerIdentifier());
         }
     }
 
