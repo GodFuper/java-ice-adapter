@@ -126,6 +126,26 @@
                                       text="Additional packet forwarding"
                                       selected="true"/>
                         </VBox>
+
+                        <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
+                            <Label text="Packet Loss Probability:" style="-fx-font-weight: bold;"/>
+
+                            <ComboBox fx:id="packetLossComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+
+                            <Label text="Packet Delay (ms):" style="-fx-font-weight: bold;"/>
+
+                            <ComboBox fx:id="packetDelayComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+
+                            <Label text="Jitter (%):" style="-fx-font-weight: bold;"/>
+
+                            <ComboBox fx:id="packetJitterComboBox"
+                                      prefWidth="Infinity"
+                                      HBox.hgrow="ALWAYS"/>
+                        </VBox>
                     </VBox>
                 </VBox>
 

@@ -131,6 +131,15 @@ public class WindowController {
     @FXML
     private CheckBox additionalPacketForwardingCheckbox;
 
+    @FXML
+    private ComboBox<Integer> packetLossComboBox;
+
+    @FXML
+    private ComboBox<Integer> packetDelayComboBox;
+
+    @FXML
+    private ComboBox<Integer> packetJitterComboBox;
+
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
@@ -156,6 +165,15 @@ public class WindowController {
     }
 
     private void initPanes() {
+        for (int i = 0; i <= 90; i += 10) {
+            packetLossComboBox.getItems().add(i);
+        }
+        for (int i = 0; i <= 400; i += 40) {
+            packetDelayComboBox.getItems().add(i);
+        }
+        for (int i = 0; i <= 50; i += 5) {
+            packetJitterComboBox.getItems().add(i);
+        }
 
         relayPeerComboBox.setOnAction(event -> {
             PeerView newValue = relayPeerComboBox.getValue();
@@ -303,6 +321,33 @@ public class WindowController {
             }
         });
 
+        packetLossComboBox.setOnAction(e -> {
+            if (selectedPeer != null && adapter != null) {
+                Integer value = packetLossComboBox.getValue();
+                if (value != null) {
+                    adapter.setPacketLossProbability(selectedPeer, value / 100.0f);
+                }
+            }
+        });
+
+        packetDelayComboBox.setOnAction(e -> {
+            if (selectedPeer != null && adapter != null) {
+                Integer value = packetDelayComboBox.getValue();
+                if (value != null) {
+                    adapter.setPacketDelay(selectedPeer, value);
+                }
+            }
+        });
+
+        packetJitterComboBox.setOnAction(e -> {
+            if (selectedPeer != null && adapter != null) {
+                Integer value = packetJitterComboBox.getValue();
+                if (value != null) {
+                    adapter.setPacketJitter(selectedPeer, value / 100.0f);
+                }
+            }
+        });
+
         peerSendModeComboBox.setOnAction(event -> {
             PeerSendMode newValue = peerSendModeComboBox.getValue();
             if (newValue != null && adapter != null) {
@@ -371,6 +416,19 @@ public class WindowController {
         selectCheckBox(
                 additionalPacketForwardingCheckbox,
                 peer.getAdditionalInfo().getSendDirectAndRelay().get());
+
+        int packetLossPercent = Math.round(peer.getAdditionalInfo().getPacketLossProbability() * 100);
+        packetLossPercent = Math.max(0, Math.min(90, packetLossPercent));
+        selectComboBox(packetLossComboBox, packetLossPercent);
+
+        int packetDelay = peer.getAdditionalInfo().getPacketDelay();
+        packetDelay = Math.max(0, Math.min(400, packetDelay));
+        selectComboBox(packetDelayComboBox, packetDelay);
+
+        int packetJitterPercent = Math.round(peer.getAdditionalInfo().getPacketJitter() * 100);
+        packetJitterPercent = Math.max(0, Math.min(50, packetJitterPercent));
+        selectComboBox(packetJitterComboBox, packetJitterPercent);
+
         updatePairCandidateInfo(
                 peer.getAdditionalInfo().getGetFullCandidateInfo().get());
     }

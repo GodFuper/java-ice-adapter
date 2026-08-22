@@ -28,11 +28,17 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
     private final Peer peer;
     private volatile boolean running = false;
     private Lock lockSocket;
+    private DelayBufferModule delayBuffer;
 
     @Override
     public void init() {
         peer.addEventListener(this);
         lockSocket = peer.getLock(LOCK_SOCKET);
+        delayBuffer = new DelayBufferModule(peer.getPeerIdentifier(), this::deliverPacket);
+    }
+
+    private void deliverPacket(byte[] data) {
+        handleProcessedData(peer, data, data.length);
     }
 
     @Override
@@ -57,6 +63,9 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
         if (running) {
             log.info("Stopping IceListenerModule");
             running = false;
+            if (delayBuffer != null) {
+                delayBuffer.stop();
+            }
             Component component = peer.getComponent();
             if (component != null) {
                 try {
@@ -71,6 +80,9 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
     private void createListener(Component component) {
         Thread.currentThread().setName(threadComponentListenerName());
         running = true;
+        if (delayBuffer != null) {
+            delayBuffer.start();
+        }
         MultiplexingDatagramSocket datagramSocket = component.getSocket();
         byte[] buf = new byte[DatagramSocketUtils.MAX_SIZE_PACKET];
         while (!datagramSocket.isClosed()) {
@@ -102,8 +114,26 @@ public class PeerToPeerListenerModule implements ModuleBase, PeerEventListener {
     }
 
     protected void handlerData(Peer peer, byte[] data, int length) {
+        float packetLossProbability = peer.getPacketLossProbability();
+        if (packetLossProbability > 0 && Math.random() < packetLossProbability) {
+            log.trace("Dropping packet for {} (packet loss probability: {}%)", peer.getPeerIdentifier(),
+                    String.format("%.0f", packetLossProbability * 100));
+            return;
+        }
+
         peer.setLastPacketReceived(System.currentTimeMillis());
 
+        int packetDelay = peer.getPacketDelay();
+        float packetJitter = peer.getPacketJitter();
+
+        if (packetDelay > 0 && delayBuffer != null) {
+            delayBuffer.enqueue(data, packetDelay, packetJitter);
+        } else {
+            handleProcessedData(peer, data, length);
+        }
+    }
+
+    protected void handleProcessedData(Peer peer, byte[] data, int length) {
         peer.handleData(data);
         if (data[0] == FaToPeerModule.COMMAND_FA
                 || data[0] == PeerConnectivityCheckerModule.COMMAND_ECHO

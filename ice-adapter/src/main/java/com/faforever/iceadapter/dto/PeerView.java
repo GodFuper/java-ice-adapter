@@ -42,6 +42,9 @@ public class PeerView implements PeerEventListener {
         private Supplier<String> getFullCandidateInfo;
         private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
         private final BooleanProperty sendDirectAndRelay = new SimpleBooleanProperty(true);
+        private float packetLossProbability;
+        private int packetDelay;
+        private float packetJitter;
         private PeerSendMode peerSendMode;
     }
 
@@ -109,6 +112,9 @@ public class PeerView implements PeerEventListener {
 
         getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);
         getAdditionalInfo().getSendDirectAndRelay().set(peer.isAdditionalPacketForwarding());
+        getAdditionalInfo().setPacketLossProbability(peer.getPacketLossProbability());
+        getAdditionalInfo().setPacketDelay(peer.getPacketDelay());
+        getAdditionalInfo().setPacketJitter(peer.getPacketJitter());
         getAdditionalInfo().setPeerSendMode(peer.getSendMode());
     }
 

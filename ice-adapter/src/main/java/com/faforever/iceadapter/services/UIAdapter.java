@@ -152,6 +152,12 @@ public interface UIAdapter {
 
     void setAdditionalPacketForwarding(PeerView peer, boolean enabled);
 
+    void setPacketLossProbability(PeerView peer, float probability);
+
+    void setPacketDelay(PeerView peer, int delay);
+
+    void setPacketJitter(PeerView peer, float jitter);
+
     void setPeerSendMode(PeerView peer, PeerSendMode peerSendMode);
 
     boolean isEnabledManualCombinationConnection();

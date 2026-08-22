@@ -303,6 +303,39 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
+    public void setPacketLossProbability(PeerView peer, float probability) {
+        if (peer == null) {
+            return;
+        }
+        int id = peer.getId().get();
+        getGameSession()
+                .flatMap(session -> session.getPeer(id))
+                .ifPresent(p -> p.setPacketLossProbability(probability));
+    }
+
+    @Override
+    public void setPacketDelay(PeerView peer, int delay) {
+        if (peer == null) {
+            return;
+        }
+        int id = peer.getId().get();
+        getGameSession()
+                .flatMap(session -> session.getPeer(id))
+                .ifPresent(p -> p.setPacketDelay(delay));
+    }
+
+    @Override
+    public void setPacketJitter(PeerView peer, float jitter) {
+        if (peer == null) {
+            return;
+        }
+        int id = peer.getId().get();
+        getGameSession()
+                .flatMap(session -> session.getPeer(id))
+                .ifPresent(p -> p.setPacketJitter(jitter));
+    }
+
+    @Override
     public void setPeerSendMode(PeerView peer, PeerSendMode peerSendMode) {
         if (peer == null || peerSendMode == null) {
             return;

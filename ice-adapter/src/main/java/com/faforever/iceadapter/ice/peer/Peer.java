@@ -51,6 +51,9 @@ public abstract class Peer {
 
     private final Map<Integer, RelayPing> rtts = new ConcurrentHashMap<>();
     private volatile boolean additionalPacketForwarding = false;
+    private volatile float packetLossProbability = 0.0f;
+    private volatile int packetDelay = 0;
+    private volatile float packetJitter = 0.0f;
 
     private volatile float rtt = 0.0f;
     private volatile Long lastEcho;
