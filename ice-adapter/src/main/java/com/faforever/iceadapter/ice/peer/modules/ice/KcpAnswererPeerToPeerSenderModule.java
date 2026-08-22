@@ -98,9 +98,9 @@ public class KcpAnswererPeerToPeerSenderModule implements ModuleBase, PeerEventL
 
         byte receivedConv = data[1];
         boolean kcpExist = kcpAdapter != null;
-        boolean convEquals = kcpExist && (byte) kcpAdapter.getConv() == receivedConv;
+        boolean convNotEquals = kcpExist && (byte) kcpAdapter.getConv() != receivedConv;
 
-        if (!convEquals) {
+        if (!kcpExist || convNotEquals) {
             LockUtil.executeWithLock(lockTransport, () -> {
                 createAdapter(receivedConv);
             });
