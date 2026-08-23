@@ -13,14 +13,14 @@ import org.ice4j.ice.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static com.faforever.iceadapter.ice.peer.modules.ice.KcpOffererPeerToPeerSenderModule.KCP_PROTOCOL_MARKER;
+import static com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule.KCP_PROTOCOL_MARKER;
 
 @Slf4j
 @RequiredArgsConstructor
 @Data
 public class PeerKcpOutput implements KcpOutput {
     private final Peer peer;
-    private final byte conv;
+    private final byte channel;
 
     private volatile Kcp kcpOut;
 
@@ -37,11 +37,11 @@ public class PeerKcpOutput implements KcpOutput {
         }
 
         // Called by KCP when raw UDP bytes need to be sent
-        // Prepend 'u' marker and conv byte to identify KCP data packets
+        // Prepend 'u' marker and channel byte to identify KCP data packets
         int totalLength = data.readableBytes() + 2;
         ByteBuf packet = Unpooled.buffer(totalLength);
         packet.writeByte(KCP_PROTOCOL_MARKER);
-        packet.writeByte(conv);
+        packet.writeByte(channel);
         packet.writeBytes(data);
         data.release();
         try {
@@ -58,6 +58,9 @@ public class PeerKcpOutput implements KcpOutput {
     }
 
     public void close() {
-        getKcp().ifPresent(Kcp::release);
+        try {
+            getKcp().ifPresent(Kcp::release);
+        } catch (Exception ignore) {
+        }
     }
 }

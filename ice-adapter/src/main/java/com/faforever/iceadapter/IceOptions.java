@@ -80,8 +80,7 @@ public class IceOptions {
             description = "Enable host-based P2P connection mode where one player acts as a host and others connect through them")
     private boolean hostMode;
 
-    @Option(
-            names = "--send-mode",
+    @Option(names = "--send-mode",
             defaultValue = "KCP_ONLY",
             description = "Peer send mode: DIRECT_ONLY, BOTH, KCP_ONLY")
     private PeerSendMode sendMode;

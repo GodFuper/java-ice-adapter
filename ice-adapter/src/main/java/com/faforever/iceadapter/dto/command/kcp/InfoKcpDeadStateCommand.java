@@ -3,7 +3,7 @@ package com.faforever.iceadapter.dto.command.kcp;
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.KcpOffererPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -31,12 +31,12 @@ public class InfoKcpDeadStateCommand extends CommandBase {
             return;
         }
 
-        KcpOffererPeerToPeerSenderModule module = peer.getModule(PeerModule.KCP_OFFERER_PEER_TO_PEER_TRANSPORT,
-                KcpOffererPeerToPeerSenderModule.class).orElse(null);
+        KcpPeerToPeerSenderModule module = peer.getModule(PeerModule.KCP_OFFERER_PEER_TO_PEER_TRANSPORT,
+                KcpPeerToPeerSenderModule.class).orElse(null);
         if (module == null) {
             log.warn("Module KcpOffererPeerToPeerSenderModule not found on peer {}", peer.getPeerIdentifier());
             return;
         }
-        module.changeConvIfEqualsConv(conv);
+        module.restartKcp(conv);
     }
 }

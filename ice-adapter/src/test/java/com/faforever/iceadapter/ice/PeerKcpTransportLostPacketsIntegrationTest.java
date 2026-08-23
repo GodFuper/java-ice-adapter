@@ -119,7 +119,7 @@ class PeerKcpTransportLostPacketsIntegrationTest extends PeerConnectionIntegrati
                 socketB.getReceivedBytes().size() + ")");
     }
 
-    <T extends ModuleBase> T addPeerModuleListener(Peer peer, T module) {
+    private <T extends ModuleBase> T addPeerModuleListener(Peer peer, T module) {
         PeerModule typeModule = PeerModule.PEER_LISTENER_MODULE;
         module.init();
 

@@ -4,8 +4,8 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.KcpAnswererPeerToPeerSenderModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.KcpOffererPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.KcpReceiverModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
 import com.faforever.iceadapter.ice.peer.modules.other.*;
@@ -47,8 +47,8 @@ public enum PeerModule implements Comparator<PeerModule> {
     RELAY_CLIENT_MODULE(RelayClientModule::new),
     RELAY_SERVER_MODULE(RelayServerModule::new),
     AUTO_RELAY_CALCULATE_RTT(RelayBestRttPeerCheckerModule::new),
-    KCP_OFFERER_PEER_TO_PEER_TRANSPORT(KcpOffererPeerToPeerSenderModule::new),
-    KCP_ANSWERER_PEER_TO_PEER_TRANSPORT(KcpAnswererPeerToPeerSenderModule::new),
+    KCP_OFFERER_PEER_TO_PEER_TRANSPORT(KcpPeerToPeerSenderModule::new),
+    KCP_ANSWERER_PEER_TO_PEER_TRANSPORT(KcpReceiverModule::new),
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
     PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new);

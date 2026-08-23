@@ -32,7 +32,7 @@ public class KcpAdapter {
     private static final int SEND_WINDOW = 128;
     private static final int RECV_WINDOW = 256;
     private static final int DEADLINK = 30;
-    private static final int UPDATE_INTERVAL_MS = 1;
+    private static final int UPDATE_INTERVAL_MS = 2;
     private static final int MAX_UPDATE_DELAY_MS = 1000;
 
     private final String name;

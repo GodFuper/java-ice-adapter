@@ -1,7 +1,7 @@
 package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.modules.ice.KcpOffererPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +50,7 @@ class DroppingPeerToPeerListenerModule extends PeerToPeerListenerModule {
     protected void handlerData(Peer p, byte[] data, int length) {
         // In KCP mode, count and drop all packets
         // Without custom mode, let them all through
-        if (data[0] != KcpOffererPeerToPeerSenderModule.KCP_PROTOCOL_MARKER) {
+        if (data[0] != KcpPeerToPeerSenderModule.KCP_PROTOCOL_MARKER) {
             super.handlerData(p, data, length);
             return;
         }

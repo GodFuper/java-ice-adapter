@@ -139,4 +139,74 @@ class PeerCustomUdpTransportIntegrationTest extends PeerConnectionIntegrationBas
             assertEquals("kcp-B-" + i, received, msg);
         }
     }
+
+    @Test
+    @Timeout(value = 30)
+    void testKcpModeFromPeerA() throws IOException {
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
+
+        // Verify KCP mode is enabled
+        assertEquals(PeerSendMode.KCP_ONLY, peerA.getSendMode(), "Peer A should be in KCP_ONLY mode");
+        assertEquals(PeerSendMode.KCP_ONLY, peerB.getSendMode(), "Peer B should be in KCP_ONLY mode");
+
+        socketA.clear();
+        socketB.clear();
+
+        sleep(300); // Wait for KCP transport to fully initialize
+
+        // Send packets A → B through KCP transport
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            socketA.sendString("kcp-A-" + i);
+        }
+
+        sleep(DATA_WAIT_MS);
+
+        // Verify A → B
+        assertEquals(
+                NUM_PACKETS,
+                socketB.getReceivedBytes().size(),
+                "socketB should receive " + NUM_PACKETS + " packets from A in KCP mode, got: "
+                        + socketB.getReceivedBytes().size());
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            String received = new String(socketB.getReceivedBytes().get(i), StandardCharsets.UTF_8);
+            String msg = "Packet " + i + " A→B in KCP mode: expected=kcp-A-" + i + " actual=" + received;
+            assertEquals("kcp-A-" + i, received, msg);
+        }
+    }
+
+    @Test
+    @Timeout(value = 30)
+    void testKcpModeFromPeerB() throws IOException {
+        peerA.setSendMode(PeerSendMode.KCP_ONLY);
+        peerB.setSendMode(PeerSendMode.KCP_ONLY);
+
+        // Verify KCP mode is enabled
+        assertEquals(PeerSendMode.KCP_ONLY, peerA.getSendMode(), "Peer A should be in KCP_ONLY mode");
+        assertEquals(PeerSendMode.KCP_ONLY, peerB.getSendMode(), "Peer B should be in KCP_ONLY mode");
+
+        socketA.clear();
+        socketB.clear();
+
+        sleep(300); // Wait for KCP transport to fully initialize
+
+        // Send packets B → A through KCP transport
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            socketB.sendString("kcp-B-" + i);
+        }
+
+        sleep(DATA_WAIT_MS);
+
+        // Verify B → A
+        assertEquals(
+                NUM_PACKETS,
+                socketA.getReceivedBytes().size(),
+                "socketA should receive " + NUM_PACKETS + " packets from B in KCP mode, got: "
+                        + socketA.getReceivedBytes().size());
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            String received = new String(socketA.getReceivedBytes().get(i), StandardCharsets.UTF_8);
+            String msg = "Packet " + i + " B→A in KCP mode: expected=kcp-B-" + i + " actual=" + received;
+            assertEquals("kcp-B-" + i, received, msg);
+        }
+    }
 }
