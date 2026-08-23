@@ -1,6 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import io.jpower.kcp.netty.KcpOutput;
+import kcp.KcpOutput;
 import org.junit.jupiter.api.*;
 
 import java.nio.charset.StandardCharsets;

@@ -1,15 +1,13 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.util.LockUtil;
-import io.jpower.kcp.netty.Kcp;
-import io.jpower.kcp.netty.KcpOutput;
-import io.jpower.kcp.netty.Ukcp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import kcp.Kcp;
+import kcp.KcpOutput;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +19,7 @@ import java.util.function.Consumer;
 /**
  * KCP adapter that bridges ice4j Component (DatagramSocket) with KCP protocol.
  * <p>
- * Adapts kcp-netty to work on top of ice4j Component instead of Netty DatagramChannel.
+ * Adapts kcp-base to work on top of ice4j Component instead of Netty DatagramChannel.
  * KCP data is sent/received through the existing ICE component's datagram socket.
  */
 @Slf4j
@@ -29,8 +27,8 @@ import java.util.function.Consumer;
 public class KcpAdapter {
 
     private static final int MTU = 1200;
-    private static final int SEND_WINDOW = 128;
-    private static final int RECV_WINDOW = 256;
+    private static final int SEND_WINDOW = 1024;
+    private static final int RECV_WINDOW = 2048;
     private static final int DEADLINK = 30;
     private static final int UPDATE_INTERVAL_MS = 2;
     private static final int MAX_UPDATE_DELAY_MS = 1000;
@@ -38,7 +36,7 @@ public class KcpAdapter {
     private final String name;
     private final KcpOutput output;
     private final Consumer<byte[]> handleData;
-    private final Ukcp ukcp;
+    private final Kcp kcp;
     private volatile boolean running = false;
     private volatile long nextUpdateTimestamp = 0;
     private ScheduledExecutorService updateExecutor;
@@ -61,13 +59,14 @@ public class KcpAdapter {
         this.handleData = handleData;
 
         // Conv = remoteId
-        this.ukcp = new Ukcp(conv, output);
+        this.kcp = new Kcp(conv, output);
 
         // Nodelay mode for minimum latency (gaming mode)
-        ukcp.nodelay(true, UPDATE_INTERVAL_MS, 2, true);
-        ukcp.setMtu(MTU);
-        ukcp.wndSize(SEND_WINDOW, RECV_WINDOW);
-        ukcp.setDeadLink(DEADLINK);
+        kcp.nodelay(true, UPDATE_INTERVAL_MS, 2, true);
+        kcp.setMtu(MTU);
+        kcp.setSndWnd(SEND_WINDOW);
+        kcp.setRcvWnd(RECV_WINDOW);
+        // setDeadLink is not available in kcp-base, dead-link detection uses default threshold
     }
 
     /**
@@ -108,29 +107,25 @@ public class KcpAdapter {
         if (!running) {
             return;
         }
-        long now = System.currentTimeMillis();
-
-        // Schedule the next update based on KCP state
-        nextUpdateTimestamp = scheduleNextUpdate(now);
 
         LockUtil.executeWithLock(lock, () -> {
-            ukcp.update((int) now);
+            long now = System.currentTimeMillis();
+
+            // Schedule the next update based on KCP state
+            nextUpdateTimestamp = scheduleNextUpdate(now);
+
+            kcp.update(now);
 
             // Receive and deliver data
-            while (ukcp.peekSize() > 0) {
-                int size = ukcp.peekSize();
+            while (kcp.peekSize() > 0) {
+                int size = kcp.peekSize();
                 if (size <= 0) {
                     break;
                 }
-                ByteBuf buf = Unpooled.buffer(size);
-                try {
-                    ukcp.receive(buf);
-                } catch (IOException e) {
-                    log.error("KCP receive failed for {}", name, e);
-                    buf.release();
+                ByteBuf buf = kcp.mergeRecv();
+                if (buf == null) {
                     break;
                 }
-
                 byte[] data = new byte[buf.readableBytes()];
                 buf.getBytes(buf.readerIndex(), data);
                 buf.release();
@@ -148,11 +143,14 @@ public class KcpAdapter {
         if (!running) {
             return;
         }
-        try {
-            ukcp.input(Unpooled.wrappedBuffer(data, offset, length));
-        } catch (IOException e) {
-            log.error("KCP input failed for {}", name, e);
-        }
+        LockUtil.executeWithLock(lock, () -> {
+            try {
+                kcp.input(Unpooled.wrappedBuffer(data, offset, length), true, System.currentTimeMillis());
+            } catch (Exception e) {
+                log.error("KCP input failed for {}", name, e);
+            }
+        });
+
     }
 
     public Kcp getKcp() {
@@ -168,29 +166,31 @@ public class KcpAdapter {
      */
     public void send(byte[] payload) {
         bytesSent.addAndGet(payload.length);
-        try {
-            ukcp.send(Unpooled.wrappedBuffer(payload));
-        } catch (IOException e) {
-            log.error("KCP send failed for {}", name, e);
-        }
+        LockUtil.executeWithLock(lock, () -> {
+            int r = kcp.send(Unpooled.wrappedBuffer(payload));
+            if (r != 0) {
+                log.error("KCP send failed for {}, ret={}", name, r);
+            }
+            return r;
+        });
     }
 
     /**
      * Get the current send buffer size (for diagnostics).
      */
     public int getWaitSnd() {
-        return ukcp.waitSnd();
+        return kcp.waitSnd();
     }
 
     /**
      * Get the current KCP state (0 = normal, -1 = dead-link).
      */
     public int getState() {
-        return ukcp.getState();
+        return kcp.getState();
     }
 
     public int getConv() {
-        return ukcp.getConv();
+        return kcp.getConv();
     }
 
     /**
@@ -198,10 +198,10 @@ public class KcpAdapter {
      * Returns the next timestamp in milliseconds.
      * Ensures at least UPDATE_INTERVAL_MS between updates to maintain stability.
      * Caps maximum delay to prevent hang when send buffer is empty
-     * (ukcp.check() returns Integer.MAX_VALUE for tmPacket in that case).
+     * (kcp.check() returns Long.MAX_VALUE for tmPacket in that case).
      */
     private long scheduleNextUpdate(long now) {
-        long nextTs = ukcp.check((int) now);
+        long nextTs = kcp.check(now);
         long minNext = now + UPDATE_INTERVAL_MS;
         long maxNext = now + MAX_UPDATE_DELAY_MS;
 

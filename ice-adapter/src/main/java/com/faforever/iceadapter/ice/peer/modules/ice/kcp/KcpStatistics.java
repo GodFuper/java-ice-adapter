@@ -1,7 +1,5 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import io.jpower.kcp.netty.Kcp;
-import io.jpower.kcp.netty.KcpMetric;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -163,6 +161,8 @@ public class KcpStatistics {
         this.bytesReceivedBytes = 0;
     }
 
+    // KcpMetric не доступен в kcp-base — эти поля больше не заполняются
+    /*
     public void update(Kcp kcp) {
         KcpMetric metric = kcp.getMetric();
         this.srttMs = metric.srtt();
@@ -182,13 +182,11 @@ public class KcpStatistics {
         this.timestampMs = System.currentTimeMillis();
     }
 
-    /**
-     * Updates all KCP statistics from the Kcp instance and sets the conv from the adapter.
-     */
     public void update(Kcp kcp, int conv) {
         this.conv = conv;
         update(kcp);
     }
+    */
 
     /**
      * Updates the next update timestamp fields from the KcpAdapter.

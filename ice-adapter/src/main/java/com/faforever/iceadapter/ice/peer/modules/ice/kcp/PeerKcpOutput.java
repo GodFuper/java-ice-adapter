@@ -1,10 +1,11 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
-import io.jpower.kcp.netty.Kcp;
-import io.jpower.kcp.netty.KcpOutput;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import kcp.IKcp;
+import kcp.Kcp;
+import kcp.KcpOutput;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ public class PeerKcpOutput implements KcpOutput {
     private volatile Kcp kcpOut;
 
     @Override
-    public void out(ByteBuf data, Kcp kcp) {
+    public void out(ByteBuf data, IKcp kcp) {
         Component component = peer.getComponent();
         if (component == null) {
             data.release();
@@ -33,7 +34,7 @@ public class PeerKcpOutput implements KcpOutput {
         }
 
         if (kcpOut == null) {
-            kcpOut = kcp;
+            kcpOut = (Kcp) kcp;
         }
 
         // Called by KCP when raw UDP bytes need to be sent
