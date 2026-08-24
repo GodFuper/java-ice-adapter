@@ -9,8 +9,8 @@ import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpAdapter;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.PeerKcpOutput;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcp;
 import com.faforever.iceadapter.util.LockUtil;
-import io.jpower.kcp.netty.Kcp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
@@ -185,7 +185,7 @@ public class KcpReceiverModule implements ModuleBase, PeerEventListener {
     private void updateStatistic(KcpAdapter adapter) {
         KcpStatistics statistics = peer.getKcpStatistics();
         if (statistics != null && adapter != null) {
-            Kcp kcp = adapter.getKcp();
+            MyKcp kcp = adapter.getMyKcp();
             if (kcp != null) {
                 statistics.update(kcp, adapter.getConv());
                 statistics.updateNextUpdate(adapter.getNextUpdateTimestamp());

@@ -20,6 +20,13 @@ public class MyUkcp {
 
     private final MyKcp kcp;
 
+    /**
+     * Returns the underlying MyKcp instance.
+     */
+    public MyKcp getKcp() {
+        return kcp;
+    }
+
     @Getter
     private boolean fastFlush = true;
 

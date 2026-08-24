@@ -1,8 +1,8 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
-import io.jpower.kcp.netty.Kcp;
-import io.jpower.kcp.netty.KcpOutput;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcp;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpOutput;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Data;
@@ -18,14 +18,14 @@ import static com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderM
 @Slf4j
 @RequiredArgsConstructor
 @Data
-public class PeerKcpOutput implements KcpOutput {
+public class PeerKcpOutput implements MyKcpOutput {
     private final Peer peer;
     private final byte channel;
 
-    private volatile Kcp kcpOut;
+    private volatile MyKcp kcpOut;
 
     @Override
-    public void out(ByteBuf data, Kcp kcp) {
+    public void out(ByteBuf data, MyKcp kcp) {
         Component component = peer.getComponent();
         if (component == null) {
             data.release();
@@ -53,14 +53,11 @@ public class PeerKcpOutput implements KcpOutput {
         }
     }
 
-    public Optional<Kcp> getKcp() {
+    public Optional<MyKcp> getKcp() {
         return Optional.ofNullable(kcpOut);
     }
 
     public void close() {
-        try {
-            getKcp().ifPresent(Kcp::release);
-        } catch (Exception ignore) {
-        }
+        // MyKcp doesn't have a release method
     }
 }

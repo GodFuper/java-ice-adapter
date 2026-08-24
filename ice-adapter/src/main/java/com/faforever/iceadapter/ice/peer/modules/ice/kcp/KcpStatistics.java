@@ -1,7 +1,7 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import io.jpower.kcp.netty.Kcp;
-import io.jpower.kcp.netty.KcpMetric;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcp;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpMetric;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -163,8 +163,8 @@ public class KcpStatistics {
         this.bytesReceivedBytes = 0;
     }
 
-    public void update(Kcp kcp) {
-        KcpMetric metric = kcp.getMetric();
+    public void update(MyKcp kcp) {
+        MyKcpMetric metric = kcp.getMetric();
         this.srttMs = metric.srtt();
         this.rttvarMs = metric.rttvar();
         this.rtoMs = metric.rto();
@@ -183,9 +183,9 @@ public class KcpStatistics {
     }
 
     /**
-     * Updates all KCP statistics from the Kcp instance and sets the conv from the adapter.
+     * Updates all KCP statistics from the MyKcp instance and sets the conv from the adapter.
      */
-    public void update(Kcp kcp, int conv) {
+    public void update(MyKcp kcp, int conv) {
         this.conv = conv;
         update(kcp);
     }

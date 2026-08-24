@@ -7,7 +7,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.internal.ObjectPool;
 import io.netty.util.internal.ObjectPool.Handle;
 import lombok.Data;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -209,7 +208,6 @@ public class MyKcp {
      */
     private boolean autoSetConv;
 
-    @Getter
     private MyKcpMetric metric = new MyKcpMetric(this);
 
     private static long int2Uint(int i) {
@@ -535,7 +533,7 @@ public class MyKcp {
                 int lastLen = lastData.readableBytes();
                 if (lastLen < mss) {
                     int capacity = mss - lastLen;
-                    int extend = Math.min(len, capacity);
+                    int extend = len < capacity ? len : capacity;
                     if (lastData.maxWritableBytes() < extend) { // extend
                         ByteBuf newBuf = byteBufAllocator.ioBuffer(lastLen + extend);
                         newBuf.writeBytes(lastData);
@@ -570,7 +568,7 @@ public class MyKcp {
 
         // segment
         for (int i = 0; i < count; i++) {
-            int size = Math.min(len, mss);
+            int size = len > mss ? mss : len;
             Segment seg = Segment.createSegment(buf.readRetainedSlice(size));
             seg.frg = (short) (stream ? 0 : count - i - 1);
             sndQueue.add(seg);
@@ -601,7 +599,7 @@ public class MyKcp {
     }
 
     private void shrinkBuf() {
-        if (!sndBuf.isEmpty()) {
+        if (sndBuf.size() > 0) {
             Segment seg = sndBuf.peek();
             sndUna = seg.sn;
         } else {
@@ -1342,5 +1340,4 @@ public class MyKcp {
                 "conv=" + conv +
                 ')';
     }
-
 }
