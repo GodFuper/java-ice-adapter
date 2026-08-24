@@ -4,16 +4,19 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for packet delivery over KCP transport under packet loss conditions.
@@ -33,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
 
     private static final int NUM_PACKETS = 100;
-    private static final long DATA_WAIT_MS = 3_000;
+    private static final long AWAIT_TIMEOUT_MS = 14_000;
 
     @Override
     protected Set<PeerModule> getDisabledModules() {
@@ -50,7 +53,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // Test 1: 5% packet loss — 100/100 should be delivered
     // =========================================================================
     @Test
-    @Timeout(value = 120)
+    @Timeout(value = 15)
     @DisplayName("5% packet loss: all packets should be delivered via KCP")
     void test5PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 20th packet = 5% loss
@@ -69,7 +72,12 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("loss5-A-" + i);
         }
 
-        sleep(DATA_WAIT_MS); // 5% loss needs time for KCP retransmissions
+        // Build expected set
+        List<String> expectedPackets = new ArrayList<>();
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            expectedPackets.add("loss5-A-" + i);
+        }
+        awaitReceived(NUM_PACKETS, expectedPackets);
 
         // Verify: ALL 100 packets should be delivered
         int receivedCount = socketB.getReceivedBytes().size();
@@ -77,41 +85,15 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
         System.out.println("Sent: " + NUM_PACKETS);
         System.out.println("Received: " + receivedCount);
 
-        // Check which specific packets are missing
-        java.util.Set<String> received = new java.util.HashSet<>();
-        for (byte[] bytes : socketB.getReceivedBytes()) {
-            received.add(new String(bytes, StandardCharsets.UTF_8));
-        }
-
-        java.util.List<String> missing = new java.util.ArrayList<>();
-        for (int i = 0; i < NUM_PACKETS; i++) {
-            String expected = "loss5-A-" + i;
-            if (!received.contains(expected)) {
-                missing.add(expected);
-            }
-        }
-
-        if (!missing.isEmpty()) {
-            System.out.println("MISSING packets: " + missing);
-        } else {
-            System.out.println("ALL packets delivered successfully!");
-        }
-
         assertEquals(NUM_PACKETS, receivedCount,
                 "socketB should receive " + NUM_PACKETS + " packets from A with 5% loss, got: " + receivedCount);
-
-        for (int i = 0; i < NUM_PACKETS; i++) {
-            String expected = "loss5-A-" + i;
-            assertTrue(received.contains(expected),
-                    "Missing packet: " + expected);
-        }
     }
 
     // =========================================================================
     // Test 2: 10% packet loss — 100/100 should be delivered
     // =========================================================================
     @Test
-    @Timeout(value = 120)
+    @Timeout(value = 15)
     @DisplayName("10% packet loss: all packets should be delivered via KCP")
     void test10PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 10th packet = 10% loss
@@ -129,25 +111,17 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("loss10-A-" + i);
         }
 
-        sleep(DATA_WAIT_MS);
+        // Build expected set
+        List<String> expectedPackets = new ArrayList<>();
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            expectedPackets.add("loss10-A-" + i);
+        }
+        awaitReceived(NUM_PACKETS, expectedPackets);
 
         int receivedCount = socketB.getReceivedBytes().size();
         System.out.println("=== 10% LOSS TEST ===");
         System.out.println("Sent: " + NUM_PACKETS);
         System.out.println("Received: " + receivedCount);
-
-        java.util.Set<String> received = new java.util.HashSet<>();
-        for (byte[] bytes : socketB.getReceivedBytes()) {
-            received.add(new String(bytes, StandardCharsets.UTF_8));
-        }
-
-        java.util.List<String> missing = new java.util.ArrayList<>();
-        for (int i = 0; i < NUM_PACKETS; i++) {
-            String expected = "loss10-A-" + i;
-            if (!received.contains(expected)) {
-                missing.add(expected);
-            }
-        }
 
         assertEquals(NUM_PACKETS, receivedCount,
                 "socketB should receive " + NUM_PACKETS + " packets from A with 10% loss, got: " + receivedCount);
@@ -157,7 +131,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // Test 3: 20% packet loss — 100/100 should be delivered
     // =========================================================================
     @Test
-    @Timeout(value = 120)
+    @Timeout(value = 15)
     @DisplayName("20% packet loss: all packets should be delivered via KCP")
     void test20PercentPacketLoss_allPacketsDelivered() throws IOException, InterruptedException {
         // Drop every 5th packet = 20% loss
@@ -175,7 +149,12 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("loss20-A-" + i);
         }
 
-        sleep(DATA_WAIT_MS);
+        // Build expected set
+        List<String> expectedPackets = new ArrayList<>();
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            expectedPackets.add("loss20-A-" + i);
+        }
+        awaitReceived(NUM_PACKETS, expectedPackets);
 
         int receivedCount = socketB.getReceivedBytes().size();
         System.out.println("=== 20% LOSS TEST ===");
@@ -190,7 +169,7 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // Test 4: Bidirectional 5% packet loss
     // =========================================================================
     @Test
-    @Timeout(value = 120)
+    @Timeout(value = 15)
     @DisplayName("Bidirectional 5% packet loss: all packets in both directions")
     void testBidirectional5PercentPacketLoss() throws IOException, InterruptedException {
         // Drop packets in BOTH directions
@@ -214,7 +193,19 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketB.sendString("bidir-B-" + i);
         }
 
-        sleep(DATA_WAIT_MS);
+        // Build expected sets
+        List<String> expectedA = new ArrayList<>();
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            expectedA.add("bidir-B-" + i);
+        }
+        List<String> expectedB = new ArrayList<>();
+        for (int i = 0; i < NUM_PACKETS; i++) {
+            expectedB.add("bidir-A-" + i);
+        }
+        awaitReceived(NUM_PACKETS, expectedB);
+
+        // For A, we need to wait on a different socket context
+        awaitReceivedOnSocket(socketA, NUM_PACKETS, expectedA);
 
         int receivedA = socketA.getReceivedBytes().size();
         int receivedB = socketB.getReceivedBytes().size();
@@ -251,7 +242,12 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
             socketA.sendString("debug-" + i);
         }
 
-        sleep(DATA_WAIT_MS);
+        // Build expected set
+        List<String> expectedPackets = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            expectedPackets.add("debug-" + i);
+        }
+        awaitReceived(20, expectedPackets);
 
         int receivedCount = socketB.getReceivedBytes().size();
         System.out.println("=== DEBUG 20 PACKETS ===");
@@ -272,6 +268,78 @@ class ReliableTransportPacketLossTest extends PeerConnectionIntegrationBase {
     // =========================================================================
     // Helper methods
     // =========================================================================
+
+    /**
+     * Waits until the expected number of packets are received on socketB.
+     * Polls every 50ms with a timeout of AWAIT_TIMEOUT_MS.
+     */
+    private void awaitReceived(int expectedCount, List<String> expectedPackets) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + AWAIT_TIMEOUT_MS;
+        Set<String> expectedSet = new HashSet<>(expectedPackets);
+
+        while (System.currentTimeMillis() < deadline) {
+            Set<String> received = new HashSet<>();
+            for (byte[] bytes : socketB.getReceivedBytes()) {
+                received.add(new String(bytes, StandardCharsets.UTF_8));
+            }
+
+            if (received.containsAll(expectedSet)) {
+                return; // All packets delivered
+            }
+            Thread.sleep(50);
+        }
+
+        // Timeout — build detailed error message
+        Set<String> received = new HashSet<>();
+        for (byte[] bytes : socketB.getReceivedBytes()) {
+            received.add(new String(bytes, StandardCharsets.UTF_8));
+        }
+        List<String> missing = new ArrayList<>();
+        for (String expected : expectedSet) {
+            if (!received.contains(expected)) {
+                missing.add(expected);
+            }
+        }
+        Assertions.fail(String.format(
+                "Timeout after %dms: received %d/%d packets. Missing: %s",
+                AWAIT_TIMEOUT_MS, received.size(), expectedCount, missing));
+    }
+
+    /**
+     * Waits until the expected number of packets are received on a given socket.
+     * Used for bidirectional tests where we need to wait on both sockets.
+     */
+    private void awaitReceivedOnSocket(Object socketObj, int expectedCount, List<String> expectedPackets) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + AWAIT_TIMEOUT_MS;
+        Set<String> expectedSet = new HashSet<>(expectedPackets);
+
+        while (System.currentTimeMillis() < deadline) {
+            Set<String> received = new HashSet<>();
+            for (byte[] bytes : ((InMemoryDatagramSocket) socketObj).getReceivedBytes()) {
+                received.add(new String(bytes, StandardCharsets.UTF_8));
+            }
+
+            if (received.containsAll(expectedSet)) {
+                return; // All packets delivered
+            }
+            Thread.sleep(50);
+        }
+
+        // Timeout — build detailed error message
+        Set<String> received = new HashSet<>();
+        for (byte[] bytes : ((InMemoryDatagramSocket) socketObj).getReceivedBytes()) {
+            received.add(new String(bytes, StandardCharsets.UTF_8));
+        }
+        List<String> missing = new ArrayList<>();
+        for (String expected : expectedSet) {
+            if (!received.contains(expected)) {
+                missing.add(expected);
+            }
+        }
+        Assertions.fail(String.format(
+                "Timeout after %dms on socket: received %d/%d packets. Missing: %s",
+                AWAIT_TIMEOUT_MS, received.size(), expectedCount, missing));
+    }
 
     /**
      * Replace PEER_LISTENER_MODULE with DroppingPeerToPeerListenerModule.

@@ -108,12 +108,14 @@ public class KcpAdapter {
         if (!running) {
             return;
         }
-        long now = System.currentTimeMillis();
 
-        // Schedule the next update based on KCP state
-        nextUpdateTimestamp = scheduleNextUpdate(now);
 
         LockUtil.executeWithLock(lock, () -> {
+            long now = System.currentTimeMillis();
+
+            // Schedule the next update based on KCP state
+            nextUpdateTimestamp = scheduleNextUpdate(now);
+
             ukcp.update((int) now);
 
             // Receive and deliver data
@@ -148,10 +150,14 @@ public class KcpAdapter {
         if (!running) {
             return;
         }
+
         try {
+            lock.lock();
             ukcp.input(Unpooled.wrappedBuffer(data, offset, length));
         } catch (IOException e) {
             log.error("KCP input failed for {}", name, e);
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -169,9 +175,12 @@ public class KcpAdapter {
     public void send(byte[] payload) {
         bytesSent.addAndGet(payload.length);
         try {
+            lock.lock();
             ukcp.send(Unpooled.wrappedBuffer(payload));
         } catch (IOException e) {
             log.error("KCP send failed for {}", name, e);
+        } finally {
+            lock.unlock();
         }
     }
 

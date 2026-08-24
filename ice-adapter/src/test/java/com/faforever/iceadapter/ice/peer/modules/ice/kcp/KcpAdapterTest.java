@@ -1,11 +1,16 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import io.jpower.kcp.netty.KcpOutput;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * via the KcpOutput callback, and that incoming packets are properly decoded
  * and delivered via the handleData consumer.
  */
+@Slf4j
 class KcpAdapterTest {
 
     private static final int CONV = 42;
@@ -225,6 +231,165 @@ class KcpAdapterTest {
         for (int i = 0; i < 10; i++) {
             assertEquals("reverse-" + i, decodedDataOnA.get(i),
                     "Reverse packet " + i + " mismatch");
+        }
+    }
+
+    /**
+     * Test sending packets with various packet loss rates (10% to 90%).
+     * KCP's reliability should ensure all application data eventually arrives.
+     *
+     * @param dropChance percentage of packets to drop (10 to 90, step 10)
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {10, 20, 30, 40, 50, 60, 70, 80, 90})
+    @Timeout(value = 10)
+    @DisplayName("Should deliver all packets under random packet loss (drop chance: {0}%)")
+    void testRandomPacketLossDeliversAllPackets(int dropChance) {
+        // Clear state
+        decodedDataOnA.clear();
+        decodedDataOnB.clear();
+        kcpOutputFromA.clear();
+        kcpOutputFromB.clear();
+
+        KcpOutput lossyOutputA = (data, kcp) -> {
+            if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
+                log.warn("Drop msg lossyOutputA");
+                return; // drop
+            }
+            byte[] raw = new byte[data.readableBytes()];
+            data.getBytes(data.readerIndex(), raw);
+            kcpOutputFromA.add(raw);
+            adapterB.onIncomingPacket(raw, 0, raw.length);
+        };
+
+        KcpOutput lossyOutputB = (data, kcp) -> {
+            if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
+                log.warn("Drop msg lossyOutputB");
+                return; // drop
+            }
+            byte[] raw = new byte[data.readableBytes()];
+            data.getBytes(data.readerIndex(), raw);
+            kcpOutputFromB.add(raw);
+            adapterA.onIncomingPacket(raw, 0, raw.length);
+        };
+
+        // Replace outputs by creating new adapters
+        adapterA.stop();
+        adapterB.stop();
+
+        adapterA = new KcpAdapter(
+                CONV,
+                "A",
+                lossyOutputA,
+                data -> decodedDataOnA.add(new String(data, StandardCharsets.UTF_8))
+        );
+        adapterB = new KcpAdapter(
+                CONV,
+                "B",
+                lossyOutputB,
+                data -> decodedDataOnB.add(new String(data, StandardCharsets.UTF_8))
+        );
+
+        adapterA.start();
+        adapterB.start();
+
+        // Send packets from A to B
+        int packetCount = 20;
+        for (int i = 0; i < packetCount; i++) {
+            adapterA.send(("loss-test-" + i).getBytes(StandardCharsets.UTF_8));
+        }
+
+        // Verify all packets received on B despite loss
+        waitForDecodedData(() -> decodedDataOnB.size(), packetCount, 30_000);
+
+        assertEquals(packetCount, decodedDataOnB.size(),
+                "Expected " + packetCount + " decoded packets on B despite " + dropChance + "% packet loss, got: " + decodedDataOnB.size());
+
+        // Verify content integrity
+        for (int i = 0; i < packetCount; i++) {
+            assertEquals("loss-test-" + i, decodedDataOnB.get(i),
+                    "Packet " + i + " payload mismatch under " + dropChance + "% packet loss");
+        }
+    }
+
+    /**
+     * Test sending packets with regular packet loss (every Nth packet dropped).
+     * KCP's reliability should ensure all application data eventually arrives.
+     *
+     * @param dropEveryN drop every Nth packet (2 = every 2nd, 3 = every 3rd, etc.)
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {2, 3, 4, 5})
+    @Timeout(value = 60)
+    @DisplayName("Should deliver all packets with periodic packet loss (drop every {0}th)")
+    void testPeriodicPacketLossDeliversAllPackets(int dropEveryN) {
+        // Clear state
+        decodedDataOnA.clear();
+        decodedDataOnB.clear();
+        kcpOutputFromA.clear();
+        kcpOutputFromB.clear();
+
+        AtomicLong packetsFromA = new AtomicLong(0);
+        AtomicLong packetsFromB = new AtomicLong(0);
+
+        KcpOutput periodicOutputA = (data, kcp) -> {
+            long num = packetsFromA.incrementAndGet();
+            if (num % dropEveryN == 0) {
+                return; // drop every Nth packet
+            }
+            byte[] raw = new byte[data.readableBytes()];
+            data.getBytes(data.readerIndex(), raw);
+            kcpOutputFromA.add(raw);
+            adapterB.onIncomingPacket(raw, 0, raw.length);
+        };
+
+        KcpOutput periodicOutputB = (data, kcp) -> {
+            long num = packetsFromB.incrementAndGet();
+            if (num % dropEveryN == 0) {
+                return; // drop every Nth packet
+            }
+            byte[] raw = new byte[data.readableBytes()];
+            data.getBytes(data.readerIndex(), raw);
+            kcpOutputFromB.add(raw);
+            adapterA.onIncomingPacket(raw, 0, raw.length);
+        };
+
+        // Replace outputs by creating new adapters
+        adapterA.stop();
+        adapterB.stop();
+
+        adapterA = new KcpAdapter(
+                CONV,
+                "A",
+                periodicOutputA,
+                data -> decodedDataOnA.add(new String(data, StandardCharsets.UTF_8))
+        );
+        adapterB = new KcpAdapter(
+                CONV,
+                "B",
+                periodicOutputB,
+                data -> decodedDataOnB.add(new String(data, StandardCharsets.UTF_8))
+        );
+
+        adapterA.start();
+        adapterB.start();
+
+        // Send packets from A to B
+        int packetCount = 20;
+        for (int i = 0; i < packetCount; i++) {
+            adapterA.send(("periodic-" + i).getBytes(StandardCharsets.UTF_8));
+        }
+
+        // Verify all packets received on B despite periodic loss
+        waitForDecodedData(() -> decodedDataOnB.size(), packetCount, 30_000);
+
+        assertEquals(packetCount, decodedDataOnB.size(),
+                "Expected " + packetCount + " decoded packets on B despite dropping every " + dropEveryN + "th packet, got: " + decodedDataOnB.size());
+
+        // Verify content integrity
+        for (int i = 0; i < packetCount; i++) {
+            assertEquals("periodic-" + i, decodedDataOnB.get(i),
+                    "Packet " + i + " payload mismatch under drop-every-" + dropEveryN + " loss");
         }
     }
 

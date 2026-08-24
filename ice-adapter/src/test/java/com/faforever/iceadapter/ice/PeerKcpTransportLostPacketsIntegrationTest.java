@@ -60,7 +60,7 @@ class PeerKcpTransportLostPacketsIntegrationTest extends PeerConnectionIntegrati
     @Timeout(value = 30)
     @DisplayName("KCP mode with 30% packet loss (every 3rd packet dropped)")
     void testCustomModeWith30PercentPacketLoss() throws IOException {
-        runPacketLossTest(2, "loss30-A-");
+        runPacketLossTest(3, "loss30-A-");
     }
 
     private void runPacketLossTest(int dropEveryN, String packetPrefix) throws IOException {
