@@ -104,6 +104,14 @@ public class MyKcp {
      */
     public static final int IKCP_FASTACK_LIMIT = 5;
 
+    /**
+     * Max time in ms a segment can wait for ACK before being discarded.
+     * Segments older than TTL are silently removed from sndBuf, preventing
+     * infinite retransmission on dead links without hitting deadLink counter.
+     * Set to -1 to disable TTL (original KCP behavior).
+     */
+    public static final int TTL_SEGMENT_MS = 10000;
+
     private int conv;
 
     private int mtu = IKCP_MTU_DEF;
@@ -271,6 +279,8 @@ public class MyKcp {
 
         private int xmit;
 
+        private int createTime;
+
         private ByteBuf data;
 
         private static final ObjectPool<Segment> RECYCLER = ObjectPool.newPool(Segment::new);
@@ -291,6 +301,7 @@ public class MyKcp {
             rto = 0;
             fastack = 0;
             xmit = 0;
+            createTime = 0;
             if (releaseBuf) {
                 data.release();
             }
@@ -986,6 +997,7 @@ public class MyKcp {
             newSeg.rto = rxRto;
             newSeg.fastack = 0;
             newSeg.xmit = 0;
+            newSeg.createTime = current;
         }
 
         // calculate resent
@@ -997,6 +1009,17 @@ public class MyKcp {
         boolean lost = false;
         for (Iterator<Segment> itr = sndBufItr.rewind(); itr.hasNext(); ) {
             Segment segment = itr.next();
+
+            // Discard segments that have waited for ACK longer than TTL
+            if (TTL_SEGMENT_MS > 0 && itimediff(current, segment.createTime) > TTL_SEGMENT_MS) {
+                itr.remove();
+                segment.recycle(true);
+                if (log.isDebugEnabled()) {
+                    log.debug("{} flush discarding expired segment: sn={}, age={}ms", this, segment.sn, itimediff(current, segment.createTime));
+                }
+                continue;
+            }
+
             boolean needsend = false;
             if (segment.xmit == 0) {
                 needsend = true;
