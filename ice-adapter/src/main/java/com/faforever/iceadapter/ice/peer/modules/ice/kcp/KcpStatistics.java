@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcp;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpMetric;
+import kcp.Kcp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +9,8 @@ import lombok.NoArgsConstructor;
  * KCP protocol statistics for a single peer connection.
  * <p>
  * Captures available metrics from the underlying KCP implementation for monitoring and debugging.
+ * Note: kcp-base 1.6.2 does not expose all internal metrics via public API,
+ * so some fields (xmit, maxSegXmit) are not available.
  */
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,127 +19,91 @@ public class KcpStatistics {
 
     /**
      * KCP conversation ID — unique identifier for this KCP session.
-     * Used to distinguish multiple KCP streams; matches the conv parameter passed to Ukcp constructor.
      */
     private int conv = 0;
 
     /**
-     * Smoothed round-trip time (SRTT) — average latency estimate in milliseconds.
-     * Low values indicate stable connection; sudden spikes suggest packet loss or congestion.
+     * Smoothed round-trip time (SRTT) — not exposed by kcp-base 1.6.2 API.
      */
     private int srttMs = 0;
 
     /**
-     * RTT variation (RTTVAR) — standard deviation of round-trip times in milliseconds.
-     * High values indicate unstable connection with variable latency.
+     * RTT variation (RTTVAR) — not exposed by kcp-base 1.6.2 API.
      */
     private int rttvarMs = 0;
 
     /**
-     * Retransmission timeout (RTO) — time before unacknowledged data is retransmitted in milliseconds.
-     * Increases with RTT and RTTVAR; clamped between IKCP_RTO_MIN (100) and IKCP_RTO_MAX (60000).
+     * Retransmission timeout (RTO) — not exposed by kcp-base 1.6.2 API.
      */
     private int rtoMs = 0;
 
     /**
-     * Congestion window size (cwnd) — maximum number of segments that can be in flight.
-     * Growths indicate healthy throughput; reductions signal detected loss/congestion.
+     * Congestion window size (cwnd) — not exposed by kcp-base 1.6.2 API.
      */
     private int cwnd = 0;
 
     /**
-     * Send next sequence number — the SN of the next segment to be sent.
-     * Monotonically increasing; gap indicates segments not yet transmitted.
+     * Send next sequence number — not exposed by kcp-base 1.6.2 API.
      */
     private long sndNxt = 0;
 
     /**
-     * Send unacknowledged — the earliest SN waiting for ACK from remote peer.
-     * Distance from sndNxt indicates in-flight data volume.
+     * Send unacknowledged — not exposed by kcp-base 1.6.2 API.
      */
     private long sndUna = 0;
 
     /**
-     * Receive next sequence number — the SN expected by local application.
-     * Increments as out-of-order segments are reassembled and delivered.
+     * Receive next sequence number — not exposed by kcp-base 1.6.2 API.
      */
     private long rcvNxt = 0;
 
     /**
-     * Local send window size — maximum segments the local stack permits (configurable, default 32).
-     * Together with cwnd and rmtWnd, bounds actual throughput.
+     * Local send window size.
      */
     private int sndWnd = 0;
 
     /**
-     * Local receive window size — maximum segments the local stack can buffer (default 128).
-     * Flow control limit for incoming data.
+     * Local receive window size.
      */
     private int rcvWnd = 0;
 
     /**
-     * Pending send queue size — total segments buffered locally (sndBuf + sndQueue).
-     * High values indicate application producing data faster than network can transmit.
+     * Pending send queue size.
      */
     private int waitSnd = 0;
 
     /**
-     * Total retransmissions — cumulative count of all segment retransmits since connection start.
-     * Useful for computing packet loss ratio (xmit / total_sent).
-     */
-    private int xmit = 0;
-
-    /**
-     * Maximum retransmissions for any single segment — indicates worst-case per-segment loss.
-     * If this approaches IKCP_DEADLINK (20), the connection will be considered dead.
-     */
-    private int maxSegXmit = 0;
-
-    /**
-     * Configured dead link threshold — number of retransmits before connection is declared dead.
-     * Default is 20 (IKCP_DEADLINK). Compare with maxSegXmit to assess connection health.
-     */
-    private int deadLink = 0;
-
-    /**
-     * KCP internal state — 0=normal, -1=dead (when maxSegXmit >= deadLink).
-     * Use getState() on Kcp instance for current state.
+     * KCP internal state — 0=normal, -1=dead.
      */
     private int state = 0;
 
     /**
-     * Last update timestamp — epoch milliseconds when this snapshot was captured.
-     * Useful for monitoring staleness of the statistics.
+     * Last update timestamp.
      */
     private long timestampMs = 0;
 
     /**
-     * Next scheduled update timestamp — epoch milliseconds when the next KCP update cycle is scheduled.
-     * Lower time-to-update values indicate more responsive KCP processing.
+     * Next scheduled update timestamp.
      */
     private long nextUpdateMs = 0;
 
     /**
-     * Time until next update in milliseconds — how long until the next KCP update cycle.
-     * Useful for monitoring KCP responsiveness.
+     * Time until next update in milliseconds.
      */
     private int timeToNextUpdateMs = 0;
 
     /**
-     * Total bytes sent through KCP — cumulative count of all application data bytes sent since connection start.
-     * Increments each time send() is called on the KcpAdapter.
+     * Total bytes sent through KCP.
      */
     private long bytesSentBytes = 0;
 
     /**
-     * Total bytes received through KCP — cumulative count of all application data bytes received since connection start.
-     * Increments each time data is delivered to the application layer via receive().
+     * Total bytes received through KCP.
      */
     private long bytesReceivedBytes = 0;
 
     /**
      * Resets all statistics to their default (zero) values.
-     * Use this to clear accumulated counters when starting a new connection or session.
      */
     public void reset() {
         this.conv = 0;
@@ -152,9 +117,6 @@ public class KcpStatistics {
         this.sndWnd = 0;
         this.rcvWnd = 0;
         this.waitSnd = 0;
-        this.xmit = 0;
-        this.maxSegXmit = 0;
-        this.deadLink = 0;
         this.state = 0;
         this.timestampMs = 0;
         this.nextUpdateMs = 0;
@@ -163,29 +125,22 @@ public class KcpStatistics {
         this.bytesReceivedBytes = 0;
     }
 
-    public void update(MyKcp kcp) {
-        MyKcpMetric metric = kcp.getMetric();
-        this.srttMs = metric.srtt();
-        this.rttvarMs = metric.rttvar();
-        this.rtoMs = metric.rto();
-        this.cwnd = metric.cwnd();
-        this.sndNxt = metric.sndNxt();
-        this.sndUna = metric.sndUna();
-        this.rcvNxt = metric.rcvNxt();
-        this.xmit = metric.xmit();
-        this.maxSegXmit = metric.maxSegXmit();
+    /**
+     * Updates all KCP statistics from the Kcp instance.
+     * Note: Only exposes metrics available in kcp-base 1.6.2 public API.
+     */
+    public void update(Kcp kcp) {
+        // Only sndWnd and rcvWnd are available via IKcp interface
         this.sndWnd = kcp.getSndWnd();
-        this.rcvWnd = kcp.getRcvWnd();
         this.waitSnd = kcp.waitSnd();
-        this.deadLink = kcp.getDeadLink();
         this.state = kcp.getState();
         this.timestampMs = System.currentTimeMillis();
     }
 
     /**
-     * Updates all KCP statistics from the MyKcp instance and sets the conv from the adapter.
+     * Updates all KCP statistics from the Kcp instance and sets the conv.
      */
-    public void update(MyKcp kcp, int conv) {
+    public void update(Kcp kcp, int conv) {
         this.conv = conv;
         update(kcp);
     }

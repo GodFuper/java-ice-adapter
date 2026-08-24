@@ -56,12 +56,6 @@ public class InfoKcpPeerController {
     private TableColumn<KcpPeerView, String> waitSndColumn;
 
     @FXML
-    private TableColumn<KcpPeerView, String> xmitColumn;
-
-    @FXML
-    private TableColumn<KcpPeerView, String> maxSegXmitColumn;
-
-    @FXML
     private TableColumn<KcpPeerView, String> stateColumn;
 
     @FXML
@@ -98,8 +92,6 @@ public class InfoKcpPeerController {
         sndWndColumn.setCellValueFactory(cellData -> cellData.getValue().getSndWnd());
         rcvWndColumn.setCellValueFactory(cellData -> cellData.getValue().getRcvWnd());
         waitSndColumn.setCellValueFactory(cellData -> cellData.getValue().getWaitSnd());
-        xmitColumn.setCellValueFactory(cellData -> cellData.getValue().getXmit());
-        maxSegXmitColumn.setCellValueFactory(cellData -> cellData.getValue().getMaxSegXmit());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
         nextUpdateMsColumn.setCellValueFactory(cellData -> cellData.getValue().getNextUpdateMs());
         bytesSentColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesSentBytes());

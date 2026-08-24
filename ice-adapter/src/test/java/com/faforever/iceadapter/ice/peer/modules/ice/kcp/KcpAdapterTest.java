@@ -1,6 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpOutput;
+import kcp.KcpOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,7 +46,7 @@ class KcpAdapterTest {
         kcpOutputFromB.clear();
 
         // Adapter A: its output goes into B's input, B's output goes into A's input
-        MyKcpOutput outputA = (data, kcp) -> {
+        KcpOutput outputA = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromA.add(raw);
@@ -54,7 +54,7 @@ class KcpAdapterTest {
             adapterB.onIncomingPacket(raw, 0, raw.length);
         };
 
-        MyKcpOutput outputB = (data, kcp) -> {
+        KcpOutput outputB = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromB.add(raw);
@@ -251,7 +251,7 @@ class KcpAdapterTest {
         kcpOutputFromA.clear();
         kcpOutputFromB.clear();
 
-        MyKcpOutput lossyOutputA = (data, kcp) -> {
+        KcpOutput lossyOutputA = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 log.warn("Drop msg lossyOutputA");
                 return; // drop
@@ -262,7 +262,7 @@ class KcpAdapterTest {
             adapterB.onIncomingPacket(raw, 0, raw.length);
         };
 
-        MyKcpOutput lossyOutputB = (data, kcp) -> {
+        KcpOutput lossyOutputB = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 log.warn("Drop msg lossyOutputB");
                 return; // drop
@@ -340,7 +340,7 @@ class KcpAdapterTest {
         AtomicLong packetsFromA = new AtomicLong(0);
         AtomicLong packetsFromB = new AtomicLong(0);
 
-        MyKcpOutput periodicOutputA = (data, kcp) -> {
+        KcpOutput periodicOutputA = (data, kcp) -> {
             long num = packetsFromA.incrementAndGet();
             if (num % dropEveryN == 0) {
                 return; // drop every Nth packet
@@ -351,7 +351,7 @@ class KcpAdapterTest {
             adapterB.onIncomingPacket(raw, 0, raw.length);
         };
 
-        MyKcpOutput periodicOutputB = (data, kcp) -> {
+        KcpOutput periodicOutputB = (data, kcp) -> {
             long num = packetsFromB.incrementAndGet();
             if (num % dropEveryN == 0) {
                 return; // drop every Nth packet
