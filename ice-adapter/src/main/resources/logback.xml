@@ -21,7 +21,7 @@
     </encoder>
   </appender>
 
-  <logger name="io.jpower.kcp.netty" level="WARN"/>
+  <logger name="kcp" level="WARN"/>
 
   <root level="DEBUG">
     <appender-ref ref="STDOUT"/>

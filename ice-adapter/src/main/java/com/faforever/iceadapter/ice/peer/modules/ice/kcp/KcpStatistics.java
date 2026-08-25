@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
+import kcp.IKcp;
 import kcp.Kcp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -126,23 +127,25 @@ public class KcpStatistics {
     }
 
     /**
-     * Updates all KCP statistics from the Kcp instance.
+     * Updates all KCP statistics from the IKcp instance.
      * Note: Only exposes metrics available in kcp-base 1.6.2 public API.
      */
-    public void update(Kcp kcp) {
+    public void update(IKcp ikcp) {
         // Only sndWnd and rcvWnd are available via IKcp interface
-        this.sndWnd = kcp.getSndWnd();
-        this.waitSnd = kcp.waitSnd();
-        this.state = kcp.getState();
+        this.sndWnd = ikcp.getSndWnd();
+        this.waitSnd = ikcp.waitSnd();
+        this.state = ikcp.getState();
         this.timestampMs = System.currentTimeMillis();
     }
 
     /**
      * Updates all KCP statistics from the Kcp instance and sets the conv.
+     * @deprecated Use {@link #update(IKcp)} instead
      */
+    @Deprecated
     public void update(Kcp kcp, int conv) {
         this.conv = conv;
-        update(kcp);
+        update((IKcp) kcp);
     }
 
     /**

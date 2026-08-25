@@ -1,6 +1,5 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import kcp.KcpOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,9 +14,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link KcpAdapter}.
+ * Unit tests for {@link KcpToIceAdapter}.
  * <p>
- * Tests verify that sending packets through KcpAdapter produces correct output
+ * Tests verify that sending packets through UkcpAdapter produces correct output
  * via the KcpOutput callback, and that incoming packets are properly decoded
  * and delivered via the handleData consumer.
  */
@@ -35,8 +34,8 @@ class KcpAdapterTest {
     private final List<String> decodedDataOnA = new CopyOnWriteArrayList<>();
     private final List<String> decodedDataOnB = new CopyOnWriteArrayList<>();
 
-    private KcpAdapter adapterA;
-    private KcpAdapter adapterB;
+    private KcpToIceAdapter adapterA;
+    private KcpToIceAdapter adapterB;
 
     @BeforeEach
     void setUp() {
@@ -46,23 +45,23 @@ class KcpAdapterTest {
         kcpOutputFromB.clear();
 
         // Adapter A: its output goes into B's input, B's output goes into A's input
-        KcpOutput outputA = (data, kcp) -> {
+        kcp.KcpOutput outputA = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromA.add(raw);
             // Feed into B's input (simulating the network)
-            adapterB.onIncomingPacket(raw, 0, raw.length);
+            adapterB.onReceive(raw, 0, raw.length);
         };
 
-        KcpOutput outputB = (data, kcp) -> {
+        kcp.KcpOutput outputB = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromB.add(raw);
             // Feed into A's input (simulating the network)
-            adapterA.onIncomingPacket(raw, 0, raw.length);
+            adapterA.onReceive(raw, 0, raw.length);
         };
 
-        adapterA = new KcpAdapter(
+        adapterA = new KcpToIceAdapter(
                 CONV,
                 "A",
                 outputA,
@@ -71,7 +70,7 @@ class KcpAdapterTest {
                 }
         );
 
-        adapterB = new KcpAdapter(
+        adapterB = new KcpToIceAdapter(
                 CONV,
                 "B",
                 outputB,
@@ -145,13 +144,13 @@ class KcpAdapterTest {
     }
 
     /**
-     * Test that onIncomingPacket delivers data through handleData callback.
+     * Test that input delivers data through handleData callback.
      * Simulates receiving raw KCP-encoded bytes and verifying they are decoded.
      */
     @Test
     @Timeout(value = 30)
     @DisplayName("Incoming KCP packets should be decoded and delivered via handleData")
-    void testOnIncomingPacketDeliversData() {
+    void testInputDeliversData() {
         String payload = "hello-from-a";
         adapterA.send(payload.getBytes(StandardCharsets.UTF_8));
 
@@ -251,7 +250,7 @@ class KcpAdapterTest {
         kcpOutputFromA.clear();
         kcpOutputFromB.clear();
 
-        KcpOutput lossyOutputA = (data, kcp) -> {
+        kcp.KcpOutput lossyOutputA = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 log.warn("Drop msg lossyOutputA");
                 return; // drop
@@ -259,10 +258,10 @@ class KcpAdapterTest {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromA.add(raw);
-            adapterB.onIncomingPacket(raw, 0, raw.length);
+            adapterB.onReceive(raw, 0, raw.length);
         };
 
-        KcpOutput lossyOutputB = (data, kcp) -> {
+        kcp.KcpOutput lossyOutputB = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 log.warn("Drop msg lossyOutputB");
                 return; // drop
@@ -270,20 +269,20 @@ class KcpAdapterTest {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromB.add(raw);
-            adapterA.onIncomingPacket(raw, 0, raw.length);
+            adapterA.onReceive(raw, 0, raw.length);
         };
 
         // Replace outputs by creating new adapters
         adapterA.stop();
         adapterB.stop();
 
-        adapterA = new KcpAdapter(
+        adapterA = new KcpToIceAdapter(
                 CONV,
                 "A",
                 lossyOutputA,
                 data -> decodedDataOnA.add(new String(data, StandardCharsets.UTF_8))
         );
-        adapterB = new KcpAdapter(
+        adapterB = new KcpToIceAdapter(
                 CONV,
                 "B",
                 lossyOutputB,
@@ -302,11 +301,6 @@ class KcpAdapterTest {
         // Verify all packets received on B despite loss
         waitForDecodedData(() -> decodedDataOnB.size(), packetCount, 30_000);
 
-        // Diagnostic: log state if test continues
-        log.info("[Test] A: bytesSent={}, waitSnd={}, state={}",
-                adapterA.getBytesSent(), adapterA.getWaitSnd(), adapterA.getState());
-        log.info("[Test] B: bytesReceived={}, state={}",
-                adapterB.getBytesReceived(), adapterB.getState());
         log.info("[Test] decodedDataOnB.size()={}, kcpOutputFromA.size()={}, kcpOutputFromB.size()={}",
                 decodedDataOnB.size(), kcpOutputFromA.size(), kcpOutputFromB.size());
 
@@ -340,7 +334,7 @@ class KcpAdapterTest {
         AtomicLong packetsFromA = new AtomicLong(0);
         AtomicLong packetsFromB = new AtomicLong(0);
 
-        KcpOutput periodicOutputA = (data, kcp) -> {
+        kcp.KcpOutput periodicOutputA = (data, kcp) -> {
             long num = packetsFromA.incrementAndGet();
             if (num % dropEveryN == 0) {
                 return; // drop every Nth packet
@@ -348,10 +342,10 @@ class KcpAdapterTest {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromA.add(raw);
-            adapterB.onIncomingPacket(raw, 0, raw.length);
+            adapterB.onReceive(raw, 0, raw.length);
         };
 
-        KcpOutput periodicOutputB = (data, kcp) -> {
+        kcp.KcpOutput periodicOutputB = (data, kcp) -> {
             long num = packetsFromB.incrementAndGet();
             if (num % dropEveryN == 0) {
                 return; // drop every Nth packet
@@ -359,20 +353,20 @@ class KcpAdapterTest {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromB.add(raw);
-            adapterA.onIncomingPacket(raw, 0, raw.length);
+            adapterA.onReceive(raw, 0, raw.length);
         };
 
         // Replace outputs by creating new adapters
         adapterA.stop();
         adapterB.stop();
 
-        adapterA = new KcpAdapter(
+        adapterA = new KcpToIceAdapter(
                 CONV,
                 "A",
                 periodicOutputA,
                 data -> decodedDataOnA.add(new String(data, StandardCharsets.UTF_8))
         );
-        adapterB = new KcpAdapter(
+        adapterB = new KcpToIceAdapter(
                 CONV,
                 "B",
                 periodicOutputB,
@@ -403,7 +397,7 @@ class KcpAdapterTest {
 
     /**
      * Waits until the supplier returns the target value, polling without calling update.
-     * The KcpAdapter's ScheduledExecutorService handles updates on its own thread,
+     * The UkcpAdapter's ScheduledExecutorService handles updates on its own thread,
      * so we should NOT call update() from the test thread (causes ConcurrentModificationException).
      * Throws AssertionError on timeout.
      */

@@ -5,15 +5,15 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpAdapter;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpToIceAdapter;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpTransport;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.PeerKcpOutput;
 import com.faforever.iceadapter.util.LockUtil;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
 
-import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -32,6 +32,7 @@ import java.util.function.Consumer;
  * </ul>
  */
 @Slf4j
+@Getter
 @RequiredArgsConstructor
 public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     private static final int PERIOD_GET_STATISTIC = 100;
@@ -40,18 +41,17 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
 
     private final Peer peer;
     private volatile Component component;
-    private volatile KcpAdapter kcpAdapter;
-    private volatile byte channel;
+    private volatile KcpTransport kcpAdapter;
+    private volatile int conv;
     private Lock lockTransport;
 
-    private final Random random = new Random();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> statisticTask;
 
     @Override
     public void init() {
         peer.addEventListener(this);
-        channel = peer.isLocalOffer() ? (byte) 0 : (byte) 1;
+        conv = peer.isLocalOffer() ? peer.getFromId() : peer.getRemoteId();
         lockTransport = peer.getLock(LOCK_TRANSPORT);
     }
 
@@ -68,7 +68,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
 
     @Override
     public void onSendToPeer(Peer peer, byte[] data) {
-        KcpAdapter adapter = checkStateSafe();
+        KcpTransport adapter = this.kcpAdapter;
         if (!isEnabled() || adapter == null) {
             return;
         }
@@ -80,7 +80,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         if (!peer.isSupportCommand() && !force) {
             return;
         }
-        KcpAdapter adapter = checkStateSafe();
+        KcpTransport adapter = this.kcpAdapter;
         if (!isEnabled() || adapter == null) {
             return;
         }
@@ -89,9 +89,8 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
 
     private boolean isDataKcp(byte[] data) {
         int len = data.length;
-        return len > 2
-                && data[0] == KcpPeerToPeerSenderModule.KCP_PROTOCOL_MARKER
-                && data[1] == channel;
+        return len >= 1
+                && data[0] == KcpPeerToPeerSenderModule.KCP_PROTOCOL_MARKER;
     }
 
     @Override
@@ -100,20 +99,20 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
             return;
         }
         // KCP processes all non-STUN, non-command packets automatically
-        // KcpAdapter itself calls peer.handleData() via receive() loop
-        KcpAdapter adapter = checkStateSafe();
+        // UkcpAdapter processes data via its internal readTask
+        KcpTransport adapter = checkStateSafe();
         if (adapter != null) {
             int len = data.length;
-            adapter.onIncomingPacket(data, 2, len - 2);
+            adapter.onReceive(data, 1, len - 1);
         }
     }
 
-    private KcpAdapter checkStateSafe() {
-        KcpAdapter adapter = this.kcpAdapter;
-        if (adapter != null && adapter.getState() == -1) {
+    private KcpTransport checkStateSafe() {
+        KcpTransport adapter = this.kcpAdapter;
+        if (adapter == null) {
             adapter = LockUtil.executeWithLock(lockTransport, () -> {
-                KcpAdapter lockedAdapter = this.kcpAdapter;
-                if (lockedAdapter != null && lockedAdapter.getState() == -1) {
+                KcpTransport lockedAdapter = this.kcpAdapter;
+                if (lockedAdapter == null) {
                     return createAdapterLocked();
                 }
                 return lockedAdapter;
@@ -135,27 +134,23 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         LockUtil.executeWithLock(lockTransport, this::createAdapterLocked);
     }
 
-    private KcpAdapter createAdapterLocked() {
-        KcpAdapter adapter = this.kcpAdapter;
+    private KcpTransport createAdapterLocked() {
+        KcpTransport adapter = this.kcpAdapter;
         if (adapter != null) {
-            if (adapter.getState() != -1) {
-                return adapter;
-            }
-            log.info("KCP transport have State = {}, stopped. peer {}", adapter.getState(), peer.getPeerIdentifier());
-            adapter.stop();
+            return adapter;
         }
 
-        PeerKcpOutput kcpOutput = new PeerKcpOutput(peer, channel);
+        PeerKcpOutput kcpOutput = new PeerKcpOutput(peer);
         Consumer<byte[]> handle = peer::handleData;
-        KcpAdapter kcpAdapter = new KcpAdapter(channel, peer.getPeerIdentifier(), kcpOutput, handle);
-        kcpAdapter.start();
-        this.kcpAdapter = kcpAdapter;
+        KcpToIceAdapter kcpToIceAdapter = new KcpToIceAdapter(conv, peer.getPeerIdentifier(), kcpOutput, handle);
+        kcpToIceAdapter.start();
+        this.kcpAdapter = kcpToIceAdapter;
 
         if (statisticTask != null && !statisticTask.isDone()) {
             statisticTask.cancel(false);
         }
         statisticTask = scheduler.scheduleAtFixedRate(this::doStatistic, 0, PERIOD_GET_STATISTIC, TimeUnit.MILLISECONDS);
-        log.info("KCP transport created for offerer peer {} with channel={}", peer.getPeerIdentifier(), channel);
+        log.info("KCP transport created for offerer peer {} with conv={}", peer.getPeerIdentifier(), conv);
         return kcpAdapter;
     }
 
@@ -165,22 +160,15 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
             return;
         }
 
-        KcpAdapter adapter = this.kcpAdapter;
-        if (adapter != null) {
-            int state = adapter.getState();
-            if (state == -1) {
-                log.info("KCP adapter state is -1 (dead-link) for offerer peer {}, recreating", peer.getPeerIdentifier());
-                createAdapter();
-            }
-        } else {
+        KcpTransport adapter = this.kcpAdapter;
+        if (adapter == null) {
             createAdapter();
         }
     }
 
     private void stopAdapterLocked() {
-        KcpAdapter adapter = this.kcpAdapter;
-        if (adapter != null) {
-            adapter.stop();
+        if (kcpAdapter != null) {
+            kcpAdapter.close();
             this.kcpAdapter = null;
             log.info("KCP transport stopped for offerer peer {}", peer.getPeerIdentifier());
             if (statisticTask != null) {
@@ -198,14 +186,21 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         return peer.isKcpTransportEnabled();
     }
 
+    /**
+     * Returns the underlying KCP adapter, if initialized.
+     */
+    public KcpTransport getKcpModule() {
+        return kcpAdapter;
+    }
+
     @Override
     public void refresh() {
         checkAndRecreateIfDead();
         updateStatistic(null);
     }
 
-    public void restartKcp(byte channelRq) {
-        if (channelRq != channel) {
+    public void restartKcp(int convRq) {
+        if (conv != convRq) {
             return;
         }
         createAdapter();
@@ -213,19 +208,18 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
     }
 
     private void doStatistic() {
-        KcpAdapter adapter = this.kcpAdapter;
+        KcpTransport adapter = this.kcpAdapter;
         if (adapter == null) {
             return;
         }
-        updateStatistic(adapter);
+//        updateStatistic(adapter);
     }
 
-    private void updateStatistic(KcpAdapter adapter) {
-        KcpStatistics statistics = peer.getKcpStatistics();
-        if (statistics != null && adapter != null) {
-            statistics.update(adapter.getKcpInstance(), adapter.getConv());
-            statistics.updateNextUpdate(adapter.getNextUpdateTimestamp());
-            statistics.updateBytes(adapter.getBytesSent(), adapter.getBytesReceived());
-        }
+    private void updateStatistic(KcpToIceAdapter adapter) {
+//        KcpStatistics statistics = peer.getKcpStatistics();
+//        if (statistics != null && adapter != null) {
+////            statistics.update(adapter.getKcpInstance());
+//            statistics.updateBytes(adapter.getBytesSent(), adapter.getBytesReceived());
+//        }
     }
 }
