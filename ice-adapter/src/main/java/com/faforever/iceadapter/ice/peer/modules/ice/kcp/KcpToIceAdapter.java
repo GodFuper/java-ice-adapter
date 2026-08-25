@@ -10,8 +10,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 @Slf4j
 public class KcpToIceAdapter implements KcpTransport {
 
-    private static final int DEFAULT_UPDATE_INTERVAL_MS = 10;
 
     /**
      * FEC configuration: 12 data shards + 4 parity shards = 33% redundancy
@@ -36,7 +35,7 @@ public class KcpToIceAdapter implements KcpTransport {
     @Getter
     private volatile boolean running = false;
     private ScheduledExecutorService updateExecutor;
-    private ScheduledFuture<?> updateTask;
+    private Future<?> updateTask;
     private final Consumer<byte[]> handleData;
 
     /**
@@ -117,15 +116,25 @@ public class KcpToIceAdapter implements KcpTransport {
     }
 
     /**
-     * KCP state machine update loop — runs every 10ms.
-     * Updates KCP timers, handles retransmissions, and triggers flush.
+     * KCP state machine update loop — runs dynamically based on KCP timer state.
+     * Uses the next update timestamp returned by updateKcp to schedule the next invocation,
+     * avoiding unnecessary wake-ups when KCP is idle.
      * ReadTask and WriteTask are triggered asynchronously via executor when data arrives.
      */
     public void runUpdateLoop() {
         if (!running) {
             return;
         }
-        long next = ice4jUkcp.updateKcp(System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        long next = ice4jUkcp.updateKcp(now);
+        if (running) {
+            scheduleNextUpdate(next);
+        }
+    }
+
+    private void scheduleNextUpdate(long next) {
+        long delayNs = Math.max(1, next - System.currentTimeMillis());
+        updateTask = updateExecutor.schedule(this::runUpdateLoop, delayNs, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -142,12 +151,7 @@ public class KcpToIceAdapter implements KcpTransport {
             t.setDaemon(true);
             return t;
         });
-        updateTask = updateExecutor.scheduleAtFixedRate(
-                this::runUpdateLoop,
-                0,
-                DEFAULT_UPDATE_INTERVAL_MS,
-                TimeUnit.MILLISECONDS
-        );
+        updateTask = updateExecutor.submit(this::runUpdateLoop);
         log.info("UkcpAdapter '{}' started with FEC={}+{}", name, FEC_DATA_SHARDS, FEC_PARITY_SHARDS);
     }
 

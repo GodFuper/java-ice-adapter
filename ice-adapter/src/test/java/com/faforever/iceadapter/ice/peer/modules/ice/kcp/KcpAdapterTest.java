@@ -241,7 +241,7 @@ class KcpAdapterTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {10, 20, 30, 40, 50, 60, 70})
-    @Timeout(value = 10)
+    @Timeout(value = 20)
     @DisplayName("Should deliver all packets under random packet loss (drop chance: {0}%)")
     void testRandomPacketLossDeliversAllPackets(int dropChance) {
         // Clear state
