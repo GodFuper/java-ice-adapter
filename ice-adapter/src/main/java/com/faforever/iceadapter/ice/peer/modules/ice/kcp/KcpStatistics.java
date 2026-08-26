@@ -73,11 +73,6 @@ public class KcpStatistics {
     private int waitSnd = 0;
 
     /**
-     * KCP internal state — 0=normal, -1=dead.
-     */
-    private int state = 0;
-
-    /**
      * Maximum segment retransmissions (xmit threshold).
      */
     private int maxSegXmit = 0;
@@ -148,36 +143,30 @@ public class KcpStatistics {
     private long bytesReceivedBytes = 0;
 
     /**
-     * Resets all statistics to their default (zero) values.
+     * Indicates a near-dead KCP link (consecutive soft-resyncs or excessive retransmissions).
      */
-    public void reset() {
-        this.conv = 0;
-        this.srttMs = 0;
-        this.rttvarMs = 0;
-        this.rtoMs = 0;
-        this.cwnd = 0;
-        this.sndNxt = 0;
-        this.sndUna = 0;
-        this.rcvNxt = 0;
-        this.sndWnd = 0;
-        this.rcvWnd = 0;
-        this.waitSnd = 0;
-        this.state = 0;
-        this.maxSegXmit = 0;
-        this.xmit = 0;
-        this.resendCount = 0;
-        this.fastResendCount = 0;
-        this.fastackCount = 0;
-        this.ssthresh = 0;
-        this.sndQueueSize = 0;
-        this.rcvQueueSize = 0;
-        this.unackedPackets = 0;
-        this.timestampMs = 0;
-        this.nextUpdateMs = 0;
-        this.timeToNextUpdateMs = 0;
-        this.bytesSentBytes = 0;
-        this.bytesReceivedBytes = 0;
-    }
+    private boolean deadLinkDetected = false;
+
+    /**
+     * Count of consecutive soft-resync events (skipped missing ranges).
+     */
+    private int consecutiveSoftResync = 0;
+
+    /**
+     * Timestamp (ms) when the current receive gap was first detected. -1 if no gap.
+     */
+    private int receiveGapSince = -1;
+
+    /**
+     * Cumulative count of segments dropped from sndBuf due to TTL expiry.
+     */
+    private long softDroppedSegments = 0;
+
+    /**
+     * Cumulative count of soft-resync events (skipped missing ranges in rcvBuf).
+     */
+    private long softResyncCount = 0;
+
 
     /**
      * Updates all KCP statistics from the MyKcpMetric instance.
@@ -203,6 +192,11 @@ public class KcpStatistics {
         this.sndQueueSize = metric.sndQueueSize();
         this.rcvQueueSize = metric.rcvQueueSize();
         this.unackedPackets = metric.unackedPackets();
+        this.deadLinkDetected = metric.deadLinkDetected();
+        this.consecutiveSoftResync = metric.consecutiveSoftResync();
+        this.receiveGapSince = metric.getReceiveGapSince();
+        this.softDroppedSegments = metric.getSoftDroppedSegments();
+        this.softResyncCount = metric.getSoftResyncCount();
         this.timestampMs = System.currentTimeMillis();
     }
 

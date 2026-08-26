@@ -39,6 +39,12 @@ public class KcpPeerView {
     private final StringProperty bytesSentBytes = new SimpleStringProperty("-");
     private final StringProperty bytesReceivedBytes = new SimpleStringProperty("-");
 
+    private final StringProperty deadLinkDetected = new SimpleStringProperty("-");
+    private final StringProperty consecutiveSoftResync = new SimpleStringProperty("-");
+    private final StringProperty receiveGapSince = new SimpleStringProperty("-");
+    private final StringProperty softDroppedSegments = new SimpleStringProperty("-");
+    private final StringProperty softResyncCount = new SimpleStringProperty("-");
+
     public KcpPeerView(int peerId, String login) {
         this.peerId.set(peerId);
         this.login.set(login);
@@ -57,7 +63,6 @@ public class KcpPeerView {
         sndWnd.set(String.valueOf(stats.getSndWnd()));
         rcvWnd.set(String.valueOf(stats.getRcvWnd()));
         waitSnd.set(String.valueOf(stats.getWaitSnd()));
-        state.set(String.valueOf(stats.getState()));
         xmit.set(String.valueOf(stats.getXmit()));
         maxSegXmit.set(String.valueOf(stats.getMaxSegXmit()));
         resendCount.set(String.valueOf(stats.getResendCount()));
@@ -73,6 +78,15 @@ public class KcpPeerView {
         nextUpdateMs.set(String.valueOf(stats.getTimeToNextUpdateMs()));
         bytesSentBytes.set(formatBytes(stats.getBytesSentBytes()));
         bytesReceivedBytes.set(formatBytes(stats.getBytesReceivedBytes()));
+        deadLinkDetected.set(stats.isDeadLinkDetected() ? "Yes" : "No");
+        consecutiveSoftResync.set(String.valueOf(stats.getConsecutiveSoftResync()));
+        if (stats.getReceiveGapSince() >= 0) {
+            receiveGapSince.set(String.valueOf(System.currentTimeMillis() - stats.getReceiveGapSince()) + " ms");
+        } else {
+            receiveGapSince.set("—");
+        }
+        softDroppedSegments.set(String.valueOf(stats.getSoftDroppedSegments()));
+        softResyncCount.set(String.valueOf(stats.getSoftResyncCount()));
     }
 
     private String formatBytes(long bytes) {

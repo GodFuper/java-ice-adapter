@@ -80,6 +80,26 @@ public class MyKcpMetric {
         return kcp.getSndBufSize();
     }
 
+    public boolean deadLinkDetected() {
+        return kcp.isDeadLinkDetected();
+    }
+
+    public int consecutiveSoftResync() {
+        return kcp.getConsecutiveSoftResync();
+    }
+
+    public int getReceiveGapSince() {
+        return kcp.getReceiveGapSince();
+    }
+
+    public long getSoftDroppedSegments() {
+        return kcp.getSoftDroppedSegments();
+    }
+
+    public long getSoftResyncCount() {
+        return kcp.getSoftResyncCount();
+    }
+
     @Override
     public String toString() {
         return "MyKcpMetric(" +

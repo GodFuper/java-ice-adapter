@@ -195,6 +195,47 @@
             </content>
         </Tab>
 
+        <!-- Resync Tab -->
+        <Tab text="Resync">
+            <content>
+                <TableView fx:id="resyncTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn6" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn6" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Dead Link" prefWidth="100">
+                            <columns>
+                                <TableColumn fx:id="deadLinkDetectedColumn" text="Status" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Soft Resync" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="consecutiveSoftResyncColumn" text="Consecutive" prefWidth="75"/>
+                                <TableColumn fx:id="softResyncCountColumn" text="Total" prefWidth="75"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Receive Gap" prefWidth="120">
+                            <columns>
+                                <TableColumn fx:id="receiveGapSinceColumn" text="Elapsed" prefWidth="110"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Dropped" prefWidth="100">
+                            <columns>
+                                <TableColumn fx:id="softDroppedSegmentsColumn" text="Segments" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
     </TabPane>
 
     <stylesheets>

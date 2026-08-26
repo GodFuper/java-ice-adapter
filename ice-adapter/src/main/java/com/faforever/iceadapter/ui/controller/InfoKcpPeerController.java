@@ -142,6 +142,31 @@ public class InfoKcpPeerController {
     @FXML
     private TableColumn<KcpPeerView, String> bytesReceivedColumn;
 
+    // Resync Tab
+    @FXML
+    private TableView<KcpPeerView> resyncTable;
+
+    @FXML
+    private TableColumn<KcpPeerView, Integer> peerIdColumn6;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> loginColumn6;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> deadLinkDetectedColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> consecutiveSoftResyncColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> receiveGapSinceColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> softDroppedSegmentsColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> softResyncCountColumn;
+
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
@@ -197,6 +222,15 @@ public class InfoKcpPeerController {
         fastackCountColumn.setCellValueFactory(cellData -> cellData.getValue().getFastackCount());
         bytesSentColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesSentBytes());
         bytesReceivedColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesReceivedBytes());
+
+        // Resync Tab
+        peerIdColumn6.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        loginColumn6.setCellValueFactory(cellData -> cellData.getValue().getLogin());
+        deadLinkDetectedColumn.setCellValueFactory(cellData -> cellData.getValue().getDeadLinkDetected());
+        consecutiveSoftResyncColumn.setCellValueFactory(cellData -> cellData.getValue().getConsecutiveSoftResync());
+        receiveGapSinceColumn.setCellValueFactory(cellData -> cellData.getValue().getReceiveGapSince());
+        softDroppedSegmentsColumn.setCellValueFactory(cellData -> cellData.getValue().getSoftDroppedSegments());
+        softResyncCountColumn.setCellValueFactory(cellData -> cellData.getValue().getSoftResyncCount());
     }
 
     private void updateAllInfo() {
@@ -212,6 +246,7 @@ public class InfoKcpPeerController {
                 sequenceTable.setItems(kcpPeerList);
                 queuesTable.setItems(kcpPeerList);
                 statisticsTable.setItems(kcpPeerList);
+                resyncTable.setItems(kcpPeerList);
             }
 
             connectionTable.refresh();
@@ -219,6 +254,7 @@ public class InfoKcpPeerController {
             sequenceTable.refresh();
             queuesTable.refresh();
             statisticsTable.refresh();
+            resyncTable.refresh();
         });
     }
 

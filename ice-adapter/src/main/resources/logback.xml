@@ -21,7 +21,7 @@
     </encoder>
   </appender>
 
-  <logger name="com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework" level="WARN"/>
+  <logger name="com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework" level="INFO"/>
 
   <root level="DEBUG">
     <appender-ref ref="STDOUT"/>

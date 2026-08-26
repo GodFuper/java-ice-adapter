@@ -109,7 +109,15 @@ public class MyKcp {
      * infinite retransmission on dead links without hitting deadLink counter.
      * Set to -1 to disable TTL (original KCP behavior).
      */
-    public static final int TTL_SEGMENT_MS = 10000;
+    public static final int TTL_SEGMENT_MS = 30000;
+
+    public static final int MAX_SOFT_RESYNC = 10;
+
+    private static final int RECEIVE_GAP_TIMEOUT = TTL_SEGMENT_MS;
+
+    private int maxSoftResync = MAX_SOFT_RESYNC;
+
+    private int consecutiveSoftResync;
 
     private int conv;
 
@@ -118,6 +126,8 @@ public class MyKcp {
     private int mss = this.mtu - IKCP_OVERHEAD;
 
     private int state;
+
+    private boolean deadLinkDetected;
 
     private long sndUna;
 
@@ -145,6 +155,8 @@ public class MyKcp {
 
     private int rmtWnd = IKCP_WND_RCV;
 
+    private int receiveGapSince = -1;
+
     private int cwnd;
 
     private int probe;
@@ -156,6 +168,10 @@ public class MyKcp {
     private int tsFlush = IKCP_INTERVAL;
 
     private int xmit;
+
+    private long softDroppedSegments;
+
+    private long softResyncCount;
 
     /**
      * Cumulative timeout-based retransmissions (RTO expiry).
@@ -668,6 +684,92 @@ public class MyKcp {
         }
     }
 
+    private void skipLostMessage() {
+        if (rcvBuf.isEmpty()) {
+            return;
+        }
+
+        Segment first = rcvBuf.peek();
+
+        if (itimediff(first.sn, rcvNxt) <= 0) {
+            return;
+        }
+
+        long skippedFrom = rcvNxt;
+        long skippedTo = first.sn - 1;
+
+        softResyncCount++;
+        consecutiveSoftResync++;
+
+        if (consecutiveSoftResync >= maxSoftResync) {
+            deadLinkDetected = true;
+        }
+
+        rcvNxt = first.sn;
+
+        for (Iterator<Segment> itr = rcvBufItr.rewind(); itr.hasNext(); ) {
+            Segment seg = itr.next();
+
+            if (seg.sn != rcvNxt) {
+                break;
+            }
+
+            short frg = seg.frg;
+
+            itr.remove();
+            seg.recycle(true);
+
+            rcvNxt++;
+
+            if (frg == 0) {
+                break;
+            }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "{} soft-resync: skipped missing range {}..{}, new rcvNxt={}",
+                    this,
+                    skippedFrom,
+                    skippedTo,
+                    rcvNxt
+            );
+        }
+
+        receiveGapSince = -1;
+
+        moveRcvData();
+    }
+
+    private void detectReceiveGap(int current) {
+        if (rcvBuf.isEmpty()) {
+            receiveGapSince = -1;
+            return;
+        }
+
+        Segment first = rcvBuf.peek();
+
+        if (first.sn == rcvNxt) {
+            receiveGapSince = -1;
+            return;
+        }
+
+        if (itimediff(first.sn, rcvNxt) > 0) {
+            if (receiveGapSince < 0) {
+                receiveGapSince = current;
+
+                if (log.isDebugEnabled()) {
+                    log.debug(
+                            "{} receive gap detected: expected={}, firstAvailable={}",
+                            this,
+                            rcvNxt,
+                            first.sn
+                    );
+                }
+            }
+        }
+    }
+
     private void ackPush(long sn, int ts) {
         int newSize = 2 * (ackcount + 1);
 
@@ -716,7 +818,10 @@ public class MyKcp {
 
         if (repeat) {
             newSeg.recycle(true);
-        } else if (listItr == null) {
+            return;
+        }
+
+        if (listItr == null) {
             rcvBuf.add(newSeg);
         } else {
             if (findPos) {
@@ -725,20 +830,28 @@ public class MyKcp {
             listItr.add(newSeg);
         }
 
-        // move available data from rcv_buf -> rcv_queue
-        moveRcvData(); // Invoke the method only if the segment is not repeat?
+        moveRcvData();
     }
 
     private void moveRcvData() {
+        boolean moved = false;
+
         for (Iterator<Segment> itr = rcvBufItr.rewind(); itr.hasNext(); ) {
             Segment seg = itr.next();
+
             if (seg.sn == rcvNxt && rcvQueue.size() < rcvWnd) {
                 itr.remove();
                 rcvQueue.add(seg);
                 rcvNxt++;
+                moved = true;
             } else {
                 break;
             }
+        }
+
+        if (moved) {
+            receiveGapSince = -1;
+            consecutiveSoftResync = 0;
         }
     }
 
@@ -893,6 +1006,7 @@ public class MyKcp {
                     incr = rmtWnd * mss;
                 }
             }
+            deadLinkDetected = false;
         }
 
         return 0;
@@ -1025,12 +1139,22 @@ public class MyKcp {
             Segment segment = itr.next();
 
             // Discard segments that have waited for ACK longer than TTL
-            if (TTL_SEGMENT_MS > 0 && itimediff(current, segment.createTime) > TTL_SEGMENT_MS) {
-                itr.remove();
-                segment.recycle(true);
+            if (TTL_SEGMENT_MS > 0 &&
+                    itimediff(current, segment.createTime) > TTL_SEGMENT_MS) {
+
                 if (log.isDebugEnabled()) {
-                    log.debug("{} flush discarding expired segment: sn={}, age={}ms", this, segment.sn, itimediff(current, segment.createTime));
+                    log.debug(
+                            "{} soft-deadlink: dropping sn={}, xmit={}, age={}ms",
+                            this,
+                            segment.sn,
+                            segment.xmit,
+                            itimediff(current, segment.createTime)
+                    );
                 }
+
+                itr.remove();
+                softDroppedSegments++;
+                segment.recycle(true);
                 continue;
             }
 
@@ -1094,10 +1218,12 @@ public class MyKcp {
                 }
 
                 if (segment.xmit >= deadLink) {
-                    state = -1;
+                    deadLinkDetected = true;
                 }
             }
         }
+
+        shrinkBuf();
 
         // flash remain segments
         if (buffer != null) {
@@ -1145,6 +1271,13 @@ public class MyKcp {
      */
     public void update(int current) {
         this.current = current;
+        detectReceiveGap(current);
+
+        if (receiveGapSince >= 0 &&
+                itimediff(current, receiveGapSince) >= RECEIVE_GAP_TIMEOUT) {
+
+            skipLostMessage();
+        }
 
         if (!updated) {
             updated = true;
@@ -1330,6 +1463,26 @@ public class MyKcp {
 
     public int getRto() {
         return rxRto;
+    }
+
+    public boolean isDeadLinkDetected() {
+        return deadLinkDetected;
+    }
+
+    public int getConsecutiveSoftResync() {
+        return consecutiveSoftResync;
+    }
+
+    public int getReceiveGapSince() {
+        return receiveGapSince;
+    }
+
+    public long getSoftDroppedSegments() {
+        return softDroppedSegments;
+    }
+
+    public long getSoftResyncCount() {
+        return softResyncCount;
     }
 
     public int getSndQueueSize() {
