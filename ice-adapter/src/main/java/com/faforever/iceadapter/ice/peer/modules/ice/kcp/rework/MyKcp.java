@@ -157,6 +157,21 @@ public class MyKcp {
 
     private int xmit;
 
+    /**
+     * Cumulative timeout-based retransmissions (RTO expiry).
+     */
+    private int resendCount;
+
+    /**
+     * Cumulative fast retransmissions (triggered by fastack).
+     */
+    private int fastResendCount;
+
+    /**
+     * Cumulative fastack events (segments with duplicate ACKs).
+     */
+    private int fastackCount;
+
     private int maxSegXmit;
 
     private boolean nodelay;
@@ -648,6 +663,7 @@ public class MyKcp {
                 break;
             } else if (sn != seg.sn) {
                 seg.fastack++;
+                fastackCount++;
             }
         }
     }
@@ -738,7 +754,6 @@ public class MyKcp {
         if (data == null || data.readableBytes() < IKCP_OVERHEAD) {
             return -1;
         }
-
         while (true) {
             int conv, len, wnd, ts;
             long sn, una;
@@ -766,6 +781,7 @@ public class MyKcp {
             if (data.readableBytes() < len || len < 0) {
                 return -2;
             }
+
 
             if (cmd != IKCP_CMD_PUSH && cmd != IKCP_CMD_ACK && cmd != IKCP_CMD_WASK && cmd != IKCP_CMD_WINS) {
                 return -3;
@@ -1031,6 +1047,7 @@ public class MyKcp {
                 needsend = true;
                 incrXmit(segment);
                 xmit++;
+                resendCount++;
                 segment.fastack = 0;
                 if (!nodelay) {
                     segment.rto += rxRto;
@@ -1050,6 +1067,7 @@ public class MyKcp {
                     segment.fastack = 0;
                     segment.resendts = current + segment.rto;
                     change++;
+                    fastResendCount++;
                     if (log.isDebugEnabled()) {
                         log.debug("{} fastresend. sn={}, xmit={}, resendts={} ", this, segment.sn, segment.xmit,
                                 (segment
@@ -1302,36 +1320,28 @@ public class MyKcp {
         }
     }
 
-    int getSrtt() {
+    public int getSrtt() {
         return rxSrtt;
     }
 
-    int getRttvar() {
+    public int getRttvar() {
         return rxRttvar;
     }
 
-    int getRto() {
+    public int getRto() {
         return rxRto;
     }
 
-    long getSndNxt() {
-        return sndNxt;
+    public int getSndQueueSize() {
+        return sndQueue.size();
     }
 
-    long getSndUna() {
-        return sndUna;
+    public int getRcvQueueSize() {
+        return rcvQueue.size();
     }
 
-    long getRcvNxt() {
-        return rcvNxt;
-    }
-
-    int getCwnd() {
-        return cwnd;
-    }
-
-    int getXmit() {
-        return xmit;
+    public int getSndBufSize() {
+        return sndBuf.size();
     }
 
     @Override

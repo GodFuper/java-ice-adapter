@@ -52,6 +52,34 @@ public class MyKcpMetric {
         this.maxSegXmit = maxSegXmit;
     }
 
+    public int resendCount() {
+        return kcp.getResendCount();
+    }
+
+    public int fastResendCount() {
+        return kcp.getFastResendCount();
+    }
+
+    public int fastackCount() {
+        return kcp.getFastackCount();
+    }
+
+    public int ssthresh() {
+        return kcp.getSsthresh();
+    }
+
+    public int sndQueueSize() {
+        return kcp.getSndQueueSize();
+    }
+
+    public int rcvQueueSize() {
+        return kcp.getRcvQueueSize();
+    }
+
+    public int unackedPackets() {
+        return kcp.getSndBufSize();
+    }
+
     @Override
     public String toString() {
         return "MyKcpMetric(" +

@@ -4,6 +4,7 @@ import com.faforever.iceadapter.dto.KcpPeerView;
 import com.faforever.iceadapter.services.UIAdapter;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.VBox;
@@ -23,16 +24,17 @@ public class InfoKcpPeerController {
     private VBox root;
 
     @FXML
-    private TableView<KcpPeerView> tableView;
+    private TabPane tabPane;
+
+    // Connection Tab
+    @FXML
+    private TableView<KcpPeerView> connectionTable;
 
     @FXML
-    private TableColumn<KcpPeerView, Integer> peerIdColumn;
+    private TableColumn<KcpPeerView, Integer> peerIdColumn1;
 
     @FXML
-    private TableColumn<KcpPeerView, String> loginColumn;
-
-    @FXML
-    private TableColumn<KcpPeerView, String> convColumn;
+    private TableColumn<KcpPeerView, String> loginColumn1;
 
     @FXML
     private TableColumn<KcpPeerView, String> srttMsColumn;
@@ -47,6 +49,22 @@ public class InfoKcpPeerController {
     private TableColumn<KcpPeerView, String> cwndColumn;
 
     @FXML
+    private TableColumn<KcpPeerView, String> ssthreshColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> unackedPacketsColumn;
+
+    // Windows Tab
+    @FXML
+    private TableView<KcpPeerView> windowsTable;
+
+    @FXML
+    private TableColumn<KcpPeerView, Integer> peerIdColumn2;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> loginColumn2;
+
+    @FXML
     private TableColumn<KcpPeerView, String> sndWndColumn;
 
     @FXML
@@ -55,11 +73,68 @@ public class InfoKcpPeerController {
     @FXML
     private TableColumn<KcpPeerView, String> waitSndColumn;
 
+    // Sequence Tab
     @FXML
-    private TableColumn<KcpPeerView, String> stateColumn;
+    private TableView<KcpPeerView> sequenceTable;
+
+    @FXML
+    private TableColumn<KcpPeerView, Integer> peerIdColumn3;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> loginColumn3;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> sndNxtColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> sndUnaColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> rcvNxtColumn;
+
+    // Queues Tab
+    @FXML
+    private TableView<KcpPeerView> queuesTable;
+
+    @FXML
+    private TableColumn<KcpPeerView, Integer> peerIdColumn4;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> loginColumn4;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> sndQueueSizeColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> rcvQueueSizeColumn;
 
     @FXML
     private TableColumn<KcpPeerView, String> nextUpdateMsColumn;
+
+    // Statistics Tab
+    @FXML
+    private TableView<KcpPeerView> statisticsTable;
+
+    @FXML
+    private TableColumn<KcpPeerView, Integer> peerIdColumn5;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> loginColumn5;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> xmitColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> maxSegXmitColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> resendCountColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> fastResendCountColumn;
+
+    @FXML
+    private TableColumn<KcpPeerView, String> fastackCountColumn;
 
     @FXML
     private TableColumn<KcpPeerView, String> bytesSentColumn;
@@ -81,19 +156,45 @@ public class InfoKcpPeerController {
     }
 
     private void initColumns() {
-        peerIdColumn.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
-        loginColumn.setCellValueFactory(cellData -> cellData.getValue().getLogin());
-        convColumn.setCellValueFactory(cellData -> cellData.getValue().getConv());
-
+        // Connection Tab
+        peerIdColumn1.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        loginColumn1.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         srttMsColumn.setCellValueFactory(cellData -> cellData.getValue().getSrttMs());
         rttvarMsColumn.setCellValueFactory(cellData -> cellData.getValue().getRttvarMs());
         rtoMsColumn.setCellValueFactory(cellData -> cellData.getValue().getRtoMs());
         cwndColumn.setCellValueFactory(cellData -> cellData.getValue().getCwnd());
+        ssthreshColumn.setCellValueFactory(cellData -> cellData.getValue().getSsthresh());
+        unackedPacketsColumn.setCellValueFactory(cellData -> cellData.getValue().getUnackedPackets());
+
+        // Windows Tab
+        peerIdColumn2.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        loginColumn2.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         sndWndColumn.setCellValueFactory(cellData -> cellData.getValue().getSndWnd());
         rcvWndColumn.setCellValueFactory(cellData -> cellData.getValue().getRcvWnd());
         waitSndColumn.setCellValueFactory(cellData -> cellData.getValue().getWaitSnd());
-        stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
+
+        // Sequence Tab
+        peerIdColumn3.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        loginColumn3.setCellValueFactory(cellData -> cellData.getValue().getLogin());
+        sndNxtColumn.setCellValueFactory(cellData -> cellData.getValue().getSndNxt());
+        sndUnaColumn.setCellValueFactory(cellData -> cellData.getValue().getSndUna());
+        rcvNxtColumn.setCellValueFactory(cellData -> cellData.getValue().getRcvNxt());
+
+        // Queues Tab
+        peerIdColumn4.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        loginColumn4.setCellValueFactory(cellData -> cellData.getValue().getLogin());
+        sndQueueSizeColumn.setCellValueFactory(cellData -> cellData.getValue().getSndQueueSize());
+        rcvQueueSizeColumn.setCellValueFactory(cellData -> cellData.getValue().getRcvQueueSize());
         nextUpdateMsColumn.setCellValueFactory(cellData -> cellData.getValue().getNextUpdateMs());
+
+        // Statistics Tab
+        peerIdColumn5.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        loginColumn5.setCellValueFactory(cellData -> cellData.getValue().getLogin());
+        xmitColumn.setCellValueFactory(cellData -> cellData.getValue().getXmit());
+        maxSegXmitColumn.setCellValueFactory(cellData -> cellData.getValue().getMaxSegXmit());
+        resendCountColumn.setCellValueFactory(cellData -> cellData.getValue().getResendCount());
+        fastResendCountColumn.setCellValueFactory(cellData -> cellData.getValue().getFastResendCount());
+        fastackCountColumn.setCellValueFactory(cellData -> cellData.getValue().getFastackCount());
         bytesSentColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesSentBytes());
         bytesReceivedColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesReceivedBytes());
     }
@@ -105,11 +206,19 @@ public class InfoKcpPeerController {
 
         Platform.runLater(() -> {
             var kcpPeerList = adapter.getKcpPeerInfoList();
-            if (!Objects.equals(kcpPeerList, tableView.getItems())) {
-                tableView.setItems(kcpPeerList);
+            if (!Objects.equals(kcpPeerList, connectionTable.getItems())) {
+                connectionTable.setItems(kcpPeerList);
+                windowsTable.setItems(kcpPeerList);
+                sequenceTable.setItems(kcpPeerList);
+                queuesTable.setItems(kcpPeerList);
+                statisticsTable.setItems(kcpPeerList);
             }
 
-            tableView.refresh();
+            connectionTable.refresh();
+            windowsTable.refresh();
+            sequenceTable.refresh();
+            queuesTable.refresh();
+            statisticsTable.refresh();
         });
     }
 

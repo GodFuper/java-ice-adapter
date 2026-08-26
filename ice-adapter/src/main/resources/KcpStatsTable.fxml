@@ -7,26 +7,195 @@
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.faforever.iceadapter.ui.controller.InfoKcpPeerController"
       prefHeight="500.0">
-    <TableView fx:id="tableView" editable="false" VBox.vgrow="ALWAYS">
-        <columns>
-            <TableColumn fx:id="peerIdColumn" text="Peer ID" prefWidth="80"/>
-            <TableColumn fx:id="loginColumn" text="Login" prefWidth="150"/>
-            <TableColumn fx:id="convColumn" text="Conv" prefWidth="80"/>
-            <TableColumn fx:id="srttMsColumn" text="SRTT (ms)" prefWidth="90"/>
-            <TableColumn fx:id="rttvarMsColumn" text="RTTVAR (ms)" prefWidth="100"/>
-            <TableColumn fx:id="rtoMsColumn" text="RTO (ms)" prefWidth="90"/>
-            <TableColumn fx:id="cwndColumn" text="CWND" prefWidth="80"/>
-            <TableColumn fx:id="sndWndColumn" text="SndWnd" prefWidth="80"/>
-            <TableColumn fx:id="rcvWndColumn" text="RcvWnd" prefWidth="80"/>
-            <TableColumn fx:id="waitSndColumn" text="WaitSnd" prefWidth="80"/>
-            <TableColumn fx:id="xmitColumn" text="Xmit" prefWidth="80"/>
-            <TableColumn fx:id="maxSegXmitColumn" text="MaxXmit" prefWidth="90"/>
-            <TableColumn fx:id="stateColumn" text="State" prefWidth="80"/>
-            <TableColumn fx:id="nextUpdateMsColumn" text="NextUpdate (ms)" prefWidth="120"/>
-            <TableColumn fx:id="bytesSentColumn" text="Bytes Sent" prefWidth="120"/>
-            <TableColumn fx:id="bytesReceivedColumn" text="Bytes Received" prefWidth="130"/>
-        </columns>
-    </TableView>
+    <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <!-- Connection Tab -->
+        <Tab text="Connection">
+            <content>
+                <TableView fx:id="connectionTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn1" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn1" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Latency" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="srttMsColumn" text="SRTT (ms)" prefWidth="75"/>
+                                <TableColumn fx:id="rttvarMsColumn" text="RTTVAR (ms)" prefWidth="75"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Timeout" prefWidth="100">
+                            <columns>
+                                <TableColumn fx:id="rtoMsColumn" text="RTO (ms)" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Congestion" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="cwndColumn" text="CWND" prefWidth="75"/>
+                                <TableColumn fx:id="ssthreshColumn" text="Ssthresh" prefWidth="75"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Unacked" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="unackedPacketsColumn" text="Count" prefWidth="70"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- Windows Tab -->
+        <Tab text="Windows">
+            <content>
+                <TableView fx:id="windowsTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn2" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn2" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Send Window" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="sndWndColumn" text="SndWnd" prefWidth="75"/>
+                                <TableColumn fx:id="waitSndColumn" text="WaitSnd" prefWidth="75"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Recv Window" prefWidth="100">
+                            <columns>
+                                <TableColumn fx:id="rcvWndColumn" text="RcvWnd" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- Sequence Tab -->
+        <Tab text="Sequence">
+            <content>
+                <TableView fx:id="sequenceTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn3" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn3" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Send" prefWidth="180">
+                            <columns>
+                                <TableColumn fx:id="sndNxtColumn" text="SndNxt" prefWidth="90"/>
+                                <TableColumn fx:id="sndUnaColumn" text="SndUna" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Recv" prefWidth="100">
+                            <columns>
+                                <TableColumn fx:id="rcvNxtColumn" text="RcvNxt" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- Queues Tab -->
+        <Tab text="Queues">
+            <content>
+                <TableView fx:id="queuesTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn4" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn4" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Send Queue" prefWidth="120">
+                            <columns>
+                                <TableColumn fx:id="sndQueueSizeColumn" text="Size" prefWidth="110"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Recv Queue" prefWidth="120">
+                            <columns>
+                                <TableColumn fx:id="rcvQueueSizeColumn" text="Size" prefWidth="110"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Next Update" prefWidth="120">
+                            <columns>
+                                <TableColumn fx:id="nextUpdateMsColumn" text="Delay (ms)" prefWidth="110"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- Statistics Tab -->
+        <Tab text="Statistics">
+            <content>
+                <TableView fx:id="statisticsTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn5" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn5" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Transmission" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="xmitColumn" text="Xmit" prefWidth="75"/>
+                                <TableColumn fx:id="maxSegXmitColumn" text="MaxXmit" prefWidth="75"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Resends" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="resendCountColumn" text="ResendCnt" prefWidth="75"/>
+                                <TableColumn fx:id="fastResendCountColumn" text="FastResend" prefWidth="75"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Fast ACK" prefWidth="100">
+                            <columns>
+                                <TableColumn fx:id="fastackCountColumn" text="Count" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Bytes Sent" prefWidth="120">
+                            <columns>
+                                <TableColumn fx:id="bytesSentColumn" text="Total" prefWidth="110"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Bytes Recv" prefWidth="130">
+                            <columns>
+                                <TableColumn fx:id="bytesReceivedColumn" text="Total" prefWidth="120"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+    </TabPane>
 
     <stylesheets>
         <URL value="@infoWindowStyle.css"/>

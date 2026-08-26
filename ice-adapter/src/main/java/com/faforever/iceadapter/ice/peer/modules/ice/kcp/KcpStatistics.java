@@ -88,6 +88,41 @@ public class KcpStatistics {
     private int xmit = 0;
 
     /**
+     * Cumulative timeout-based retransmissions (RTO expiry).
+     */
+    private int resendCount = 0;
+
+    /**
+     * Cumulative fast retransmissions (triggered by fastack).
+     */
+    private int fastResendCount = 0;
+
+    /**
+     * Cumulative fastack events (segments with duplicate ACKs).
+     */
+    private int fastackCount = 0;
+
+    /**
+     * Slow-start threshold (congestion control).
+     */
+    private int ssthresh = 0;
+
+    /**
+     * Pending send queue size (sndQueue).
+     */
+    private int sndQueueSize = 0;
+
+    /**
+     * Received queue size (rcvQueue).
+     */
+    private int rcvQueueSize = 0;
+
+    /**
+     * Unacknowledged packets in sndBuf.
+     */
+    private int unackedPackets = 0;
+
+    /**
      * Last update timestamp.
      */
     private long timestampMs = 0;
@@ -130,6 +165,13 @@ public class KcpStatistics {
         this.state = 0;
         this.maxSegXmit = 0;
         this.xmit = 0;
+        this.resendCount = 0;
+        this.fastResendCount = 0;
+        this.fastackCount = 0;
+        this.ssthresh = 0;
+        this.sndQueueSize = 0;
+        this.rcvQueueSize = 0;
+        this.unackedPackets = 0;
         this.timestampMs = 0;
         this.nextUpdateMs = 0;
         this.timeToNextUpdateMs = 0;
@@ -154,6 +196,13 @@ public class KcpStatistics {
         this.rcvNxt = metric.rcvNxt();
         this.maxSegXmit = metric.maxSegXmit();
         this.xmit = metric.xmit();
+        this.resendCount = metric.resendCount();
+        this.fastResendCount = metric.fastResendCount();
+        this.fastackCount = metric.fastackCount();
+        this.ssthresh = metric.ssthresh();
+        this.sndQueueSize = metric.sndQueueSize();
+        this.rcvQueueSize = metric.rcvQueueSize();
+        this.unackedPackets = metric.unackedPackets();
         this.timestampMs = System.currentTimeMillis();
     }
 
