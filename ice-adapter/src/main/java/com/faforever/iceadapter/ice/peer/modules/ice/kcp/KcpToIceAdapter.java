@@ -8,6 +8,7 @@ import kcp.KcpConfig;
 import kcp.KcpOutput;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import threadPool.netty.NettyMessageExecutorPool;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -22,6 +23,7 @@ import java.util.function.Consumer;
 @Slf4j
 public class KcpToIceAdapter implements KcpTransport {
 
+    private final NettyMessageExecutorPool pool = new NettyMessageExecutorPool(1);
 
     /**
      * FEC configuration: 12 data shards + 4 parity shards = 33% redundancy
@@ -36,7 +38,6 @@ public class KcpToIceAdapter implements KcpTransport {
     private volatile boolean running = false;
     private ScheduledExecutorService updateExecutor;
     private Future<?> updateTask;
-    private final Consumer<byte[]> handleData;
 
     /**
      * Create and start a new UkcpAdapter.
@@ -50,9 +51,9 @@ public class KcpToIceAdapter implements KcpTransport {
         this.name = name;
         ChannelConfig channelConfig = buildChannelConfig(conv);
         Ice4jKcpChannelManager manager = new Ice4jKcpChannelManager();
-        ice4jUkcp = new Ice4jUkcp(output, handleData, channelConfig, manager);
+        ice4jUkcp = new Ice4jUkcp(output, handleData, pool.getIMessageExecutor(), channelConfig, manager);
         manager.add(null, ice4jUkcp, null);
-        this.handleData = handleData;
+
     }
 
     private static ChannelConfig buildChannelConfig(int conv) {
@@ -111,7 +112,8 @@ public class KcpToIceAdapter implements KcpTransport {
         try {
             ice4jUkcp.receivedPacket(packetBuf);
         } catch (Exception e) {
-            log.error("KCP input failed for '{}'", name, e);
+            packetBuf.release();
+            log.error("KCP input failed for '{}', packetLength={}", name, length, e);
         }
     }
 
@@ -159,6 +161,7 @@ public class KcpToIceAdapter implements KcpTransport {
      * Stop the KCP adapter and release resources.
      */
     public void stop() {
+        log.info("UkcpAdapter '{}' stopped", name);
         if (!running) {
             return;
         }

@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import kcp.IKcp;
-import kcp.Kcp;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpMetric;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,37 +23,37 @@ public class KcpStatistics {
     private int conv = 0;
 
     /**
-     * Smoothed round-trip time (SRTT) — not exposed by kcp-base 1.6.2 API.
+     * Smoothed round-trip time (SRTT) in milliseconds.
      */
     private int srttMs = 0;
 
     /**
-     * RTT variation (RTTVAR) — not exposed by kcp-base 1.6.2 API.
+     * RTT variation (RTTVAR) in milliseconds.
      */
     private int rttvarMs = 0;
 
     /**
-     * Retransmission timeout (RTO) — not exposed by kcp-base 1.6.2 API.
+     * Retransmission timeout (RTO) in milliseconds.
      */
     private int rtoMs = 0;
 
     /**
-     * Congestion window size (cwnd) — not exposed by kcp-base 1.6.2 API.
+     * Congestion window size (cwnd).
      */
     private int cwnd = 0;
 
     /**
-     * Send next sequence number — not exposed by kcp-base 1.6.2 API.
+     * Send next sequence number.
      */
     private long sndNxt = 0;
 
     /**
-     * Send unacknowledged — not exposed by kcp-base 1.6.2 API.
+     * Send unacknowledged.
      */
     private long sndUna = 0;
 
     /**
-     * Receive next sequence number — not exposed by kcp-base 1.6.2 API.
+     * Receive next sequence number.
      */
     private long rcvNxt = 0;
 
@@ -77,6 +76,16 @@ public class KcpStatistics {
      * KCP internal state — 0=normal, -1=dead.
      */
     private int state = 0;
+
+    /**
+     * Maximum segment retransmissions (xmit threshold).
+     */
+    private int maxSegXmit = 0;
+
+    /**
+     * Current segment retransmission count.
+     */
+    private int xmit = 0;
 
     /**
      * Last update timestamp.
@@ -119,6 +128,8 @@ public class KcpStatistics {
         this.rcvWnd = 0;
         this.waitSnd = 0;
         this.state = 0;
+        this.maxSegXmit = 0;
+        this.xmit = 0;
         this.timestampMs = 0;
         this.nextUpdateMs = 0;
         this.timeToNextUpdateMs = 0;
@@ -127,25 +138,23 @@ public class KcpStatistics {
     }
 
     /**
-     * Updates all KCP statistics from the IKcp instance.
-     * Note: Only exposes metrics available in kcp-base 1.6.2 public API.
+     * Updates all KCP statistics from the MyKcpMetric instance.
+     * Provides full access to internal KCP metrics including SRTT, RTTVAR, RTO, CWND, etc.
      */
-    public void update(IKcp ikcp) {
-        // Only sndWnd and rcvWnd are available via IKcp interface
-        this.sndWnd = ikcp.getSndWnd();
-        this.waitSnd = ikcp.waitSnd();
-        this.state = ikcp.getState();
+    public void update(MyKcpMetric metric) {
+        if (metric == null) {
+            return;
+        }
+        this.srttMs = metric.srtt();
+        this.rttvarMs = metric.rttvar();
+        this.rtoMs = metric.rto();
+        this.cwnd = metric.cwnd();
+        this.sndNxt = metric.sndNxt();
+        this.sndUna = metric.sndUna();
+        this.rcvNxt = metric.rcvNxt();
+        this.maxSegXmit = metric.maxSegXmit();
+        this.xmit = metric.xmit();
         this.timestampMs = System.currentTimeMillis();
-    }
-
-    /**
-     * Updates all KCP statistics from the Kcp instance and sets the conv.
-     * @deprecated Use {@link #update(IKcp)} instead
-     */
-    @Deprecated
-    public void update(Kcp kcp, int conv) {
-        this.conv = conv;
-        update((IKcp) kcp);
     }
 
     /**

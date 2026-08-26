@@ -5,9 +5,10 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpToIceAdapter;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpAdapter;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpTransport;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.PeerKcpOutput;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.MyPeerKcpOutput;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -140,9 +141,9 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
             return adapter;
         }
 
-        PeerKcpOutput kcpOutput = new PeerKcpOutput(peer);
+        MyPeerKcpOutput kcpOutput = new MyPeerKcpOutput(peer);
         Consumer<byte[]> handle = peer::handleData;
-        KcpToIceAdapter kcpToIceAdapter = new KcpToIceAdapter(conv, peer.getPeerIdentifier(), kcpOutput, handle);
+        KcpAdapter kcpToIceAdapter = new KcpAdapter(conv, peer.getPeerIdentifier(), kcpOutput, handle);
         kcpToIceAdapter.start();
         this.kcpAdapter = kcpToIceAdapter;
 
@@ -212,14 +213,14 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         if (adapter == null) {
             return;
         }
-//        updateStatistic(adapter);
+        updateStatistic(adapter);
     }
 
-    private void updateStatistic(KcpToIceAdapter adapter) {
-//        KcpStatistics statistics = peer.getKcpStatistics();
-//        if (statistics != null && adapter != null) {
-////            statistics.update(adapter.getKcpInstance());
-//            statistics.updateBytes(adapter.getBytesSent(), adapter.getBytesReceived());
-//        }
+    private void updateStatistic(KcpTransport adapter) {
+        KcpStatistics statistics = peer.getKcpStatistics();
+        if (statistics != null && adapter != null) {
+            statistics.update(adapter.getMetric());
+            statistics.updateBytes(adapter.getBytesSent(), adapter.getBytesReceived());
+        }
     }
 }

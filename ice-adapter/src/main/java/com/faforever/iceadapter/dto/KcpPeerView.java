@@ -23,6 +23,8 @@ public class KcpPeerView {
     private final StringProperty rcvWnd = new SimpleStringProperty("-");
     private final StringProperty waitSnd = new SimpleStringProperty("-");
     private final StringProperty state = new SimpleStringProperty("-");
+    private final StringProperty xmit = new SimpleStringProperty("-");
+    private final StringProperty maxSegXmit = new SimpleStringProperty("-");
     private final StringProperty nextUpdateMs = new SimpleStringProperty("-");
     private final StringProperty bytesSentBytes = new SimpleStringProperty("-");
     private final StringProperty bytesReceivedBytes = new SimpleStringProperty("-");
@@ -46,6 +48,8 @@ public class KcpPeerView {
         rcvWnd.set(String.valueOf(stats.getRcvWnd()));
         waitSnd.set(String.valueOf(stats.getWaitSnd()));
         state.set(String.valueOf(stats.getState()));
+        xmit.set(String.valueOf(stats.getXmit()));
+        maxSegXmit.set(String.valueOf(stats.getMaxSegXmit()));
         nextUpdateMs.set(String.valueOf(stats.getTimeToNextUpdateMs()));
         bytesSentBytes.set(formatBytes(stats.getBytesSentBytes()));
         bytesReceivedBytes.set(formatBytes(stats.getBytesReceivedBytes()));
