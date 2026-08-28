@@ -12,19 +12,15 @@ import java.util.concurrent.atomic.AtomicLong;
  * Test module that intercepts packets at the socket receive level and drops them based on
  * a periodic pattern (every Nth packet).
  *
- * <p>When kcpUdpTransport is enabled (KCP mode), all packets are counted and dropped
- * based on the periodic pattern since KCP doesn't use a separate packet header.
- *
- * <p>Cannot extend {@link PeerToPeerListenerModule} because its core methods (createListener,
- * handlerData) are private. Instead, this class replicates the same logic with the addition
- * of deterministic packet dropping — every Nth packet is silently dropped.
+ * <p>Extends {@link PeerToPeerListenerModule} and overrides {@code handlerData} to inject
+ * deterministic packet dropping. When KCP mode is active (KCP_PROTOCOL_MARKER detected),
+ * packets are counted and dropped based on the periodic pattern.
  *
  * <p>This simulates the scenario where Peer1 sends a packet, but Peer2 fails to process it
  * due to network issues, buffer overflow, etc.
  *
- * <p>Drop logic is (connId, seq)-based: each unique (connId, seq) pair is considered once.
- * The first occurrence is dropped based on the periodic pattern. Retransmissions of the same
- * (connId, seq) are allowed to pass so the reliable transport can recover from the loss.
+ * <p>Drop logic is based on a global packet counter — every Nth KCP packet is silently dropped.
+ * Retransmissions of the same packet are also dropped (no retransmission tracking).
  */
 @Slf4j
 @Getter

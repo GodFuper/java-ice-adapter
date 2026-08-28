@@ -15,10 +15,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link KcpToIceAdapter}.
+ * Unit tests for {@link KcpAdapter}.
  * <p>
- * Tests verify that sending packets through UkcpAdapter produces correct output
- * via the KcpOutput callback, and that incoming packets are properly decoded
+ * Tests verify that sending packets through KcpAdapter produces correct output
+ * via the IceKcpOutput callback, and that incoming packets are properly decoded
  * and delivered via the handleData consumer.
  */
 @Slf4j

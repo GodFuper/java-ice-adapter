@@ -11,6 +11,10 @@ import lombok.Setter;
 
 import java.util.Set;
 
+/**
+ * Test extension of {@link GameSession} that allows overriding lobby port,
+ * disabling specific peer modules, and controlling the peer send mode.
+ */
 @Setter
 @Getter
 public class TestGameSession extends GameSession {

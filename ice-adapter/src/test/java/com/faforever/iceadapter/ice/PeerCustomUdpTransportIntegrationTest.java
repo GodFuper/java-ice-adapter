@@ -13,17 +13,17 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Integration test that verifies packet delivery through both normal UDP and KCP transport.
+ * Integration test that verifies packet delivery through both direct UDP and KCP transport.
  *
  * <p>Tests two scenarios:
  * <ol>
- *   <li>Normal mode (kcpUdp = false) — standard ice4j UDP path</li>
- *   <li>KCP mode (kcpUdp = true) — KCP overlay with reliable delivery, retransmissions</li>
+ *   <li>Direct mode (PeerSendMode.DIRECT_ONLY) — standard ice4j UDP path</li>
+ *   <li>KCP mode (PeerSendMode.KCP_ONLY) — KCP overlay with reliable delivery, retransmissions</li>
  * </ol>
  *
  * <p>In both cases data flows: socket → ice4j Component → Peer listener → ... → Peer sender → ice4j Component → socket.
  * In KCP mode, PeerToPeerSenderModule and RelayPeerToPeerSenderModule return early
- * (they check {@code peer.isKcpUdpTransport()}), and KcpPeerToPeerSenderModule takes over
+ * (they check {@code peer.getSendMode()}), and KcpPeerToPeerSenderModule takes over
  * by sending data through the KCP protocol.
  */
 @DisplayName("Custom UDP Transport Integration (KCP)")
