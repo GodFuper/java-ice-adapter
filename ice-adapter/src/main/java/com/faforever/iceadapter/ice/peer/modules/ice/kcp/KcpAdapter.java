@@ -1,8 +1,8 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcp;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpMetric;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpOutput;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcp;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpMetric;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpOutput;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
@@ -34,9 +34,9 @@ public class KcpAdapter implements KcpTransport {
     private static final int MAX_UPDATE_DELAY_MS = 1000;
 
     private final String name;
-    private final MyKcpOutput output;
+    private final IceKcpOutput output;
     private final Consumer<byte[]> handleData;
-    private final MyKcp myKcp;
+    private final IceKcp iceKcp;
 
     private volatile boolean running = false;
     private volatile long nextUpdateTimestamp = 0;
@@ -61,19 +61,19 @@ public class KcpAdapter implements KcpTransport {
         return bytesReceived.get();
     }
 
-    public KcpAdapter(int conv, String name, MyKcpOutput output, Consumer<byte[]> handleData) {
+    public KcpAdapter(int conv, String name, IceKcpOutput output, Consumer<byte[]> handleData) {
         this.name = name;
         this.output = output;
         this.handleData = handleData;
 
         // Conv = remoteId
-        this.myKcp = new MyKcp(conv, output);
+        this.iceKcp = new IceKcp(conv, output);
 
         // Nodelay mode for minimum latency (gaming mode)
-        myKcp.nodelay(true, UPDATE_INTERVAL_MS, 3, true);
-        myKcp.setMtu(MTU);
-        myKcp.wndsize(SEND_WINDOW, RECV_WINDOW);
-        myKcp.setDeadLink(DEADLINK);
+        iceKcp.nodelay(true, UPDATE_INTERVAL_MS, 3, true);
+        iceKcp.setMtu(MTU);
+        iceKcp.wndsize(SEND_WINDOW, RECV_WINDOW);
+        iceKcp.setDeadLink(DEADLINK);
     }
 
     /**
@@ -134,18 +134,18 @@ public class KcpAdapter implements KcpTransport {
         long now = System.currentTimeMillis();
 
         // Update KCP state
-        myKcp.update((int) now);
+        iceKcp.update((int) now);
 
         // Receive and deliver data
-        ByteBuf recvBuf = Unpooled.buffer(myKcp.getMtu());
+        ByteBuf recvBuf = Unpooled.buffer(iceKcp.getMtu());
         try {
-            while (myKcp.canRecv()) {
-                int peekSize = myKcp.peekSize();
+            while (iceKcp.canRecv()) {
+                int peekSize = iceKcp.peekSize();
                 if (peekSize <= 0) {
                     break;
                 }
                 recvBuf.clear();
-                int received = myKcp.recv(recvBuf);
+                int received = iceKcp.recv(recvBuf);
                 if (received <= 0) {
                     break;
                 }
@@ -171,7 +171,7 @@ public class KcpAdapter implements KcpTransport {
 
         while ((buf = writeQueue.poll()) != null) {
             try {
-                int sent = myKcp.send(buf);
+                int sent = iceKcp.send(buf);
                 if (sent > 0) {
                     buf.release();
                 } else {
@@ -194,7 +194,7 @@ public class KcpAdapter implements KcpTransport {
 
         while ((packet = readQueue.poll()) != null) {
             try {
-                myKcp.input(Unpooled.wrappedBuffer(packet));
+                iceKcp.input(Unpooled.wrappedBuffer(packet));
             } catch (Exception e) {
                 log.error("KCP input failed for {}", name, e);
             }
@@ -205,7 +205,7 @@ public class KcpAdapter implements KcpTransport {
      * Schedule the next update based on KCP internal state.
      */
     private long scheduleNextUpdate(int now) {
-        int nextTs = myKcp.check(now);
+        int nextTs = iceKcp.check(now);
         long minNext = now + UPDATE_INTERVAL_MS;
         long maxNext = now + MAX_UPDATE_DELAY_MS;
 
@@ -241,18 +241,18 @@ public class KcpAdapter implements KcpTransport {
      * Get the current send buffer size (for diagnostics).
      */
     public int getWaitSnd() {
-        return myKcp.waitSnd();
+        return iceKcp.waitSnd();
     }
 
     /**
      * Get the current KCP state (0 = normal, -1 = dead-link).
      */
     public int getState() {
-        return myKcp.getState();
+        return iceKcp.getState();
     }
 
     public int getConv() {
-        return myKcp.getConv();
+        return iceKcp.getConv();
     }
 
     @Override
@@ -298,7 +298,7 @@ public class KcpAdapter implements KcpTransport {
     /**
      * Get KCP statistics (for diagnostics).
      */
-    public MyKcpMetric getMetric() {
-        return myKcp.getMetric();
+    public IceKcpMetric getMetric() {
+        return iceKcp.getMetric();
     }
 }

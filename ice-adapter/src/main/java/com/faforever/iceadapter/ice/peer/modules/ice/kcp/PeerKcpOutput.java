@@ -1,9 +1,9 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcp;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpOutput;
 import io.netty.buffer.ByteBuf;
-import kcp.IKcp;
-import kcp.KcpOutput;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +16,11 @@ import static com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderM
 @Slf4j
 @RequiredArgsConstructor
 @Data
-public class PeerKcpOutput implements KcpOutput {
+public class PeerKcpOutput implements IceKcpOutput {
     private final Peer peer;
 
     @Override
-    public void out(ByteBuf data, IKcp kcp) {
+    public void out(ByteBuf data, IceKcp kcp) {
         Component component = peer.getComponent();
         if (component == null) {
             data.release();

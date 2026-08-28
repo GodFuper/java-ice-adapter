@@ -16,14 +16,14 @@ import java.util.List;
  * @author <a href="mailto:szhnet@gmail.com">szh</a>
  */
 @Slf4j
-public class MyUkcp {
+public class IceUkcp {
 
-    private final MyKcp kcp;
+    private final IceKcp kcp;
 
     /**
      * Returns the underlying MyKcp instance.
      */
-    public MyKcp getKcp() {
+    public IceKcp getKcp() {
         return kcp;
     }
 
@@ -45,8 +45,8 @@ public class MyUkcp {
      * @param conv   conv of kcp
      * @param output output for kcp
      */
-    public MyUkcp(int conv, MyKcpOutput output) {
-        MyKcp kcp = new MyKcp(conv, output);
+    public IceUkcp(int conv, IceKcpOutput output) {
+        IceKcp kcp = new IceKcp(conv, output);
         this.kcp = kcp;
         this.active = true;
     }
@@ -223,7 +223,7 @@ public class MyUkcp {
      * @param nodelay {@code true} if enable nodelay
      * @return this object
      */
-    public MyUkcp setNodelay(boolean nodelay) {
+    public IceUkcp setNodelay(boolean nodelay) {
         kcp.setNodelay(nodelay);
         return this;
     }
@@ -243,7 +243,7 @@ public class MyUkcp {
      * @param interval update interval
      * @return this object
      */
-    public MyUkcp setInterval(int interval) {
+    public IceUkcp setInterval(int interval) {
         kcp.setInterval(interval);
         return this;
     }
@@ -263,7 +263,7 @@ public class MyUkcp {
      * @param fastResend
      * @return this object
      */
-    public MyUkcp setFastResend(int fastResend) {
+    public IceUkcp setFastResend(int fastResend) {
         kcp.setFastresend(fastResend);
         return this;
     }
@@ -272,7 +272,7 @@ public class MyUkcp {
         return kcp.getFastlimit();
     }
 
-    public MyUkcp setFastLimit(int fastLimit) {
+    public IceUkcp setFastLimit(int fastLimit) {
         kcp.setFastlimit(fastLimit);
         return this;
     }
@@ -281,7 +281,7 @@ public class MyUkcp {
         return kcp.isNocwnd();
     }
 
-    public MyUkcp setNocwnd(boolean nocwnd) {
+    public IceUkcp setNocwnd(boolean nocwnd) {
         kcp.setNocwnd(nocwnd);
         return this;
     }
@@ -290,7 +290,7 @@ public class MyUkcp {
         return kcp.getRxMinrto();
     }
 
-    public MyUkcp setMinRto(int minRto) {
+    public IceUkcp setMinRto(int minRto) {
         kcp.setRxMinrto(minRto);
         return this;
     }
@@ -299,7 +299,7 @@ public class MyUkcp {
         return kcp.getMtu();
     }
 
-    public MyUkcp setMtu(int mtu) {
+    public IceUkcp setMtu(int mtu) {
         kcp.setMtu(mtu);
         return this;
     }
@@ -308,7 +308,7 @@ public class MyUkcp {
         return kcp.isStream();
     }
 
-    public MyUkcp setStream(boolean stream) {
+    public IceUkcp setStream(boolean stream) {
         kcp.setStream(stream);
         return this;
     }
@@ -317,7 +317,7 @@ public class MyUkcp {
         return kcp.getDeadLink();
     }
 
-    public MyUkcp setDeadLink(int deadLink) {
+    public IceUkcp setDeadLink(int deadLink) {
         kcp.setDeadLink(deadLink);
         return this;
     }
@@ -328,7 +328,7 @@ public class MyUkcp {
      * @param allocator the allocator is used for the kcp to allocate buffers
      * @return this object
      */
-    public MyUkcp setByteBufAllocator(ByteBufAllocator allocator) {
+    public IceUkcp setByteBufAllocator(ByteBufAllocator allocator) {
         kcp.setByteBufAllocator(allocator);
         return this;
     }
@@ -337,12 +337,12 @@ public class MyUkcp {
         return kcp.isAutoSetConv();
     }
 
-    public MyUkcp setAutoSetConv(boolean autoSetConv) {
+    public IceUkcp setAutoSetConv(boolean autoSetConv) {
         kcp.setAutoSetConv(autoSetConv);
         return this;
     }
 
-    public MyUkcp wndSize(int sndWnd, int rcvWnd) {
+    public IceUkcp wndSize(int sndWnd, int rcvWnd) {
         kcp.wndsize(sndWnd, rcvWnd);
         return this;
     }
@@ -355,7 +355,7 @@ public class MyUkcp {
         return kcp.getRcvWnd();
     }
 
-    public MyUkcp setRcvWnd(int rcvWnd) {
+    public IceUkcp setRcvWnd(int rcvWnd) {
         kcp.setRcvWnd(rcvWnd);
         return this;
     }
@@ -364,22 +364,22 @@ public class MyUkcp {
         return kcp.getSndWnd();
     }
 
-    public MyUkcp setSndWnd(int sndWnd) {
+    public IceUkcp setSndWnd(int sndWnd) {
         kcp.setSndWnd(sndWnd);
         return this;
     }
 
-    public MyUkcp setFastFlush(boolean fastFlush) {
+    public IceUkcp setFastFlush(boolean fastFlush) {
         this.fastFlush = fastFlush;
         return this;
     }
 
-    public MyUkcp setMergeSegmentBuf(boolean mergeSegmentBuf) {
+    public IceUkcp setMergeSegmentBuf(boolean mergeSegmentBuf) {
         this.mergeSegmentBuf = mergeSegmentBuf;
         return this;
     }
 
-    public MyUkcp setTsUpdate(int tsUpdate) {
+    public IceUkcp setTsUpdate(int tsUpdate) {
         this.tsUpdate = tsUpdate;
         return this;
     }
@@ -405,7 +405,7 @@ public class MyUkcp {
         return (T) kcp.getUser();
     }
 
-    public MyUkcp channel(Channel channel) {
+    public IceUkcp channel(Channel channel) {
         kcp.setUser(channel);
         return this;
     }

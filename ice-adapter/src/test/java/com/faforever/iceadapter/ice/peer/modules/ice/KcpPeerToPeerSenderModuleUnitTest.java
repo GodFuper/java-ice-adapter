@@ -1,10 +1,10 @@
 package com.faforever.iceadapter.ice.peer.modules.ice;
 
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpAdapter;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpToIceAdapter;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpTransport;
-import kcp.KcpOutput;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
 import org.junit.jupiter.api.*;
@@ -39,8 +39,8 @@ class KcpPeerToPeerSenderModuleUnitTest {
     private final List<byte[]> packetsBtoA = new CopyOnWriteArrayList<>();
     private final List<String> decodedOnB = new CopyOnWriteArrayList<>();
     private final List<String> decodedOnA = new CopyOnWriteArrayList<>();
-    private KcpToIceAdapter senderAdapter;
-    private KcpToIceAdapter receiverAdapter;
+    private KcpAdapter senderAdapter;
+    private KcpAdapter receiverAdapter;
 
     private Peer peerA;
     private Peer peerB;
@@ -235,23 +235,23 @@ class KcpPeerToPeerSenderModuleUnitTest {
     void testKcpDeliversAllPackets() throws Exception {
         List<String> received = new CopyOnWriteArrayList<>();
 
-        KcpOutput outputA = (data, kcp) -> {
+        IceKcpOutput outputA = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             data.release();
             receiverInput(receiverAdapter, raw);
         };
 
-        KcpOutput outputB = (data, kcp) -> {
+        IceKcpOutput outputB = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             data.release();
             senderInput(senderAdapter, raw);
         };
 
-        senderAdapter = new KcpToIceAdapter(99, "MockA", outputA, data -> {
+        senderAdapter = new KcpAdapter(99, "MockA", outputA, data -> {
         });
-        receiverAdapter = new KcpToIceAdapter(99, "MockB", outputB,
+        receiverAdapter = new KcpAdapter(99, "MockB", outputB,
                 data -> received.add(new String(data, StandardCharsets.UTF_8)));
         senderAdapter.start();
         receiverAdapter.start();
@@ -283,7 +283,7 @@ class KcpPeerToPeerSenderModuleUnitTest {
         List<String> received = new CopyOnWriteArrayList<>();
         int dropChance = lossPercentage;
 
-        KcpOutput outputA = (data, kcp) -> {
+        IceKcpOutput outputA = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 data.release();
                 return;
@@ -294,7 +294,7 @@ class KcpPeerToPeerSenderModuleUnitTest {
             receiverInput(receiverAdapter, raw);
         };
 
-        KcpOutput outputB = (data, kcp) -> {
+        IceKcpOutput outputB = (data, kcp) -> {
             // ACK path — never drop, only drop forward data to avoid blocking KCP sender
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
@@ -302,9 +302,9 @@ class KcpPeerToPeerSenderModuleUnitTest {
             senderInput(senderAdapter, raw);
         };
 
-        senderAdapter = new KcpToIceAdapter(99, "MockA", outputA, data -> {
+        senderAdapter = new KcpAdapter(99, "MockA", outputA, data -> {
         });
-        receiverAdapter = new KcpToIceAdapter(99, "MockB", outputB,
+        receiverAdapter = new KcpAdapter(99, "MockB", outputB,
                 data -> received.add(new String(data, StandardCharsets.UTF_8)));
         senderAdapter.start();
         receiverAdapter.start();
@@ -328,13 +328,13 @@ class KcpPeerToPeerSenderModuleUnitTest {
         receiverAdapter.stop();
     }
 
-    private void receiverInput(KcpToIceAdapter adapter, byte[] raw) {
+    private void receiverInput(KcpAdapter adapter, byte[] raw) {
         if (adapter != null && adapter.isRunning()) {
             adapter.onReceive(raw, 0, raw.length);
         }
     }
 
-    private void senderInput(KcpToIceAdapter adapter, byte[] raw) {
+    private void senderInput(KcpAdapter adapter, byte[] raw) {
         if (adapter != null && adapter.isRunning()) {
             adapter.onReceive(raw, 0, raw.length);
         }

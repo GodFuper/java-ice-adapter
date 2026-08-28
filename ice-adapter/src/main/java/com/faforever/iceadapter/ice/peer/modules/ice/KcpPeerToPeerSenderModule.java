@@ -8,7 +8,7 @@ import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpAdapter;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpTransport;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.MyPeerKcpOutput;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.PeerKcpOutput;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -141,7 +141,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
             return adapter;
         }
 
-        MyPeerKcpOutput kcpOutput = new MyPeerKcpOutput(peer);
+        PeerKcpOutput kcpOutput = new PeerKcpOutput(peer);
         Consumer<byte[]> handle = peer::handleData;
         KcpAdapter kcpToIceAdapter = new KcpAdapter(conv, peer.getPeerIdentifier(), kcpOutput, handle);
         kcpToIceAdapter.start();

@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * and delivered via the handleData consumer.
  */
 @Slf4j
-class KcpAdapterTest {
+class IceKcpAdapterTest {
 
     private static final int CONV = 42;
     private static final int UPDATE_TICKS_TO_WAIT = 50;
@@ -34,8 +35,8 @@ class KcpAdapterTest {
     private final List<String> decodedDataOnA = new CopyOnWriteArrayList<>();
     private final List<String> decodedDataOnB = new CopyOnWriteArrayList<>();
 
-    private KcpToIceAdapter adapterA;
-    private KcpToIceAdapter adapterB;
+    private KcpAdapter adapterA;
+    private KcpAdapter adapterB;
 
     @BeforeEach
     void setUp() {
@@ -45,7 +46,7 @@ class KcpAdapterTest {
         kcpOutputFromB.clear();
 
         // Adapter A: its output goes into B's input, B's output goes into A's input
-        kcp.KcpOutput outputA = (data, kcp) -> {
+        IceKcpOutput outputA = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromA.add(raw);
@@ -53,7 +54,7 @@ class KcpAdapterTest {
             adapterB.onReceive(raw, 0, raw.length);
         };
 
-        kcp.KcpOutput outputB = (data, kcp) -> {
+        IceKcpOutput outputB = (data, kcp) -> {
             byte[] raw = new byte[data.readableBytes()];
             data.getBytes(data.readerIndex(), raw);
             kcpOutputFromB.add(raw);
@@ -61,7 +62,7 @@ class KcpAdapterTest {
             adapterA.onReceive(raw, 0, raw.length);
         };
 
-        adapterA = new KcpToIceAdapter(
+        adapterA = new KcpAdapter(
                 CONV,
                 "A",
                 outputA,
@@ -70,7 +71,7 @@ class KcpAdapterTest {
                 }
         );
 
-        adapterB = new KcpToIceAdapter(
+        adapterB = new KcpAdapter(
                 CONV,
                 "B",
                 outputB,
@@ -250,7 +251,7 @@ class KcpAdapterTest {
         kcpOutputFromA.clear();
         kcpOutputFromB.clear();
 
-        kcp.KcpOutput lossyOutputA = (data, kcp) -> {
+        IceKcpOutput lossyOutputA = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 log.warn("Drop msg lossyOutputA");
                 return; // drop
@@ -261,7 +262,7 @@ class KcpAdapterTest {
             adapterB.onReceive(raw, 0, raw.length);
         };
 
-        kcp.KcpOutput lossyOutputB = (data, kcp) -> {
+        IceKcpOutput lossyOutputB = (data, kcp) -> {
             if (ThreadLocalRandom.current().nextInt(100) < dropChance) {
                 log.warn("Drop msg lossyOutputB");
                 return; // drop
@@ -276,13 +277,13 @@ class KcpAdapterTest {
         adapterA.stop();
         adapterB.stop();
 
-        adapterA = new KcpToIceAdapter(
+        adapterA = new KcpAdapter(
                 CONV,
                 "A",
                 lossyOutputA,
                 data -> decodedDataOnA.add(new String(data, StandardCharsets.UTF_8))
         );
-        adapterB = new KcpToIceAdapter(
+        adapterB = new KcpAdapter(
                 CONV,
                 "B",
                 lossyOutputB,
@@ -334,7 +335,7 @@ class KcpAdapterTest {
         AtomicLong packetsFromA = new AtomicLong(0);
         AtomicLong packetsFromB = new AtomicLong(0);
 
-        kcp.KcpOutput periodicOutputA = (data, kcp) -> {
+        IceKcpOutput periodicOutputA = (data, kcp) -> {
             long num = packetsFromA.incrementAndGet();
             if (num % dropEveryN == 0) {
                 return; // drop every Nth packet
@@ -345,7 +346,7 @@ class KcpAdapterTest {
             adapterB.onReceive(raw, 0, raw.length);
         };
 
-        kcp.KcpOutput periodicOutputB = (data, kcp) -> {
+        IceKcpOutput periodicOutputB = (data, kcp) -> {
             long num = packetsFromB.incrementAndGet();
             if (num % dropEveryN == 0) {
                 return; // drop every Nth packet
@@ -360,13 +361,13 @@ class KcpAdapterTest {
         adapterA.stop();
         adapterB.stop();
 
-        adapterA = new KcpToIceAdapter(
+        adapterA = new KcpAdapter(
                 CONV,
                 "A",
                 periodicOutputA,
                 data -> decodedDataOnA.add(new String(data, StandardCharsets.UTF_8))
         );
-        adapterB = new KcpToIceAdapter(
+        adapterB = new KcpAdapter(
                 CONV,
                 "B",
                 periodicOutputB,

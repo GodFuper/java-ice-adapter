@@ -2,15 +2,16 @@ package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import kcp.IKcp;
 import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Component;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -57,7 +58,7 @@ class PeerKcpOutputTest {
     private PeerKcpOutput createOutput(byte[] data, int off, int len) {
         PeerKcpOutput output = new PeerKcpOutput(peerMock);
         ByteBuf buf = Unpooled.wrappedBuffer(data, off, len);
-        IKcp kcpMock = mock(IKcp.class);
+        IceKcp kcpMock = mock(IceKcp.class);
         // PeerKcpOutput.out() already calls data.release(), so we must NOT release here
         output.out(buf, kcpMock);
         return output;
@@ -119,7 +120,7 @@ class PeerKcpOutputTest {
 
         PeerKcpOutput output = new PeerKcpOutput(peerMock);
         ByteBuf buf = Unpooled.wrappedBuffer(payload);
-        IKcp kcpMock = mock(IKcp.class);
+        IceKcp kcpMock = mock(IceKcp.class);
         // PeerKcpOutput.out() calls data.release() internally even for null component
         output.out(buf, kcpMock);
 
@@ -135,7 +136,7 @@ class PeerKcpOutputTest {
 
         assertEquals(1, sentPackets.size());
         byte[] pkt = sentPackets.get(0);
-        assertArrayEquals(payload, java.util.Arrays.copyOfRange(pkt, 1, pkt.length));
+        assertArrayEquals(payload, Arrays.copyOfRange(pkt, 1, pkt.length));
     }
 
     @AfterEach

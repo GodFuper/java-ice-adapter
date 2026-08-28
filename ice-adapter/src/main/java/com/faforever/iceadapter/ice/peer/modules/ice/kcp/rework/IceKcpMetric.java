@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
  * @author <a href="mailto:szhnet@gmail.com">szh</a>
  */
 @RequiredArgsConstructor
-public class MyKcpMetric {
+public class IceKcpMetric {
 
-    private final MyKcp kcp;
+    private final IceKcp kcp;
 
     private int maxSegXmit;
 

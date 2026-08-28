@@ -5,8 +5,8 @@ import io.netty.buffer.ByteBuf;
 /**
  * @author <a href="mailto:szhnet@gmail.com">szh</a>
  */
-public interface MyKcpOutput {
+public interface IceKcpOutput {
 
-    void out(ByteBuf data, MyKcp kcp);
+    void out(ByteBuf data, IceKcp kcp);
 
 }

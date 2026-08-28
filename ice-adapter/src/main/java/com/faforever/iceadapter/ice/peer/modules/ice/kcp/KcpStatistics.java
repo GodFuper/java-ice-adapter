@@ -1,6 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpMetric;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpMetric;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -172,7 +172,7 @@ public class KcpStatistics {
      * Updates all KCP statistics from the MyKcpMetric instance.
      * Provides full access to internal KCP metrics including SRTT, RTTVAR, RTO, CWND, etc.
      */
-    public void update(MyKcpMetric metric) {
+    public void update(IceKcpMetric metric) {
         if (metric == null) {
             return;
         }

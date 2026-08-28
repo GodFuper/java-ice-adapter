@@ -21,7 +21,7 @@ import java.util.ListIterator;
  */
 @Slf4j
 @Data
-public class MyKcp {
+public class IceKcp {
 
     /**
      * no delay min rto
@@ -230,7 +230,7 @@ public class MyKcp {
 
     private boolean stream;
 
-    private MyKcpOutput output;
+    private IceKcpOutput output;
 
     private ByteBufAllocator byteBufAllocator = ByteBufAllocator.DEFAULT;
 
@@ -239,7 +239,7 @@ public class MyKcp {
      */
     private boolean autoSetConv;
 
-    private MyKcpMetric metric = new MyKcpMetric(this);
+    private IceKcpMetric metric = new IceKcpMetric(this);
 
     private static long int2Uint(int i) {
         return i & 0xFFFFFFFFL;
@@ -257,7 +257,7 @@ public class MyKcp {
         return (int) (later - earlier);
     }
 
-    private static void output(ByteBuf data, MyKcp kcp) {
+    private static void output(ByteBuf data, IceKcp kcp) {
         if (log.isDebugEnabled()) {
             log.debug("{} [RO] {} bytes", kcp, data.readableBytes());
         }
@@ -357,7 +357,7 @@ public class MyKcp {
 
     }
 
-    public MyKcp(int conv, MyKcpOutput output) {
+    public IceKcp(int conv, IceKcpOutput output) {
         this.conv = conv;
         this.output = output;
     }

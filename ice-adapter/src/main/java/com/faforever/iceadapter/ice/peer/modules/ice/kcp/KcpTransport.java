@@ -1,6 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.MyKcpMetric;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpMetric;
 
 public interface KcpTransport {
     void send(byte[] data);
@@ -11,7 +11,7 @@ public interface KcpTransport {
 
     void close();
 
-    default MyKcpMetric getMetric() {
+    default IceKcpMetric getMetric() {
         return null;
     }
 
