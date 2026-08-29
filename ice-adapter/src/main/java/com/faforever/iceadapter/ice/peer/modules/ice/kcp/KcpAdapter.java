@@ -1,8 +1,5 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcp;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpMetric;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpOutput;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
@@ -30,7 +27,7 @@ public class KcpAdapter implements KcpTransport {
     private static final int SEND_WINDOW = 128;
     private static final int RECV_WINDOW = 256;
     private static final int DEADLINK = 10;
-    private static final int UPDATE_INTERVAL_MS = 1;
+    private static final int UPDATE_INTERVAL_MS = 20;
     private static final int MAX_UPDATE_DELAY_MS = 1000;
 
     private final String name;
@@ -44,14 +41,19 @@ public class KcpAdapter implements KcpTransport {
     private final Queue<ByteBuf> writeQueue = new ConcurrentLinkedQueue<>();
     private final Queue<byte[]> readQueue = new ConcurrentLinkedQueue<>();
 
-    private ScheduledExecutorService updateExecutor;
     private ScheduledExecutorService taskExecutor;
+
     private ScheduledFuture<?> updateTask;
-    private final AtomicBoolean writeProcessing = new AtomicBoolean(false);
-    private final AtomicBoolean readProcessing = new AtomicBoolean(false);
+    private final AtomicBoolean manualRunProcessing = new AtomicBoolean(false);
+    private final AtomicBoolean kcpProcessing = new AtomicBoolean(false);
 
     private final AtomicLong bytesSent = new AtomicLong(0);
     private final AtomicLong bytesReceived = new AtomicLong(0);
+
+    @Override
+    public long getNextUpdate() {
+        return nextUpdateTimestamp;
+    }
 
     public long getBytesSent() {
         return bytesSent.get();
@@ -84,23 +86,27 @@ public class KcpAdapter implements KcpTransport {
             return;
         }
         running = true;
-        updateExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        taskExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "KCP-Update-%s".formatted(name));
             t.setDaemon(true);
             return t;
         });
-        taskExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "KCP-Task-%s".formatted(name));
-            t.setDaemon(true);
-            return t;
-        });
 
-        updateTask = updateExecutor.scheduleAtFixedRate(
+        updateTask = taskExecutor.scheduleAtFixedRate(
                 this::runUpdateLoop,
                 0,
                 UPDATE_INTERVAL_MS,
                 TimeUnit.MILLISECONDS
         );
+    }
+
+    protected void notifyRunUpdateEvent() {
+        if (!running) {
+            return;
+        }
+        if (manualRunProcessing.compareAndSet(false, true)) {
+            taskExecutor.execute(this::runUpdateLoop);
+        }
     }
 
     /**
@@ -111,31 +117,39 @@ public class KcpAdapter implements KcpTransport {
             return;
         }
 
-        // Process write queue (kcp.send())
-        if (!writeProcessing.compareAndSet(false, true)) {
+        if (!kcpProcessing.compareAndSet(false, true)) {
             return;
         }
+
         try {
+            // Process write queue (kcp.send())
             processWriteQueue();
-        } finally {
-            writeProcessing.set(false);
-        }
-
-        // Process read queue (kcp.input())
-        if (!readProcessing.compareAndSet(false, true)) {
-            return;
-        }
-        try {
+            // Process read queue (kcp.input())
             processReadQueue();
+
+            // Throttle: only run KCP update if nextUpdateTimestamp has arrived
+            if (System.currentTimeMillis() > nextUpdateTimestamp) {
+                processUpdate();
+
+                long now = System.currentTimeMillis();
+                // Schedule next update
+                nextUpdateTimestamp = scheduleNextUpdate((int) now);
+            }
+
+            processReceiveAndDeliver();
         } finally {
-            readProcessing.set(false);
+            kcpProcessing.set(false);
+            manualRunProcessing.set(false);
         }
+    }
 
+    private void processUpdate() {
         long now = System.currentTimeMillis();
-
         // Update KCP state
         iceKcp.update((int) now);
+    }
 
+    private void processReceiveAndDeliver() {
         // Receive and deliver data
         ByteBuf recvBuf = Unpooled.buffer(iceKcp.getMtu());
         try {
@@ -157,10 +171,6 @@ public class KcpAdapter implements KcpTransport {
         } finally {
             recvBuf.release();
         }
-
-        now = System.currentTimeMillis();
-        // Schedule next update
-        nextUpdateTimestamp = scheduleNextUpdate((int) now);
     }
 
     /**
@@ -227,6 +237,7 @@ public class KcpAdapter implements KcpTransport {
         bytesSent.addAndGet(payload.length);
         ByteBuf buf = Unpooled.wrappedBuffer(payload);
         writeQueue.offer(buf);
+        notifyRunUpdateEvent();
     }
 
     @Override
@@ -235,6 +246,7 @@ public class KcpAdapter implements KcpTransport {
         byte[] packetCopy = new byte[length];
         System.arraycopy(data, offset, packetCopy, 0, length);
         readQueue.offer(packetCopy);
+        notifyRunUpdateEvent();
     }
 
     /**
@@ -264,25 +276,21 @@ public class KcpAdapter implements KcpTransport {
      * Stop the KCP adapter and release resources.
      */
     public void stop() {
-        if (updateExecutor != null && taskExecutor != null) {
+        if (taskExecutor != null) {
             running = false;
 
             if (updateTask != null) {
                 updateTask.cancel(false);
             }
 
-            updateExecutor.shutdown();
             taskExecutor.shutdown();
 
             try {
-                if (!updateExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
-                    updateExecutor.shutdownNow();
-                }
                 if (!taskExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
                     taskExecutor.shutdownNow();
                 }
+
             } catch (InterruptedException e) {
-                updateExecutor.shutdownNow();
                 taskExecutor.shutdownNow();
                 Thread.currentThread().interrupt();
             }

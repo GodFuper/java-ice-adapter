@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Used to simulate unreliable network conditions for KCP reliability testing.
  */
 @Slf4j
-class RandomDroppingPeerToPeerListenerModule extends PeerToPeerListenerModule {
+public class RandomDroppingPeerToPeerListenerModule extends PeerToPeerListenerModule {
 
     private final int dropChancePercent;
     private final AtomicLong packetsSeen = new AtomicLong(0);

@@ -1,5 +1,6 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
+import com.faforever.iceadapter.ice.base.KcpPeerToPeerIntegrationBase;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import lombok.extern.slf4j.Slf4j;

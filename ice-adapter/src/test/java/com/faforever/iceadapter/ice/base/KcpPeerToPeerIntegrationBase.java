@@ -1,13 +1,14 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.base;
 
 import com.faforever.iceadapter.IceOptions;
-import com.faforever.iceadapter.ice.base.InMemoryRpcBus;
-import com.faforever.iceadapter.ice.base.TestGameSession;
+import com.faforever.iceadapter.ice.DroppingPeerToPeerListenerModule;
+import com.faforever.iceadapter.ice.InMemoryDatagramSocket;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
+import com.faforever.iceadapter.ice.peer.modules.ice.kcp.RandomDroppingPeerToPeerListenerModule;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * </p>
  */
 @Slf4j
-abstract class KcpPeerToPeerIntegrationBase {
+abstract public class KcpPeerToPeerIntegrationBase {
 
     protected static final String LOCAL_IP = "127.0.0.1";
     protected static final int NUM_PACKETS = 10;

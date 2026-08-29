@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework;
+package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import lombok.RequiredArgsConstructor;
 

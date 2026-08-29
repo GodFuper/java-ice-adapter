@@ -1,5 +1,7 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
+import com.faforever.iceadapter.ice.ModuleBase;
+import com.faforever.iceadapter.ice.PeerConnectionIntegrationBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.PeerModule;
@@ -25,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Slf4j
 @DisplayName("Peer — SendMode switching")
-class PeerSendModeSwitchingIntegrationTest extends PeerConnectionIntegrationBase {
+public class PeerSendModeSwitchingIntegrationTest extends PeerConnectionIntegrationBase {
 
     private static final int NUM_PACKETS = 100;
 

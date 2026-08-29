@@ -1,6 +1,5 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpMetric;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

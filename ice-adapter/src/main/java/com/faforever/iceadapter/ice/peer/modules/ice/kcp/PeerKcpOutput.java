@@ -1,8 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcp;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpOutput;
 import io.netty.buffer.ByteBuf;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

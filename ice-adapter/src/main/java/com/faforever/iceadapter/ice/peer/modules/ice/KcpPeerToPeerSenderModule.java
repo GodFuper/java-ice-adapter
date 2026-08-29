@@ -40,13 +40,14 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
     private static final String LOCK_TRANSPORT = "KcpTransport";
     public static final byte KCP_PROTOCOL_MARKER = 'u';
 
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private final Peer peer;
+
     private volatile Component component;
     private volatile KcpTransport kcpAdapter;
     private volatile int conv;
     private Lock lockTransport;
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> statisticTask;
 
     @Override
@@ -150,7 +151,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         if (statisticTask != null && !statisticTask.isDone()) {
             statisticTask.cancel(false);
         }
-        statisticTask = scheduler.scheduleAtFixedRate(this::doStatistic, 0, PERIOD_GET_STATISTIC, TimeUnit.MILLISECONDS);
+        statisticTask = executor.scheduleAtFixedRate(this::doStatistic, 0, PERIOD_GET_STATISTIC, TimeUnit.MILLISECONDS);
         log.info("KCP transport created for offerer peer {} with conv={}", peer.getPeerIdentifier(), conv);
         return kcpAdapter;
     }
@@ -200,14 +201,6 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         updateStatistic(null);
     }
 
-    public void restartKcp(int convRq) {
-        if (conv != convRq) {
-            return;
-        }
-        createAdapter();
-        updateStatistic(null);
-    }
-
     private void doStatistic() {
         KcpTransport adapter = this.kcpAdapter;
         if (adapter == null) {
@@ -220,6 +213,7 @@ public class KcpPeerToPeerSenderModule implements ModuleBase, PeerEventListener 
         KcpStatistics statistics = peer.getKcpStatistics();
         if (statistics != null && adapter != null) {
             statistics.update(adapter.getMetric());
+            statistics.updateNextUpdate(adapter.getNextUpdate());
             statistics.updateBytes(adapter.getBytesSent(), adapter.getBytesReceived());
         }
     }

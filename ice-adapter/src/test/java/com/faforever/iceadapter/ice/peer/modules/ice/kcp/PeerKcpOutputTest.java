@@ -2,7 +2,6 @@ package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.extern.slf4j.Slf4j;

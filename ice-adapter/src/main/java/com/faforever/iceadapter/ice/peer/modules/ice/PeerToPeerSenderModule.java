@@ -53,11 +53,12 @@ public class PeerToPeerSenderModule implements ModuleBase, PeerEventListener {
     }
 
     protected boolean sendDirect(byte[] data) {
-        if (!peer.isDirectTransportEnabled()) {
-            return false;
-        }
         if (!isEnabled()) {
             return false;
+        }
+
+        if (!peer.isDirectTransportEnabled()) {
+            return true;
         }
 
         Component currentComponent = LockUtil.executeWithLock(lockComponent, () -> this.component);

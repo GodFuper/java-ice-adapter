@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Base class for peer connection integration tests.
  * Provides shared setup/teardown, test fixtures, and helper methods.
  */
-abstract class PeerConnectionIntegrationBase {
+abstract public class PeerConnectionIntegrationBase {
 
     protected static final String LOCAL_IP_ADDRESS = "127.0.0.1";
     protected static final long ICE_READY_TIMEOUT_MS = 30_000;

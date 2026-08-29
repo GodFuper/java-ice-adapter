@@ -1,4 +1,4 @@
-package com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework;
+package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
 import io.jpower.kcp.netty.internal.ReItrLinkedList;
 import io.jpower.kcp.netty.internal.ReusableListIterator;

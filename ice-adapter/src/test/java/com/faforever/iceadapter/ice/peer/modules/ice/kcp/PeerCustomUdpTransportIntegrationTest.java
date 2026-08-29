@@ -1,5 +1,6 @@
-package com.faforever.iceadapter.ice;
+package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
+import com.faforever.iceadapter.ice.PeerConnectionIntegrationBase;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import org.junit.jupiter.api.DisplayName;

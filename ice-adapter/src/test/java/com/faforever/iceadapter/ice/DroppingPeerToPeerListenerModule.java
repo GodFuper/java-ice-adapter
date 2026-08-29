@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 @Getter
-class DroppingPeerToPeerListenerModule extends PeerToPeerListenerModule {
+public class DroppingPeerToPeerListenerModule extends PeerToPeerListenerModule {
 
     private final Peer peer;
     private final int dropEveryNPackets;

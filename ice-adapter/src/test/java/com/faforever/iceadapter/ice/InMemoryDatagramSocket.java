@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.LongAdder;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-class InMemoryDatagramSocket extends DatagramSocket {
+public class InMemoryDatagramSocket extends DatagramSocket {
 
     private final BlockingQueue<InMemoryPacket> receivedPackets = new LinkedBlockingQueue<>();
     private final LongAdder sendCounter = new LongAdder();
@@ -35,7 +35,7 @@ class InMemoryDatagramSocket extends DatagramSocket {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final Thread readerThread;
 
-    InMemoryDatagramSocket() throws SocketException {
+    public InMemoryDatagramSocket() throws SocketException {
         super(0);
         this.running.set(true);
         this.readerThread = new Thread(this::readerLoop, "InMemoryDatagramSocket-reader");

@@ -1,7 +1,5 @@
 package com.faforever.iceadapter.ice.peer.modules.ice.kcp;
 
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.rework.IceKcpMetric;
-
 public interface KcpTransport {
     void send(byte[] data);
 
@@ -10,6 +8,10 @@ public interface KcpTransport {
     int getConv();
 
     void close();
+
+    default long getNextUpdate() {
+        return 0;
+    }
 
     default IceKcpMetric getMetric() {
         return null;
