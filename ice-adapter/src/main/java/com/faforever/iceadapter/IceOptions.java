@@ -81,7 +81,7 @@ public class IceOptions {
     private boolean hostMode;
 
     @Option(names = "--send-mode",
-            defaultValue = "KCP_ONLY",
+            defaultValue = "DIRECT_ONLY",
             description = "Peer send mode: DIRECT_ONLY, BOTH, KCP_ONLY")
     private PeerSendMode sendMode;
 }

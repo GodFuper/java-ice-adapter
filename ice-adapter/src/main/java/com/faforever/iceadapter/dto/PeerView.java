@@ -90,7 +90,10 @@ public class PeerView implements PeerEventListener {
                         .orElse("never"));
         getLastRelayRecv()
                 .set(peer.getRelayLastReceived()
-                        .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
+                        .map(ts -> {
+                            long elapsed = (System.currentTimeMillis() - ts) / 1000;
+                            return elapsed <= 30 ? "%.1fs ago".formatted(elapsed / 10f) : "";
+                        })
                         .orElse(""));
         getEchosReceived()
                 .set("%s/%s"
@@ -120,7 +123,10 @@ public class PeerView implements PeerEventListener {
                         .map(String::valueOf)
                         .orElse("–")));
         Map<Integer, RelayPing> rtts = peer.getRtts();
-        List<Integer> ids = peer.getBestRelays();
+        List<Integer> ids = peer.getBestRelays()
+                .stream()
+                .limit(1)
+                .toList();
         if (!CollectionUtils.isEmpty(ids)) {
             for (Integer idPeer : ids) {
                 RelayPing ping = rtts.get(idPeer);
