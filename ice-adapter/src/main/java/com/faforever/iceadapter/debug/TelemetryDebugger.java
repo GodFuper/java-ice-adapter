@@ -45,7 +45,7 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
     private final Thread sendingLoopThread;
 
     private volatile boolean shouldRun = false;
-    private volatile boolean disabled = true;
+    private volatile boolean disabled = false;
     private int reconnectAttempt = 0;
 
     public TelemetryDebugger(GPGNetServer gpgNetServer, String telemetryServer, int gameId, int playerId) {
