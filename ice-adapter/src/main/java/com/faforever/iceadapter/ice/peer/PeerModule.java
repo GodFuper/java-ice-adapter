@@ -49,7 +49,8 @@ public enum PeerModule implements Comparator<PeerModule> {
     KCP_OFFERER_PEER_TO_PEER_TRANSPORT(KcpPeerToPeerSenderModule::new),
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
-    PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new);
+    PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new),
+    PAIR_SELECTOR(PairSelectorModule::new);
 
     @Getter
     private static final List<PeerModule> sortedModules =

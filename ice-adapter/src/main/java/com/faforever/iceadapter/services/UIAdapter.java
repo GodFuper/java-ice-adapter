@@ -1,13 +1,11 @@
 package com.faforever.iceadapter.services;
 
-import com.faforever.iceadapter.dto.IceServerView;
-import com.faforever.iceadapter.dto.KcpPeerView;
-import com.faforever.iceadapter.dto.PeerView;
-import com.faforever.iceadapter.dto.ServerPeerView;
+import com.faforever.iceadapter.dto.*;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.collections.ObservableList;
+import org.ice4j.ice.CandidatePair;
 
 /**
  * Interface for UI components to interact with the ICE adapter and display connection/debug information.
@@ -159,6 +157,16 @@ public interface UIAdapter {
     boolean isEnabledManualStrategyConnection();
 
     boolean isEnabledAdditionalPeerInfo();
+
+    /**
+     * Returns an observable list of succeeded CandidatePair for the specified peer.
+     */
+    ObservableList<PairView> getSucceededPairs(PeerView peer);
+
+    /**
+     * Sets the active CandidatePair for the specified peer.
+     */
+    void selectPair(PeerView peer, CandidatePair pair);
 
     /**
      * Initiates a graceful shutdown of the adapter and all associated components.

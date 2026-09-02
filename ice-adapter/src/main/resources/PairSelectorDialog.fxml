@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<AnchorPane fx:id="root" prefWidth="650.0" prefHeight="450.0" xmlns="http://javafx.com/javafx/8.0.121"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.faforever.iceadapter.ui.controller.PairSelectorDialogController">
+    <VBox AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0"
+          AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0" spacing="10">
+
+        <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 10 10 0 10;">
+            <Label text="Select Active Pair" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="peerRttLabel" text="RTT: - ms" style="-fx-font-size: 12px;"/>
+        </HBox>
+
+        <TableView fx:id="pairTable" VBox.vgrow="ALWAYS" style="-fx-padding: 0 10 0 10;">
+            <columns>
+                <TableColumn fx:id="localTypeColumn" text="Local Type" prefWidth="80"/>
+                <TableColumn fx:id="localAddressColumn" text="Local Address" prefWidth="140"/>
+                <TableColumn fx:id="remoteTypeColumn" text="Remote Type" prefWidth="80"/>
+                <TableColumn fx:id="remoteAddressColumn" text="Remote Address" prefWidth="140"/>
+                <TableColumn fx:id="pairTypeColumn" text="Pair" prefWidth="140"/>
+                <TableColumn fx:id="isActiveColumn" text="Active" prefWidth="60"/>
+            </columns>
+        </TableView>
+
+        <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 0 10 10 10;">
+            <Button fx:id="selectButton" text="Select" prefWidth="80" onAction="#onSelectClicked"/>
+            <Button fx:id="closeButton" text="Close" prefWidth="80" onAction="#onCloseClicked"/>
+        </HBox>
+    </VBox>
+
+    <stylesheets>
+        <URL value="@debugWindowStyle.css"/>
+    </stylesheets>
+</AnchorPane>
