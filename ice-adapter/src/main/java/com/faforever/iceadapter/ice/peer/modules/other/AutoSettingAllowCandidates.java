@@ -9,15 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.ice4j.ice.Agent;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @RequiredArgsConstructor
 public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener {
     private static final List<AllowCombination> combinations = List.of(AllowCombination.values());
+    private static final long MIN_CHANGE_INTERVAL_MS = 1000;
 
     private final Peer peer;
-    private final AtomicInteger index = new AtomicInteger(0);
+    private long lastChangeTime = 0;
     private boolean enabled = true;
 
     @Override
@@ -32,14 +32,34 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
         }
     }
 
-    private void changeCombination() {
-        int id = index.getAndIncrement();
-        if (id >= combinations.size()) {
-            index.set(0);
-            id = 0;
+    @Override
+    public void onConnectionLost(Peer peer, boolean clearIceState) {
+        if (isEnabled()) {
+            changeCombination();
         }
-        AllowCombination combination = combinations.get(id);
-        peer.setCombination(combination);
+    }
+
+    private synchronized void changeCombination() {
+        long now = System.currentTimeMillis();
+        if (now - lastChangeTime < MIN_CHANGE_INTERVAL_MS) {
+            log.debug(
+                    "Skipping AutoSettingAllowCandidates for peer {}, last change was {}ms ago",
+                    peer.getPeerIdentifier(),
+                    now - lastChangeTime);
+            return;
+        }
+        lastChangeTime = now;
+
+        AllowCombination current = peer.getCombination();
+        int currentIndex = current != null ? combinations.indexOf(current) : -1;
+        int nextIndex = (currentIndex + 1) % combinations.size();
+        AllowCombination nextCombination = combinations.get(nextIndex);
+        log.info(
+                "AutoSettingAllowCandidates for peer {}: switching combination from {} to {}",
+                peer.getPeerIdentifier(),
+                current,
+                nextCombination);
+        peer.setCombination(nextCombination);
     }
 
     @Override

@@ -89,7 +89,7 @@ public abstract class WebRtcConnectServiceCommon {
         signalingService.setSignalingMessageSender(msg -> sendSignalingViaRpc(peer, msg));
 
         // Set up WebRTC session callbacks
-        webRtcSession.init(isOfferer, iceGameSession.getIceServers(), iceGameSession.getOptions(),
+        webRtcSession.init(isOfferer, iceGameSession.getIceServers(), iceGameSession.getOptions(), peer.getCombination(),
                 // Message handler - data received from data channel
                 (data, isBinary) -> {
                     peer.getModule(PeerModule.WEBRTC_PEER_TO_PEER_LISTENER, WebRtcPeerToPeerListenerModule.class)
@@ -124,6 +124,7 @@ public abstract class WebRtcConnectServiceCommon {
                                 log.debug("Ignoring onDisconnected from stale/closed WebRtcSession for peer {}", peer.getRemoteId());
                                 return;
                             }
+                            peer.lostConnect();
                             peer.setIceState(DISCONNECTED);
                         });
                     }

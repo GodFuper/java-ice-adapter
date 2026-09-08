@@ -37,7 +37,8 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
                 PeerModule.RELAY_CLIENT_MODULE,
                 PeerModule.RELAY_SERVER_MODULE,
                 PeerModule.AUTO_RELAY_CALCULATE_RTT,
-                PeerModule.CONNECTION_CHECKER_MODULE);
+                PeerModule.CONNECTION_CHECKER_MODULE,
+                PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.ui.IceServerWindow;
 import com.faforever.iceadapter.ui.InfoKcpPeerWindow;
 import com.faforever.iceadapter.ui.InfoServerPeerWindow;
+import com.faforever.iceadapter.ui.InfoWebRtcPeerWindow;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.collections.FXCollections;
@@ -146,6 +147,10 @@ public class WindowController {
 
     public void openPanelKcpPeers() {
         CompletableFuture.runAsync(() -> runOnUIThread(InfoKcpPeerWindow::launch));
+    }
+
+    public void openPanelWebRtcPeers() {
+        CompletableFuture.runAsync(() -> runOnUIThread(InfoWebRtcPeerWindow::launch));
     }
 
     public void initialize() {

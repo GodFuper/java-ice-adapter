@@ -206,10 +206,8 @@ public class GameSession implements IceGameSession {
             disabledModules.add(PeerModule.KCP_OFFERER_PEER_TO_PEER_TRANSPORT);
             disabledModules.add(PeerModule.PEER_LISTENER_MODULE);
             disabledModules.add(PeerModule.PEER_TO_PEER_SENDER);
-            disabledModules.add(PeerModule.PAIR_SELECTOR);
             disabledModules.add(PeerModule.PEER_TURN_REFRESHER_MODULE);
             disabledModules.add(PeerModule.CHANGE_AGENT_STRATEGY);
-            disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
             disabledModules.add(PeerModule.AUTO_RELAY_CALCULATE_RTT);
             disabledModules.add(PeerModule.RELAY_CLIENT_MODULE);
             disabledModules.add(PeerModule.RELAY_SERVER_MODULE);

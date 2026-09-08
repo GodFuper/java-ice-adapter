@@ -249,12 +249,23 @@ public abstract class Peer {
     }
 
     public void setCombination(AllowCombination combination, boolean disableAutomatic) {
+        setCombination(combination, disableAutomatic, disableAutomatic);
+    }
+
+    public void setCombination(AllowCombination combination, boolean disableAutomatic, boolean triggerReconnect) {
+        AllowCombination oldCombination = this.combination;
         this.combination = combination;
         event(bus -> bus.onCombinationChange(this, combination));
 
         if (disableAutomatic) {
             getModule(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE, AutoSettingAllowCandidates.class)
                     .ifPresent(ModuleBase::disable);
+        }
+
+        if (triggerReconnect && webRtcSession != null && oldCombination != combination) {
+            log.info("AllowCombination changed for WebRTC peer {} from {} to {}, reconnecting",
+                    getPeerIdentifier(), oldCombination, combination);
+            reconnect();
         }
     }
 
@@ -295,6 +306,10 @@ public abstract class Peer {
         if (webRtcSession != null) {
             return webRtcSession.getStats().getRttMs();
         }
+        return rtt;
+    }
+
+    public float getEchoRtt() {
         return rtt;
     }
 

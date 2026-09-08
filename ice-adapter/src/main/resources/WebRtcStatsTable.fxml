@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
+<VBox fx:id="root" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.faforever.iceadapter.ui.controller.InfoWebRtcPeerController"
+      prefHeight="500.0">
+    <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+
+        <!-- Connection Tab -->
+        <Tab text="Connection">
+            <content>
+                <TableView fx:id="connectionTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn1" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn1" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="States" prefWidth="270">
+                            <columns>
+                                <TableColumn fx:id="peerConnColumn" text="Peer Connection" prefWidth="110"/>
+                                <TableColumn fx:id="iceConnColumn" text="ICE State" prefWidth="90"/>
+                                <TableColumn fx:id="dtlsStateColumn" text="DTLS State" prefWidth="80"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Latency" prefWidth="180">
+                            <columns>
+                                <TableColumn fx:id="rttMsColumn" text="WebRTC RTT (ms)" prefWidth="95"/>
+                                <TableColumn fx:id="echoRttMsColumn" text="Echo RTT (ms)" prefWidth="85"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Selected Pair" prefWidth="160">
+                            <columns>
+                                <TableColumn fx:id="pairStateColumn" text="State" prefWidth="80"/>
+                                <TableColumn fx:id="nominatedColumn" text="Nominated" prefWidth="80"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- Candidates Tab -->
+        <Tab text="Candidates">
+            <content>
+                <TableView fx:id="candidatesTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn2" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn2" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Local Candidate" prefWidth="250">
+                            <columns>
+                                <TableColumn fx:id="localTypeColumn" text="Type" prefWidth="80"/>
+                                <TableColumn fx:id="localAddressColumn" text="Address" prefWidth="170"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Remote Candidate" prefWidth="250">
+                            <columns>
+                                <TableColumn fx:id="remoteTypeColumn" text="Type" prefWidth="80"/>
+                                <TableColumn fx:id="remoteAddressColumn" text="Address" prefWidth="170"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- DataChannel Tab -->
+        <Tab text="DataChannel">
+            <content>
+                <TableView fx:id="dataChannelTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn3" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn3" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Channel" prefWidth="180">
+                            <columns>
+                                <TableColumn fx:id="channelLabelColumn" text="Label" prefWidth="90"/>
+                                <TableColumn fx:id="channelStateColumn" text="State" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Messages" prefWidth="180">
+                            <columns>
+                                <TableColumn fx:id="messagesSentColumn" text="Sent" prefWidth="90"/>
+                                <TableColumn fx:id="messagesRecvColumn" text="Received" prefWidth="90"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Traffic" prefWidth="220">
+                            <columns>
+                                <TableColumn fx:id="bytesSentColumn" text="Bytes Sent" prefWidth="110"/>
+                                <TableColumn fx:id="bytesRecvColumn" text="Bytes Recv" prefWidth="110"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+        <!-- Transport & Bitrate Tab -->
+        <Tab text="Transport">
+            <content>
+                <TableView fx:id="transportTable" editable="false">
+                    <columns>
+                        <TableColumn text="Peer" prefWidth="80">
+                            <columns>
+                                <TableColumn fx:id="peerIdColumn4" text="ID" prefWidth="60"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="User" prefWidth="150">
+                            <columns>
+                                <TableColumn fx:id="loginColumn4" text="Login" prefWidth="140"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Bandwidth" prefWidth="200">
+                            <columns>
+                                <TableColumn fx:id="outBitrateColumn" text="Outgoing Bitrate" prefWidth="100"/>
+                                <TableColumn fx:id="inBitrateColumn" text="Incoming Bitrate" prefWidth="100"/>
+                            </columns>
+                        </TableColumn>
+                        <TableColumn text="Packets" prefWidth="240">
+                            <columns>
+                                <TableColumn fx:id="packetsSentColumn" text="Sent" prefWidth="80"/>
+                                <TableColumn fx:id="packetsRecvColumn" text="Received" prefWidth="80"/>
+                                <TableColumn fx:id="packetsDiscardedColumn" text="Discarded" prefWidth="80"/>
+                            </columns>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </content>
+        </Tab>
+
+    </TabPane>
+
+    <stylesheets>
+        <URL value="@infoWindowStyle.css"/>
+    </stylesheets>
+</VBox>

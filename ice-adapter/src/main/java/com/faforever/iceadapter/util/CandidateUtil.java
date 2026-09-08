@@ -123,14 +123,14 @@ public class CandidateUtil {
                   Address: %s:%d
                   Priority: %d
                   Foundation: %s
-
+                
                 Remote Candidate:
                   Type: %s
                   Transport: %s
                   Address: %s:%d
                   Priority: %d
                   Foundation: %s
-
+                
                 Priority: %d
                 Nominated: %s
                 State: %s

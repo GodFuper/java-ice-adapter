@@ -3,10 +3,12 @@ package com.faforever.iceadapter.webrtc;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.IceServer;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import dev.onvoid.webrtc.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -29,21 +31,29 @@ import java.util.concurrent.atomic.AtomicReference;
 public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObserver {
 
     private final WebRtcConnectionFactory factory;
+    @Getter
     private RTCPeerConnection peerConnection;
     private RTCDataChannel dataChannel;
+    @Getter
     private RTCConfiguration config;
 
-    public RTCConfiguration getConfig() {
-        return config;
-    }
+    @Getter
+    private AllowCombination allowCombination = AllowCombination.ALL;
 
     // Callbacks
     private DataChannelMessageHandler messageHandler;
     private SessionStateHandler stateHandler;
 
     // State
+    @Getter
     private boolean isOfferer;
+    /**
+     * -- GETTER --
+     * Check if the session is connected.
+     */
+    @Getter
     private volatile boolean connected = false;
+    @Getter
     private volatile boolean closed = false;
     private volatile boolean initialized = false;
 
@@ -72,14 +82,22 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         private volatile long messagesSent = 0;
         private volatile long messagesReceived = 0;
         private volatile String dataChannelState = "closed";
+        private volatile String dataChannelLabel = "fa-data";
+        private volatile String peerConnectionState = "-";
+        private volatile String iceConnectionState = "-";
+        private volatile String dtlsState = "-";
+        private volatile String candidatePairState = "-";
+        private volatile boolean nominated = false;
+        private volatile long packetsSent = 0;
+        private volatile long packetsReceived = 0;
+        private volatile long packetsDiscardedOnSend = 0;
+        private volatile double availableOutgoingBitrate = 0.0;
+        private volatile double availableIncomingBitrate = 0.0;
     }
 
+    @Getter
     private final SessionStats stats = new SessionStats();
     private ScheduledFuture<?> statsFuture;
-
-    public SessionStats getStats() {
-        return stats;
-    }
 
     /**
      * Query WebRTC statistics from libwebrtc peer connection.
@@ -89,6 +107,16 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             return;
         }
         try {
+            try {
+                if (peerConnection.getConnectionState() != null) {
+                    stats.setPeerConnectionState(peerConnection.getConnectionState().toString());
+                }
+                if (peerConnection.getIceConnectionState() != null) {
+                    stats.setIceConnectionState(peerConnection.getIceConnectionState().toString());
+                }
+            } catch (Exception ignored) {
+            }
+
             peerConnection.getStats(report -> {
                 Map<String, RTCStats> statsMap = report.getStats();
                 String selectedPairId = null;
@@ -98,7 +126,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
                         Object pairId = s.getAttributes().get("selectedCandidatePairId");
                         if (pairId != null) {
                             selectedPairId = pairId.toString();
-                            break;
+                        }
+                        Object dtls = s.getAttributes().get("dtlsState");
+                        if (dtls != null) {
+                            stats.setDtlsState(dtls.toString());
                         }
                     }
                 }
@@ -127,6 +158,34 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
                     if (rttObj instanceof Number num) {
                         stats.setRttMs((float) (num.doubleValue() * 1000.0));
                     }
+                    Object stateObj = attrs.get("state");
+                    if (stateObj != null) {
+                        stats.setCandidatePairState(stateObj.toString());
+                    }
+                    Object nomObj = attrs.get("nominated");
+                    if (nomObj instanceof Boolean b) {
+                        stats.setNominated(b);
+                    }
+                    Object pktSent = attrs.get("packetsSent");
+                    if (pktSent instanceof Number n) {
+                        stats.setPacketsSent(n.longValue());
+                    }
+                    Object pktRecv = attrs.get("packetsReceived");
+                    if (pktRecv instanceof Number n) {
+                        stats.setPacketsReceived(n.longValue());
+                    }
+                    Object pktDisc = attrs.get("packetsDiscardedOnSend");
+                    if (pktDisc instanceof Number n) {
+                        stats.setPacketsDiscardedOnSend(n.longValue());
+                    }
+                    Object outBitrate = attrs.get("availableOutgoingBitrate");
+                    if (outBitrate instanceof Number n) {
+                        stats.setAvailableOutgoingBitrate(n.doubleValue());
+                    }
+                    Object inBitrate = attrs.get("availableIncomingBitrate");
+                    if (inBitrate instanceof Number n) {
+                        stats.setAvailableIncomingBitrate(n.doubleValue());
+                    }
 
                     Object localId = attrs.get("localCandidateId");
                     if (localId != null && statsMap.containsKey(localId.toString())) {
@@ -147,6 +206,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
                     if (s.getType() == RTCStatsType.DATA_CHANNEL) {
                         Map<String, Object> attrs = s.getAttributes();
                         stats.setDataChannelState(String.valueOf(attrs.get("state")));
+                        Object label = attrs.get("label");
+                        if (label != null) {
+                            stats.setDataChannelLabel(label.toString());
+                        }
                         if (attrs.get("bytesSent") instanceof Number n) {
                             stats.setBytesSent(n.longValue());
                         }
@@ -223,21 +286,44 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     public synchronized void init(boolean offerer, List<IceServer> iceServers,
                                   IceOptions options,
                                   DataChannelMessageHandler messageHandler, SessionStateHandler stateHandler) {
+        init(offerer, iceServers, options, AllowCombination.ALL, messageHandler, stateHandler);
+    }
+
+    /**
+     * Initialize the session with configuration, options, combination, and callbacks.
+     */
+    public synchronized void init(boolean offerer, List<IceServer> iceServers,
+                                  IceOptions options,
+                                  AllowCombination combination,
+                                  DataChannelMessageHandler messageHandler, SessionStateHandler stateHandler) {
         this.isOfferer = offerer;
         this.messageHandler = messageHandler;
         this.stateHandler = stateHandler;
+        this.allowCombination = combination != null ? combination : AllowCombination.ALL;
 
         config = new RTCConfiguration();
-        if (options != null && options.isForceRelay()) {
+        if (this.allowCombination == AllowCombination.RELAY || (options != null && options.isForceRelay())) {
             config.iceTransportPolicy = RTCIceTransportPolicy.RELAY;
         } else {
             config.iceTransportPolicy = RTCIceTransportPolicy.ALL;
         }
 
+        if (config.portAllocatorConfig == null) {
+            config.portAllocatorConfig = new PortAllocatorConfig();
+        }
+
+        if (!this.allowCombination.isAllowReflexive()) {
+            config.portAllocatorConfig.setDisableStun(true);
+        }
+        if (!this.allowCombination.isAllowRelay()) {
+            config.portAllocatorConfig.setDisableRelay(true);
+        }
+        if (!this.allowCombination.isAllowHost()) {
+            config.portAllocatorConfig.setDisableAdapterEnumeration(true);
+            config.portAllocatorConfig.setDisableDefaultLocalCandidate(true);
+        }
+
         if (options != null && (options.getMinPort() > 0 || options.getMaxPort() > 0)) {
-            if (config.portAllocatorConfig == null) {
-                config.portAllocatorConfig = new PortAllocatorConfig();
-            }
             if (options.getMinPort() > 0) {
                 config.portAllocatorConfig.minPort = options.getMinPort();
             }
@@ -273,8 +359,9 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             log.warn("Could not schedule stats task", e);
         }
 
-        log.info("WebRtcSession initialized (offerer={}, iceServers={}, forceRelay={}, minPort={}, maxPort={})",
+        log.info("WebRtcSession initialized (offerer={}, iceServers={}, combination={}, forceRelay={}, minPort={}, maxPort={})",
                 offerer, config.iceServers.size(),
+                this.allowCombination,
                 options != null && options.isForceRelay(),
                 options != null ? options.getMinPort() : 0,
                 options != null ? options.getMaxPort() : 0);
@@ -437,13 +524,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     }
 
     /**
-     * Check if the session is connected.
-     */
-    public boolean isConnected() {
-        return connected;
-    }
-
-    /**
      * Wait for connection to be established.
      */
     public boolean waitForConnected(long timeoutMs) throws InterruptedException {
@@ -493,10 +573,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      */
     public boolean sendTextData(String text) {
         return sendData(text.getBytes(StandardCharsets.UTF_8), false);
-    }
-
-    public boolean isClosed() {
-        return closed;
     }
 
     /**
@@ -647,7 +723,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         ByteBuffer data = buffer.data;
         byte[] payload = new byte[data.remaining()];
         data.duplicate().get(payload);
-        log.debug("Data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
+        log.trace("Data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
         if (messageHandler != null) {
             messageHandler.onMessage(payload, buffer.binary);
         }
@@ -801,13 +877,4 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         }
     }
 
-    // ==================== Getters for Testing/Debugging ====================
-
-    public RTCPeerConnection getPeerConnection() {
-        return peerConnection;
-    }
-
-    public boolean isOfferer() {
-        return isOfferer;
-    }
 }

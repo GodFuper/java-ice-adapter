@@ -1,9 +1,6 @@
 package com.faforever.iceadapter.services;
 
-import com.faforever.iceadapter.dto.IceServerView;
-import com.faforever.iceadapter.dto.KcpPeerView;
-import com.faforever.iceadapter.dto.PeerView;
-import com.faforever.iceadapter.dto.ServerPeerView;
+import com.faforever.iceadapter.dto.*;
 import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
 import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
@@ -100,6 +97,13 @@ public interface UIAdapter {
      * @return observable list of KCP peer info objects
      */
     ObservableList<KcpPeerView> getKcpPeerInfoList();
+
+    /**
+     * Returns an observable list of WebRTC statistics for peers using WebRTC transport.
+     *
+     * @return observable list of WebRTC peer info objects
+     */
+    ObservableList<WebRtcPeerView> getWebRtcPeerInfoList();
 
     /**
      * Returns an observable list of peer connection details.

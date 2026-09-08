@@ -2,10 +2,7 @@ package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
-import com.faforever.iceadapter.dto.IceServerView;
-import com.faforever.iceadapter.dto.KcpPeerView;
-import com.faforever.iceadapter.dto.PeerView;
-import com.faforever.iceadapter.dto.ServerPeerView;
+import com.faforever.iceadapter.dto.*;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceServer;
@@ -37,6 +34,7 @@ public class UIAdapterImpl implements UIAdapter {
     private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
     private final Map<Pair<Integer, Integer>, ServerPeerView> uiServerPeers = new ConcurrentHashMap<>();
     private final Map<Integer, KcpPeerView> uiKcpPeers = new ConcurrentHashMap<>();
+    private final Map<Integer, WebRtcPeerView> uiWebRtcPeers = new ConcurrentHashMap<>();
 
     private Optional<IceGameSession> getGameSession() {
         return Optional.ofNullable(iceAdapter.getGameSession());
@@ -150,6 +148,25 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
+    public ObservableList<WebRtcPeerView> getWebRtcPeerInfoList() {
+        Map<Integer, Peer> peers =
+                getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
+
+        Set<Integer> peerIds = peers.values().stream()
+                .map(Peer::getRemoteId)
+                .collect(Collectors.toSet());
+
+        uiWebRtcPeers.keySet().stream()
+                .filter(id -> !peerIds.contains(id))
+                .forEach(uiWebRtcPeers::remove);
+
+        return FXCollections.observableArrayList(peers.values().stream()
+                .sorted((p1, p2) -> Comparator.comparingInt(Peer::getRemoteId).compare(p1, p2))
+                .map(this::toWebRtcPeerInfo)
+                .collect(Collectors.toList()));
+    }
+
+    @Override
     public ObservableList<PeerView> getPeerInfoList() {
         Map<Integer, Peer> peers =
                 getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
@@ -238,6 +255,14 @@ public class UIAdapterImpl implements UIAdapter {
     private KcpPeerView toKcpPeerInfo(Peer peer) {
         KcpPeerView info = uiKcpPeers.computeIfAbsent(peer.getRemoteId(), id ->
                 new KcpPeerView(peer.getRemoteId(), peer.getRemoteLogin()));
+        info.update(peer);
+
+        return info;
+    }
+
+    private WebRtcPeerView toWebRtcPeerInfo(Peer peer) {
+        WebRtcPeerView info = uiWebRtcPeers.computeIfAbsent(peer.getRemoteId(), id ->
+                new WebRtcPeerView(peer.getRemoteId(), peer.getRemoteLogin()));
         info.update(peer);
 
         return info;

@@ -16,6 +16,7 @@
                 <Button text="STUN/TURN" HBox.hgrow="ALWAYS" onAction="#openSettingsStunAndTurn"/>
                 <Button text="Server peers" HBox.hgrow="ALWAYS" onAction="#openPanelServerPeers"/>
                 <Button text="KCP" HBox.hgrow="ALWAYS" onAction="#openPanelKcpPeers"/>
+                <Button text="WebRTC" HBox.hgrow="ALWAYS" onAction="#openPanelWebRtcPeers"/>
             </HBox>
 
             <HBox spacing="25">
@@ -108,15 +109,6 @@
                                       HBox.hgrow="ALWAYS"/>
                         </VBox>
 
-                        <VBox fx:id="pairCandidateInfoAreaPane" spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
-                            <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
-                            <TextArea fx:id="pairCandidateInfoArea"
-                                      wrapText="true"
-                                      editable="false"
-                                      VBox.vgrow="ALWAYS"
-                                      prefHeight="150"/>
-                        </VBox>
-
                         <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
                             <ComboBox fx:id="peerSendModeComboBox"
                                       prefWidth="Infinity"
@@ -125,6 +117,15 @@
                             <CheckBox fx:id="additionalPacketForwardingCheckbox"
                                       text="Additional packet forwarding"
                                       selected="true"/>
+                        </VBox>
+
+                        <VBox fx:id="pairCandidateInfoAreaPane" spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
+                            <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
+                            <TextArea fx:id="pairCandidateInfoArea"
+                                      wrapText="true"
+                                      editable="false"
+                                      VBox.vgrow="ALWAYS"
+                                      prefHeight="150"/>
                         </VBox>
                     </VBox>
                 </VBox>
