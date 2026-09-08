@@ -52,7 +52,6 @@ public enum PeerModule implements Comparator<PeerModule> {
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
     PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new),
-    PAIR_SELECTOR(PairSelectorModule::new),
     WEBRTC_PEER_TO_PEER_SENDER(WebRtcPeerToPeerSenderModule::new),
     WEBRTC_PEER_TO_PEER_LISTENER(WebRtcPeerToPeerListenerModule::new);
 

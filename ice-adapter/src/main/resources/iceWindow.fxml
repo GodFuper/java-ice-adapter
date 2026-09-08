@@ -108,6 +108,14 @@
                                       HBox.hgrow="ALWAYS"/>
                         </VBox>
 
+                        <VBox fx:id="pairCandidateInfoAreaPane" spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
+                            <Label text="Pair Candidate Info:" style="-fx-font-weight: bold;"/>
+                            <TextArea fx:id="pairCandidateInfoArea"
+                                      wrapText="true"
+                                      editable="false"
+                                      VBox.vgrow="ALWAYS"
+                                      prefHeight="150"/>
+                        </VBox>
 
                         <VBox spacing="10" alignment="TOP_LEFT" style="-fx-padding: 5;">
                             <ComboBox fx:id="peerSendModeComboBox"
@@ -118,22 +126,6 @@
                                       text="Additional packet forwarding"
                                       selected="true"/>
                         </VBox>
-
-                        <VBox spacing="10" alignment="CENTER">
-                            <Button fx:id="switchPairButton" text="Switch Pair" maxWidth="Infinity"
-                                    style="-fx-font-size: 12px;"
-                                    onMouseClicked="#openPairSelector"/>
-                        </VBox>
-
-                        <VBox fx:id="pairCandidateInfoAreaPane" spacing="5" style="-fx-padding: 5;" VBox.vgrow="ALWAYS">
-                            <TextArea fx:id="pairCandidateInfoArea"
-                                      wrapText="true"
-                                      editable="false"
-                                      VBox.vgrow="ALWAYS"
-                                      prefHeight="150"/>
-                        </VBox>
-
-
                     </VBox>
                 </VBox>
 

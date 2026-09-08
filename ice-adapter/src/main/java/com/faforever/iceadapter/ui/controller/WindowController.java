@@ -8,7 +8,6 @@ import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.ui.IceServerWindow;
 import com.faforever.iceadapter.ui.InfoKcpPeerWindow;
 import com.faforever.iceadapter.ui.InfoServerPeerWindow;
-import com.faforever.iceadapter.ui.PairSelectorDialog;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.collections.FXCollections;
@@ -119,9 +118,6 @@ public class WindowController {
 
     @FXML
     private VBox pairCandidateInfoAreaPane;
-
-    @FXML
-    private Button switchPairButton;
 
     @FXML
     private TextArea pairCandidateInfoArea;
@@ -458,14 +454,6 @@ public class WindowController {
             }
             peerTable.refresh();
         });
-    }
-
-    @FXML
-    private void openPairSelector() {
-        if (selectedPeer != null && adapter != null) {
-            CompletableFuture.runAsync(() ->
-                    runOnUIThread(() -> PairSelectorDialog.launch(adapter, selectedPeer)));
-        }
     }
 
     private void startPeriodicUpdates() {

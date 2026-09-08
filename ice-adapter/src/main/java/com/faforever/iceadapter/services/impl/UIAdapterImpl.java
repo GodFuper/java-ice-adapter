@@ -2,13 +2,18 @@ package com.faforever.iceadapter.services.impl;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
-import com.faforever.iceadapter.dto.*;
+import com.faforever.iceadapter.dto.IceServerView;
+import com.faforever.iceadapter.dto.KcpPeerView;
+import com.faforever.iceadapter.dto.PeerView;
+import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceServer;
-import com.faforever.iceadapter.ice.peer.*;
+import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
+import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerSendMode;
+import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import com.faforever.iceadapter.ice.peer.modules.other.PairSelectorModule;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.UIAdapter;
 import javafx.collections.FXCollections;
@@ -16,7 +21,6 @@ import javafx.collections.ObservableList;
 import kotlin.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.CandidatePair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -333,50 +337,5 @@ public class UIAdapterImpl implements UIAdapter {
     @Override
     public void shutdown() {
         IceAdapter.close(0);
-    }
-
-    @Override
-    public ObservableList<PairView> getSucceededPairs(PeerView peer) {
-        Optional<Peer> optPeer = getGameSession()
-                .flatMap(session -> session.getPeer(peer.getId().get()));
-
-        if (optPeer.isEmpty()) {
-            log.warn("getSucceededPairs: peer not found for id={}", peer.getId().get());
-            return FXCollections.observableArrayList();
-        }
-
-        Peer peerObj = optPeer.get();
-        Optional<PairSelectorModule> optModule = peerObj.getModule(PeerModule.PAIR_SELECTOR, PairSelectorModule.class);
-
-        if (optModule.isEmpty()) {
-            log.warn("getSucceededPairs: PAIR_SELECTOR module not found for peer {}", peerObj.getPeerIdentifier());
-            return FXCollections.observableArrayList();
-        }
-
-        PairSelectorModule module = optModule.get();
-        List<CandidatePair> pairs = module.getSucceededPairs();
-        CandidatePair active = peerObj.getSelectedPair();
-        float rtt = peerObj.getRtt();
-
-        log.debug("getSucceededPairs: peer={} pairs={} active={}", peerObj.getPeerIdentifier(), pairs.size(), active);
-
-        return FXCollections.observableArrayList(pairs.stream()
-                .map(pair -> {
-                    PairView view = new PairView();
-                    view.update(pair, rtt);
-                    if (pair == active) {
-                        view.isActive().set(true);
-                    }
-                    return view;
-                })
-                .collect(Collectors.toList()));
-    }
-
-    @Override
-    public void selectPair(PeerView peer, CandidatePair pair) {
-        getGameSession()
-                .flatMap(session -> session.getPeer(peer.getId().get()))
-                .flatMap(p -> p.getModule(PeerModule.PAIR_SELECTOR, PairSelectorModule.class))
-                .ifPresent(module -> module.selectPair(pair));
     }
 }
