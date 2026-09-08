@@ -10,6 +10,7 @@ import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.RpcConnection;
 import com.faforever.iceadapter.services.impl.rpc.RpcConnectionImpl;
 import com.faforever.iceadapter.util.TrayIcon;
+import com.faforever.iceadapter.webrtc.WebRtcConnectionFactory;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     @CommandLine.ArgGroup(exclusive = false)
     @Getter
+    @Setter
     private IceOptions iceOptions;
 
     @Getter
@@ -38,6 +40,9 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     @Getter
     private RPCService rpcService;
+
+    @Getter
+    private WebRtcConnectionFactory webRtcConnectionFactory;
 
     @Getter
     @Setter
@@ -57,7 +62,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     public void start() {
         determineVersion();
-        log.info("Version: {}", VERSION);
+        log.info("Version: {}, Transport: {}", VERSION, iceOptions.getTransport());
 
         gpgNetServer = new GPGNetServer(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort());
         rpcService = new RPCService(iceOptions.getRpcPort());
@@ -75,7 +80,43 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         TrayIcon.create();
 
+        if (iceOptions.getTransport() == IceOptions.TransportMode.WEBRTC) {
+            startWebRtcMode();
+        } else {
+            startIceMode();
+        }
+
+        registerShutdownHook();
+
         debug().startupComplete();
+    }
+
+    private void registerShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("JVM shutdown hook triggered");
+            IceAdapter instance = INSTANCE;
+            if (instance != null) {
+                try {
+                    instance.onFAShutdown();
+                } catch (Exception ignored) {
+                }
+                if (instance.webRtcConnectionFactory != null) {
+                    try {
+                        instance.webRtcConnectionFactory.shutdown();
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }, "ice-adapter-shutdown-hook"));
+    }
+
+    private void startIceMode() {
+        log.info("Starting in ICE mode (ice4j + TCP RPC)");
+    }
+
+    private void startWebRtcMode() {
+        log.info("Starting in WEBRTC mode (WebRTC DataChannel)");
+        webRtcConnectionFactory = WebRtcConnectionFactory.getInstance();
     }
 
     @Override
@@ -149,11 +190,19 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
                 log.warn("Error closing previous GAME_SESSION", e);
             }
         }
+
+        GameSession newGameSession;
         RpcConnection rpcConnection = new RpcConnectionImpl(rpcService);
-        GameSession gameSession = new GameSession(rpcConnection, iceOptions);
-        setGameSession(gameSession);
-        return gameSession;
+        if (iceOptions.getTransport() == IceOptions.TransportMode.WEBRTC) {
+            newGameSession = new GameSession(iceOptions, webRtcConnectionFactory, rpcConnection);
+        } else {
+            newGameSession = new GameSession(rpcConnection, iceOptions);
+        }
+
+        setGameSession(newGameSession);
+        return newGameSession;
     }
+
 
     /**
      * Triggered by losing gpgnet connection to FA.
@@ -193,14 +242,25 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         instance.onFAShutdown(); // will close gameSession aswell
 
         try {
-            instance.gpgNetServer.close();
+            if (instance.gpgNetServer != null) {
+                instance.gpgNetServer.close();
+            }
         } catch (Exception e) {
             log.warn("Error closing GPGNetServer", e);
         }
         try {
-            instance.rpcService.close();
+            if (instance.rpcService != null) {
+                instance.rpcService.close();
+            }
         } catch (Exception e) {
             log.warn("Error closing RPCService", e);
+        }
+        try {
+            if (instance.webRtcConnectionFactory != null) {
+                instance.webRtcConnectionFactory.shutdown();
+            }
+        } catch (Exception e) {
+            log.warn("Error closing WebRtcConnectionFactory", e);
         }
 
         Debug.close();

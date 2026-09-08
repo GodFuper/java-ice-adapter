@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Base class for peer connection integration tests.
- * Provides shared setup/teardown, test fixtures, and helper methods.
+ * Base class for WebRTC peer connection integration tests.
+ * Sets up two game sessions communicating via WebRTC data channel over InMemory sockets.
  */
-abstract public class PeerConnectionIntegrationBase {
+public abstract class WebRtcPeerConnectionIntegrationBase {
 
     protected static final String LOCAL_IP_ADDRESS = "127.0.0.1";
     protected static final long ICE_READY_TIMEOUT_MS = 30_000;
@@ -38,12 +38,7 @@ abstract public class PeerConnectionIntegrationBase {
     protected Peer peerB;
 
     protected Set<PeerModule> getDisabledModules() {
-        return Set.of(
-                PeerModule.CONNECTION_CHECKER_MODULE,
-                PeerModule.PEER_TURN_REFRESHER_MODULE,
-                PeerModule.RELAY_CLIENT_MODULE,
-                PeerModule.RELAY_SERVER_MODULE,
-                PeerModule.AUTO_RELAY_CALCULATE_RTT);
+        return Set.of(PeerModule.CONNECTION_CHECKER_MODULE);
     }
 
     @BeforeEach
@@ -55,9 +50,9 @@ abstract public class PeerConnectionIntegrationBase {
         socketB = new InMemoryDatagramSocket();
 
         IceOptions optionsA = new IceOptions(
-                1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY, IceOptions.TransportMode.ICE);
+                1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY, IceOptions.TransportMode.WEBRTC);
         IceOptions optionsB = new IceOptions(
-                2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY, IceOptions.TransportMode.ICE);
+                2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY, IceOptions.TransportMode.WEBRTC);
 
         gameA = new TestGameSession(bus, optionsA, getDisabledModules());
         gameA.setLobbyPort(socketA.getLocalPort());
@@ -68,18 +63,15 @@ abstract public class PeerConnectionIntegrationBase {
         gameA.connectToPeer("PlayerB", 2, true, 0, AllowCombination.ALL);
         gameB.connectToPeer("PlayerA", 1, false, 0, AllowCombination.ALL);
 
-        peerA = gameA.getPeer(2).get();
-        peerB = gameB.getPeer(1).get();
+        peerA = gameA.getPeer(2).orElse(null);
+        peerB = gameB.getPeer(1).orElse(null);
 
         assertNotNull(peerA, "Peer A should exist");
         assertNotNull(peerB, "Peer B should exist");
 
-        // Register peers with the RPC bus BEFORE ICE candidates are exchanged
+        // Register peers with the RPC bus for WebRTC signaling (offer/answer/candidates)
         bus.registerPeer(peerA.getFromId(), peerA);
         bus.registerPeer(peerB.getFromId(), peerB);
-
-        // Replace FASocketModule sockets with InMemoryDatagramSocket
-        // Do this BEFORE awaiting ICE ready so ICE candidates are sent through InMemoryRpcBus
 
         sleep(100);
         try {
@@ -101,22 +93,32 @@ abstract public class PeerConnectionIntegrationBase {
         assertTrue(peerA.isConnected(), "Peer A should be connected, state=" + peerA.getIceState());
         assertTrue(peerB.isConnected(), "Peer B should be connected, state=" + peerB.getIceState());
 
-        // Clear sockets AFTER ICE connection is ready to discard any handshake/keepalive packets
+        // Clear sockets AFTER WebRTC connection is ready to discard any initial setup packets
         socketA.clear();
         socketB.clear();
     }
 
     @AfterEach
     void tearDown() {
-        gameA.close();
-        gameB.close();
-        bus.stop();
-        socketA.close();
-        socketB.close();
+        if (gameA != null) {
+            gameA.close();
+        }
+        if (gameB != null) {
+            gameB.close();
+        }
+        if (bus != null) {
+            bus.stop();
+        }
+        if (socketA != null) {
+            socketA.close();
+        }
+        if (socketB != null) {
+            socketB.close();
+        }
     }
 
     /**
-     * Actively drains candidate messages and waits for ICE connection.
+     * Waits for both peers to establish WebRTC connection and become connected.
      */
     protected void awaitIceReady(Peer peerA, Peer peerB) throws InterruptedException {
         long deadline = System.currentTimeMillis() + ICE_READY_TIMEOUT_MS;
@@ -128,8 +130,8 @@ abstract public class PeerConnectionIntegrationBase {
             Thread.sleep(POLL_INTERVAL_MS);
         }
 
-        Assertions.fail("ICE connection timeout after " + ICE_READY_TIMEOUT_MS + "ms (A=" + peerA.getIceState() + ", B="
-                + peerB.getIceState() + ")");
+        Assertions.fail("WebRTC connection timeout after " + ICE_READY_TIMEOUT_MS + "ms (A=" + peerA.getIceState()
+                + ", B=" + peerB.getIceState() + ", A.connected=" + peerA.isConnected() + ", B.connected=" + peerB.isConnected() + ")");
     }
 
     protected void sleep(long ms) {

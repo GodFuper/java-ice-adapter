@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import picocli.CommandLine.Option;
 
+import java.util.Arrays;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,6 +34,12 @@ public class IceOptions {
 
     @Option(names = "--force-relay", description = "force the usage of relay candidates only")
     private boolean forceRelay;
+
+    @Option(names = "--min-port", defaultValue = "0", description = "set minimum port for WebRTC ICE candidates (0 = automatic)")
+    private int minPort;
+
+    @Option(names = "--max-port", defaultValue = "0", description = "set maximum port for WebRTC ICE candidates (0 = automatic)")
+    private int maxPort;
 
     @Option(names = "--debug-window", description = "activate the debug window")
     private boolean debugWindow;
@@ -84,4 +92,32 @@ public class IceOptions {
             defaultValue = "DIRECT_ONLY",
             description = "Peer send mode: DIRECT_ONLY, BOTH, KCP_ONLY")
     private PeerSendMode sendMode;
+
+    @Option(names = "--transport",
+            defaultValue = "WEBRTC",
+            description = "Transport mode: ICE (ice4j + TCP RPC) or WEBRTC (WebRTC data channel)")
+    private TransportMode transport = TransportMode.WEBRTC;
+
+    public IceOptions(int id, int gameId, String login, int rpcPort, int gpgnetPort, int lobbyPort,
+                      boolean forceRelay, boolean debugWindow, boolean infoWindow, int delayUi,
+                      int pingCount, double acceptableLatency, String telemetryServer,
+                      boolean manualCombinationConnection, boolean manualStrategyConnection,
+                      boolean additionalInfoPeer, boolean hostMode, PeerSendMode sendMode,
+                      TransportMode transport) {
+        this(id, gameId, login, rpcPort, gpgnetPort, lobbyPort, forceRelay, 0, 0,
+                debugWindow, infoWindow, delayUi, pingCount, acceptableLatency, telemetryServer,
+                manualCombinationConnection, manualStrategyConnection, additionalInfoPeer,
+                hostMode, sendMode, transport);
+    }
+
+    public enum TransportMode {
+        ICE, WEBRTC;
+
+        public static TransportMode fromString(String value) {
+            return Arrays.stream(values())
+                    .filter(t -> t.name().equalsIgnoreCase(value))
+                    .findFirst()
+                    .orElse(ICE);
+        }
+    }
 }

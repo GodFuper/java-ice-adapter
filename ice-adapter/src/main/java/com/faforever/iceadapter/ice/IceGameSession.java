@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.ice;
 
+import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
 
@@ -20,4 +21,6 @@ public interface IceGameSession {
     boolean isGameEnded();
 
     int getLobbyPort();
+
+    IceOptions getOptions();
 }

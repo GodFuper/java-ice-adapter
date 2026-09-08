@@ -11,6 +11,8 @@ import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.CollectionUtils;
+import com.faforever.iceadapter.webrtc.WebRtcSession;
+import com.faforever.iceadapter.webrtc.WebRtcSignalingService;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -69,12 +71,18 @@ public abstract class Peer {
     private volatile Agent agent;
     private volatile IceMediaStream mediaStream;
     private volatile Component component;
+
+    // WebRTC fields (used when --transport=webrtc)
+    private volatile WebRtcSession webRtcSession;
+    private volatile WebRtcSignalingService webRtcSignalingService;
+    
     private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
     private AllowCombination combination = AllowCombination.ALL;
     private boolean disableConnectService = false;
     private PeerSendMode sendMode = PeerSendMode.DIRECT_ONLY;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
+    private final AtomicInteger reInitEventId = new AtomicInteger(0);
     private volatile IceState iceState = null;
 
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
@@ -152,6 +160,9 @@ public abstract class Peer {
 
     public void setIceState(IceState iceState) {
         IceState old = this.iceState;
+        if (Objects.equals(old, iceState)) {
+            return;
+        }
         this.iceState = iceState;
         event(bus -> bus.onIceStateChange(this, old, iceState));
         debug().peerStateChanged(this);
@@ -213,6 +224,22 @@ public abstract class Peer {
         event(bus -> bus.onIceComponentChange(this, component));
     }
 
+    public WebRtcSession getWebRtcSession() {
+        return webRtcSession;
+    }
+
+    public void setWebRtcSession(WebRtcSession webRtcSession) {
+        this.webRtcSession = webRtcSession;
+    }
+
+    public WebRtcSignalingService getWebRtcSignalingService() {
+        return webRtcSignalingService;
+    }
+
+    public void setWebRtcSignalingService(WebRtcSignalingService webRtcSignalingService) {
+        this.webRtcSignalingService = webRtcSignalingService;
+    }
+
     public void setRelayPeer(Peer relay) {
         event(bus -> bus.onRelayPeerChange(this, relay));
     }
@@ -253,7 +280,22 @@ public abstract class Peer {
     }
 
     public String getFullInfoSelectedPair() {
+        if (webRtcSession != null) {
+            WebRtcSession.SessionStats s = webRtcSession.getStats();
+            return "WebRTC DataChannel: %s\nLocal: %s (%s)\nRemote: %s (%s)\nRTT: %.1f ms\nBytes: %d sent / %d recv\nMessages: %d sent / %d recv"
+                    .formatted(s.getDataChannelState(), s.getLocalAddress(), s.getLocalCandidateType(),
+                            s.getRemoteAddress(), s.getRemoteCandidateType(),
+                            s.getRttMs(), s.getBytesSent(), s.getBytesReceived(),
+                            s.getMessagesSent(), s.getMessagesReceived());
+        }
         return CandidateUtil.infoCandidate(getSelectedPair());
+    }
+
+    public float getRtt() {
+        if (webRtcSession != null) {
+            return webRtcSession.getStats().getRttMs();
+        }
+        return rtt;
     }
 
     public Optional<Component> getActiveComponent() {
@@ -271,6 +313,10 @@ public abstract class Peer {
     }
 
     public List<Pair<String, String>> getCandidateTypes() {
+        if (webRtcSession != null) {
+            WebRtcSession.SessionStats s = webRtcSession.getStats();
+            return List.of(new Pair<>(s.getLocalCandidateType(), s.getRemoteCandidateType()));
+        }
         List<Pair<String, String>> candidates = new ArrayList<>();
         for (CandidatePair pair : getCandidatePairs()) {
             candidates.add(new Pair<>(
@@ -382,6 +428,15 @@ public abstract class Peer {
         event(bus -> bus.onClose(this, closing));
         for (ModuleBase module : modules.values()) {
             module.stop();
+        }
+
+        if (webRtcSession != null) {
+            try {
+                webRtcSession.close();
+            } catch (Exception e) {
+                log.warn("Error closing webRtcSession for peer {}", getPeerIdentifier(), e);
+            }
+            webRtcSession = null;
         }
 
         log.info("Peer closed: {}", getPeerIdentifier());

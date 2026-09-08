@@ -9,6 +9,7 @@ import com.faforever.iceadapter.gpgnet.LobbyInitMode;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
@@ -62,39 +63,50 @@ public class RPCHandler {
 
     public void iceMsg(long remotePlayerId, Object msg) {
         log.info("IceMsg received {}", msg);
-        boolean err = true;
-        CandidatesMessage message;
-        try {
-            message = objectMapper.readValue((String) msg, CandidatesMessage.class);
-        } catch (Exception e) {
-            log.error("Failed to parse iceMsg {}", msg, e);
-            return;
-        }
-        int idFrom = message.srcId();
-        int idTo = message.destId();
-        int myId = IceAdapter.getId();
-        if (myId != idTo) {
-            log.error("The iceMsg {} is not meant for {}. IceMsg ignored", message, idTo);
-            return;
-        }
-
-        if (remotePlayerId != idFrom) {
-            log.error("The sender {} != {} does not match the IceMsg source. IceMsg ignored", remotePlayerId, idFrom);
+        if (msg == null) {
+            log.warn("IceMsg is null, ignoring");
             return;
         }
 
         GameSession gameSession = IceAdapter.getGameSessionSafe();
         if (gameSession == null) {
-            log.error("The gameSession is null. IceMsg ignored. {}", message);
+            log.error("The gameSession is null. IceMsg ignored. {}", msg);
             return;
         }
 
         Peer peer = gameSession.getPeers().get((int) remotePlayerId);
         if (peer == null) {
-            log.error("Peer not found for id: {}. IceMsg ignored. {}", remotePlayerId, message);
+            log.error("Peer not found for id: {}. IceMsg ignored. {}", remotePlayerId, msg);
             return;
         }
-        peer.iceMessageFromRPC(message);
+
+        int myId = IceAdapter.getId();
+
+        try {
+            String msgStr = msg.toString();
+            JsonNode jsonNode = objectMapper.readTree(msgStr);
+
+            CandidatesMessage message = objectMapper.treeToValue(jsonNode, CandidatesMessage.class);
+            int idFrom = message.srcId();
+            int idTo = message.destId();
+
+            if (myId != idTo) {
+                log.error("The iceMsg {} is not meant for {}. IceMsg ignored", message, myId);
+                return;
+            }
+
+            if (remotePlayerId != idFrom) {
+                log.error(
+                        "The sender {} != {} does not match the IceMsg source. IceMsg ignored",
+                        remotePlayerId,
+                        idFrom);
+                return;
+            }
+
+            peer.iceMessageFromRPC(message);
+        } catch (Exception e) {
+            log.error("Failed to parse iceMsg {}", msg, e);
+        }
     }
 
     public void sendToGpgNet(String header, Object... args) {

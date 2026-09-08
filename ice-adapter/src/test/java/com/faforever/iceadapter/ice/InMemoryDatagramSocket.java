@@ -132,6 +132,17 @@ public class InMemoryDatagramSocket extends DatagramSocket {
     public void sendString(String text, Charset charset) throws IOException {
         Objects.requireNonNull(text, "Text must not be null");
         byte[] bytes = text.getBytes(charset);
+        sendBytes(bytes);
+    }
+
+    /**
+     * Sends a raw byte array as a UDP datagram.
+     *
+     * @param bytes the bytes to send
+     * @throws IOException if the socket is closed or not connected
+     */
+    public void sendBytes(byte[] bytes) throws IOException {
+        Objects.requireNonNull(bytes, "Bytes must not be null");
         DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
         send(packet);
     }

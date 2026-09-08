@@ -1,11 +1,11 @@
 package com.faforever.iceadapter.services;
-
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
+import com.faforever.iceadapter.webrtc.WebRtcConnectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 public class IceTrigger implements PeerEventListener {
     private final IceAsync iceAsync;
     private final ConnectService connectService;
+    private final WebRtcConnectService webRtcConnectService;
     private final RpcConnection rpcConnection;
 
     @Override
@@ -23,12 +24,24 @@ public class IceTrigger implements PeerEventListener {
         }
 
         iceAsync.runAsync(
-                false, "onIceStateChange", peer, () -> connectService.onChangeIceState(peer, oldState, newState));
+                false, "onIceStateChange", peer, () -> {
+                    if (webRtcConnectService != null) {
+                        webRtcConnectService.onChangeIceState(peer, oldState, newState);
+                    } else {
+                        connectService.onChangeIceState(peer, oldState, newState);
+                    }
+                });
     }
 
     @Override
     public void onConnectionLost(Peer peer, boolean clearIceState) {
-        iceAsync.runAsync(true, "onConnectionLost", peer, () -> connectService.onConnectionLost(peer, clearIceState));
+        iceAsync.runAsync(true, "onConnectionLost", peer, () -> {
+            if (webRtcConnectService != null) {
+                webRtcConnectService.onConnectionLost(peer, clearIceState);
+            } else {
+                connectService.onConnectionLost(peer, clearIceState);
+            }
+        });
     }
 
     @Override
@@ -45,7 +58,13 @@ public class IceTrigger implements PeerEventListener {
             return;
         }
 
-        iceAsync.runAsync(true, "onIceMessageFromRPC", peer, () -> connectService.onMessageFromRPC(peer, message));
+        iceAsync.runAsync(true, "onIceMessageFromRPC", peer, () -> {
+            if (webRtcConnectService != null) {
+                webRtcConnectService.onMessageFromRPC(peer, message);
+            } else {
+                connectService.onMessageFromRPC(peer, message);
+            }
+        });
     }
 
     @Override

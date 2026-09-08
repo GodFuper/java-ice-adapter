@@ -3,6 +3,7 @@ package com.faforever.iceadapter.ice;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.PingUtil;
+import dev.onvoid.webrtc.RTCIceServer;
 import kotlin.Pair;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,22 @@ public class IceServer {
 
     public boolean isTurn() {
         return type == TypeServer.TURN;
+    }
+
+    public RTCIceServer toWebRtcServer() {
+        RTCIceServer webrtcServer = new RTCIceServer();
+        String protocol = type == TypeServer.STUN ? "stun" : "turn";
+        String host = address.getHostString();
+        int port = address.getPort();
+        String transport = address.getTransport() == Transport.TCP ? "?transport=tcp" : "";
+        webrtcServer.urls.add(protocol + ":" + host + ":" + port + transport);
+        if (turnUsername != null && !turnUsername.isEmpty()) {
+            webrtcServer.username = turnUsername;
+        }
+        if (turnCredential != null && !turnCredential.isEmpty()) {
+            webrtcServer.password = turnCredential;
+        }
+        return webrtcServer;
     }
 
     public static List<IceServer> createPublicServers() {

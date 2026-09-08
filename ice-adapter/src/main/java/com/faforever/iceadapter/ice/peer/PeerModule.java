@@ -12,6 +12,8 @@ import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayBestRttPeerChec
 import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayPeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayClientModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule;
+import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerListenerModule;
+import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerSenderModule;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -50,7 +52,9 @@ public enum PeerModule implements Comparator<PeerModule> {
     CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
     PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new),
-    PAIR_SELECTOR(PairSelectorModule::new);
+    PAIR_SELECTOR(PairSelectorModule::new),
+    WEBRTC_PEER_TO_PEER_SENDER(WebRtcPeerToPeerSenderModule::new),
+    WEBRTC_PEER_TO_PEER_LISTENER(WebRtcPeerToPeerListenerModule::new);
 
     @Getter
     private static final List<PeerModule> sortedModules =

@@ -52,10 +52,12 @@ abstract public class KcpPeerToPeerIntegrationBase {
 
         IceOptions optionsA = new IceOptions(
                 1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null,
-                true, true, false, true, PeerSendMode.KCP_ONLY);
+                true, true, false, true, PeerSendMode.KCP_ONLY, IceOptions.TransportMode.ICE);
         IceOptions optionsB = new IceOptions(
                 2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null,
-                true, true, false, true, PeerSendMode.KCP_ONLY);
+                true, true, false, true, PeerSendMode.KCP_ONLY, IceOptions.TransportMode.ICE);
+
+        // Note: WebRTC modules are not disabled - they will be ignored in ICE mode
 
         Set<PeerModule> disabled = getDefaultDisabledModules();
 

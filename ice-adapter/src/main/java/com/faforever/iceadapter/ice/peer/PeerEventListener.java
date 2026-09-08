@@ -1,5 +1,4 @@
 package com.faforever.iceadapter.ice.peer;
-
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
