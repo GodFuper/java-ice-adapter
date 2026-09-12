@@ -44,7 +44,7 @@ public class WebRtcConnectServiceControlledImpl extends WebRtcConnectServiceComm
         final int currentAwaitingCandidatesEventId =
                 peer.getAwaitingCandidatesEventId().incrementAndGet();
         iceAsync.runAsyncDelay(
-                peer, () -> asyncTimeoutAwaitingCandidates(currentAwaitingCandidatesEventId, peer), 5000);
+                peer, () -> asyncTimeoutAwaitingCandidates(currentAwaitingCandidatesEventId, peer), 6000);
     }
 
     @Override
@@ -118,6 +118,11 @@ public class WebRtcConnectServiceControlledImpl extends WebRtcConnectServiceComm
 
         // Guard against late/delayed messages after connection is established or already checking
         if (peer.getIceState() != AWAITING_CANDIDATES) {
+            if (peer.getIceState() == CHECKING && (message.isAnswer() || (message.password() != null && message.password().contains("v=0")))) {
+                log.info("Controlled peer received duplicate Answer CandidatesMessage in CHECKING state for peer {}, ignoring duplicate",
+                        peer.getPeerIdentifier());
+                return;
+            }
             log.warn("Controlled peer received CandidatesMessage in state {}, ignoring late message",
                     peer.getIceState());
             return;

@@ -74,6 +74,7 @@ public class WebRtcConnectServiceNotControlledImpl extends WebRtcConnectServiceC
         if (peer == null) {
             return;
         }
+        lastProcessedOfferSdpByPeer.remove(peer.getRemoteId());
         LockUtil.executeWithLock(peer.getLock(LOCK_CONNECT), () -> connectLost(peer, false, clearIceState));
     }
 

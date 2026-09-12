@@ -6,7 +6,6 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Agent;
 
 import java.util.List;
 
@@ -23,13 +22,6 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
     @Override
     public void init() {
         peer.addEventListener(this);
-    }
-
-    @Override
-    public void onAgentChange(Peer peer, Agent agent) {
-        if (agent != null && isEnabled()) {
-            changeCombination();
-        }
     }
 
     @Override

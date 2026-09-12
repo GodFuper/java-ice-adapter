@@ -44,31 +44,36 @@ public final class WebRtcConnectionFactory {
         }
     }
 
-    public PeerConnectionFactory getFactory() {
+    public synchronized PeerConnectionFactory getFactory() {
+        if (factory == null) {
+            throw new IllegalStateException("WebRtcConnectionFactory is shut down or not initialized");
+        }
         return factory;
     }
 
     /**
      * Shutdown the factory (called on adapter close).
      */
-    public synchronized void shutdown() {
-        if (factory != null) {
-            try {
-                factory.dispose();
-            } catch (Exception e) {
-                log.warn("Error disposing PeerConnectionFactory", e);
+    public void shutdown() {
+        synchronized (WebRtcConnectionFactory.class) {
+            if (factory != null) {
+                try {
+                    factory.dispose();
+                } catch (Exception e) {
+                    log.warn("Error disposing PeerConnectionFactory", e);
+                }
+                factory = null;
             }
-            factory = null;
-        }
-        if (audioDeviceModule != null) {
-            try {
-                audioDeviceModule.dispose();
-            } catch (Exception e) {
-                log.warn("Error disposing AudioDeviceModule", e);
+            if (audioDeviceModule != null) {
+                try {
+                    audioDeviceModule.dispose();
+                } catch (Exception e) {
+                    log.warn("Error disposing AudioDeviceModule", e);
+                }
+                audioDeviceModule = null;
             }
-            audioDeviceModule = null;
+            instance = null;
+            log.info("WebRtcConnectionFactory shut down");
         }
-        instance = null;
-        log.info("WebRtcConnectionFactory shut down");
     }
 }

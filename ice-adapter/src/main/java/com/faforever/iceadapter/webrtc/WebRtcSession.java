@@ -30,10 +30,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObserver {
 
+    private static final long GATHER_TIMEOUT_MS = 2500;
+
     private final WebRtcConnectionFactory factory;
     @Getter
-    private RTCPeerConnection peerConnection;
-    private RTCDataChannel dataChannel;
+    private volatile RTCPeerConnection peerConnection;
+    private volatile RTCDataChannel dataChannel;
     @Getter
     private RTCConfiguration config;
 
@@ -41,8 +43,8 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     private AllowCombination allowCombination = AllowCombination.ALL;
 
     // Callbacks
-    private DataChannelMessageHandler messageHandler;
-    private SessionStateHandler stateHandler;
+    private volatile DataChannelMessageHandler messageHandler;
+    private volatile SessionStateHandler stateHandler;
 
     // State
     @Getter
@@ -423,7 +425,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         // Wait for ICE candidate gathering to complete (Vanilla ICE)
         try {
-            boolean completed = gatherLatch.await(1500, TimeUnit.MILLISECONDS);
+            boolean completed = gatherLatch.await(GATHER_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             log.info("ICE candidate gathering for offer finished (completed={}, gatheredCandidates={})",
                     completed, gatheredCandidatePackets.size());
         } catch (InterruptedException e) {
@@ -534,33 +536,41 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Send data over the data channel.
      */
     public boolean sendData(byte[] data, boolean isBinary) {
-        if (dataChannel == null || dataChannel.getState() != RTCDataChannelState.OPEN) {
+        if (closed) {
+            return false;
+        }
+        RTCDataChannel dc = this.dataChannel;
+        if (dc == null || dc.getState() != RTCDataChannelState.OPEN) {
             log.warn("Data channel not open, cannot send data");
             return false;
         }
         try {
             ByteBuffer buffer = ByteBuffer.wrap(data);
             RTCDataChannelBuffer bufferData = new RTCDataChannelBuffer(buffer, isBinary);
-            dataChannel.send(bufferData);
+            dc.send(bufferData);
+            return true;
         } catch (Exception e) {
             log.error("Failed to send data over data channel", e);
             return false;
         }
-        return true;
     }
 
     /**
      * Send data asynchronously without blocking calling thread on native WebRTC network thread.
      */
     public boolean sendDataAsync(byte[] data, boolean isBinary) {
-        if (dataChannel == null || dataChannel.getState() != RTCDataChannelState.OPEN) {
+        if (closed) {
+            return false;
+        }
+        RTCDataChannel dc = this.dataChannel;
+        if (dc == null || dc.getState() != RTCDataChannelState.OPEN) {
             log.warn("Data channel not open, cannot send data async");
             return false;
         }
         try {
             ByteBuffer buffer = ByteBuffer.wrap(data);
             RTCDataChannelBuffer bufferData = new RTCDataChannelBuffer(buffer, isBinary);
-            dataChannel.sendAsync(bufferData);
+            dc.sendAsync(bufferData);
             return true;
         } catch (Exception e) {
             log.error("Failed to send data async over data channel", e);
@@ -579,39 +589,45 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Close the session and dispose native resources.
      * Idempotent: safe to call multiple times.
      */
-    public synchronized void close() {
-        if (closed) {
-            return;
+    public void close() {
+        RTCDataChannel dc;
+        RTCPeerConnection pc;
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            stateHandler = null;
+            messageHandler = null;
+            dc = this.dataChannel;
+            this.dataChannel = null;
+            pc = this.peerConnection;
+            this.peerConnection = null;
         }
-        closed = true;
-        stateHandler = null;
-        messageHandler = null;
         log.info("Closing WebRtcSession");
-        if (dataChannel != null) {
+        if (dc != null) {
             try {
-                dataChannel.unregisterObserver();
+                dc.unregisterObserver();
             } catch (Exception e) {
                 log.warn("Error unregistering data channel observer", e);
             }
             try {
-                dataChannel.close();
+                dc.close();
             } catch (Exception e) {
                 log.warn("Error closing data channel", e);
             }
             try {
-                dataChannel.dispose();
+                dc.dispose();
             } catch (Exception e) {
                 log.warn("Error disposing data channel", e);
             }
-            dataChannel = null;
         }
-        if (peerConnection != null) {
+        if (pc != null) {
             try {
-                peerConnection.close();
+                pc.close();
             } catch (Exception e) {
                 log.warn("Error closing peer connection", e);
             }
-            peerConnection = null;
         }
         if (statsFuture != null) {
             statsFuture.cancel(false);
@@ -666,8 +682,9 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             connected = true;
             connectedLatch.countDown();
             dataChannelOpenLatch.countDown();
-            if (stateHandler != null) {
-                stateHandler.onConnected();
+            SessionStateHandler handler = stateHandler;
+            if (handler != null) {
+                handler.onConnected();
             }
         }
     }
@@ -682,8 +699,9 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
                 || state == RTCPeerConnectionState.DISCONNECTED
                 || state == RTCPeerConnectionState.CLOSED) {
             connected = false;
-            if (stateHandler != null && !closed) {
-                stateHandler.onDisconnected();
+            SessionStateHandler handler = stateHandler;
+            if (handler != null && !closed) {
+                handler.onDisconnected();
             }
         }
     }
@@ -697,24 +715,29 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
     @Override
     public void onStateChange() {
-        if (closed || dataChannel == null) {
+        if (closed) {
             return;
         }
-        RTCDataChannelState state = dataChannel.getState();
+        RTCDataChannel dc = dataChannel;
+        if (dc == null) {
+            return;
+        }
+        RTCDataChannelState state = dc.getState();
         log.info("Data channel state: {}", state);
         if (state == RTCDataChannelState.OPEN) {
             connected = true;
             connectedLatch.countDown();
             dataChannelOpenLatch.countDown();
-            if (stateHandler != null && !closed) {
-                stateHandler.onConnected();
+            SessionStateHandler handler = stateHandler;
+            if (handler != null && !closed) {
+                handler.onConnected();
             }
         } else if (state == RTCDataChannelState.CLOSED || state == RTCDataChannelState.CLOSING) {
             connected = false;
-            if (stateHandler != null && !closed) {
-                stateHandler.onDisconnected();
+            SessionStateHandler handler = stateHandler;
+            if (handler != null && !closed) {
+                handler.onDisconnected();
             }
-            dataChannel.close();
         }
     }
 
@@ -778,7 +801,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         // Wait for ICE candidate gathering to complete (Vanilla ICE)
         try {
-            boolean completed = gatherLatch.await(1500, TimeUnit.MILLISECONDS);
+            boolean completed = gatherLatch.await(GATHER_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             log.info("ICE candidate gathering for answer finished (completed={}, gatheredCandidates={})",
                     completed, gatheredCandidatePackets.size());
         } catch (InterruptedException e) {

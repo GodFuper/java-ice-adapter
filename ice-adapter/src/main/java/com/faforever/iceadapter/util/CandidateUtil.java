@@ -10,9 +10,10 @@ import org.ice4j.ice.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CandidateUtil {
-    public static int candidateIDFactory = 0;
+    private static final AtomicInteger candidateIDFactory = new AtomicInteger(0);
 
     private static CandidatePacket createCandidatePacket(Agent agent, LocalCandidate localCandidate) {
         String relAddr = null;
@@ -31,7 +32,7 @@ public class CandidateUtil {
                 localCandidate.getTransportAddress().getPort(),
                 localCandidate.getType(),
                 agent.getGeneration(),
-                String.valueOf(candidateIDFactory++),
+                String.valueOf(candidateIDFactory.getAndIncrement()),
                 relAddr,
                 relPort);
     }
@@ -228,7 +229,7 @@ public class CandidateUtil {
                     port,
                     type,
                     generation,
-                    String.valueOf(candidateIDFactory++),
+                    String.valueOf(candidateIDFactory.getAndIncrement()),
                     relAddr,
                     relPort);
         } catch (Exception e) {

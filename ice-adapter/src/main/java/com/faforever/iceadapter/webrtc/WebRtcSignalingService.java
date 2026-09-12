@@ -3,11 +3,9 @@ package com.faforever.iceadapter.webrtc;
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceServer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -17,19 +15,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class WebRtcSignalingService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final WebRtcSession webRtcSession;
     private final int localId;
     private final int remoteId;
     private final List<IceServer> iceServers;
 
     // Callback for sending signaling messages via RPC
-    private SignalingMessageSender signalingMessageSender;
+    private volatile SignalingMessageSender signalingMessageSender;
 
     // Pending items to send
     private final ConcurrentHashMap<String, CandidatesMessage> pendingOffer = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CandidatesMessage> pendingAnswer = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, List<CandidatesMessage>> pendingCandidates = new ConcurrentHashMap<>();
 
     @FunctionalInterface
     public interface SignalingMessageSender {
@@ -94,35 +90,6 @@ public class WebRtcSignalingService {
     }
 
     /**
-     * Get pending signaling messages to send via RPC.
-     * Called by ConnectService to send signaling data.
-     */
-    public Optional<CandidatesMessage> getPendingSignalingMessage() {
-        // Try to get offer first
-        if (!pendingOffer.isEmpty()) {
-            var entry = pendingOffer.entrySet().iterator().next();
-            pendingOffer.remove(entry.getKey());
-            return Optional.of(entry.getValue());
-        }
-
-        // Then answer
-        if (!pendingAnswer.isEmpty()) {
-            var entry = pendingAnswer.entrySet().iterator().next();
-            pendingAnswer.remove(entry.getKey());
-            return Optional.of(entry.getValue());
-        }
-
-        // Then candidates
-        for (var entry : pendingCandidates.entrySet()) {
-            if (!entry.getValue().isEmpty()) {
-                return Optional.of(entry.getValue().remove(0));
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    /**
      * Flush all pending signaling messages via RPC.
      * Called by ConnectService after state transitions.
      */
@@ -144,9 +111,6 @@ public class WebRtcSignalingService {
             log.info("Sent SDP answer via RPC (CandidatesMessage) to peer {}", remoteId);
         });
         pendingAnswer.clear();
-
-        // Pending candidates are no longer sent as trickle messages (Vanilla ICE)
-        pendingCandidates.clear();
     }
 
     /**
@@ -219,6 +183,5 @@ public class WebRtcSignalingService {
         webRtcSession.close();
         pendingOffer.clear();
         pendingAnswer.clear();
-        pendingCandidates.clear();
     }
 }
