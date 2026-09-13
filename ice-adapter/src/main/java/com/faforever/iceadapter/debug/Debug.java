@@ -2,11 +2,11 @@ package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.ui.IceWindow;
 import com.faforever.iceadapter.ui.InfoWindow;
-import javafx.application.Platform;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+
+import javafx.application.Platform;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Debug {

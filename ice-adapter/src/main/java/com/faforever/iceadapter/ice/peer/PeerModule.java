@@ -4,25 +4,26 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.fa.PeerToFaModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.KcpPeerToPeerSenderModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerListenerModule;
 import com.faforever.iceadapter.ice.peer.modules.info.RttCalculateModule;
-import com.faforever.iceadapter.ice.peer.modules.other.*;
+import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
+import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
+import com.faforever.iceadapter.ice.peer.modules.other.FASocketModule;
+import com.faforever.iceadapter.ice.peer.modules.other.InfoStatusModule;
+import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayBestRttPeerCheckerModule;
-import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayPeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayClientModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule;
 import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerListenerModule;
-import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerSenderModule;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
@@ -40,27 +41,22 @@ public enum PeerModule implements Comparator<PeerModule> {
         return module;
     }),
     CALCULATE_RTT(RttCalculateModule::new),
-    PEER_TO_PEER_SENDER(RelayPeerToPeerSenderModule::new),
-    PEER_LISTENER_MODULE(PeerToPeerListenerModule::new),
     CONNECTION_CHECKER_MODULE(PeerConnectivityCheckerModule::new),
     AUTO_SETTING_ALLOW_CANDIDATE(AutoSettingAllowCandidates::new),
     COMMAND_EXECUTE(CommandModule::new),
     RELAY_CLIENT_MODULE(RelayClientModule::new),
     RELAY_SERVER_MODULE(RelayServerModule::new),
     AUTO_RELAY_CALCULATE_RTT(RelayBestRttPeerCheckerModule::new),
-    KCP_OFFERER_PEER_TO_PEER_TRANSPORT(KcpPeerToPeerSenderModule::new),
-    CHANGE_AGENT_STRATEGY(ChangeIceStrategyModule::new),
     INFO_STATUS_MODULE(InfoStatusModule::new),
-    PEER_TURN_REFRESHER_MODULE(PeerTurnRefresherModule::new),
-    WEBRTC_PEER_TO_PEER_SENDER(WebRtcPeerToPeerSenderModule::new),
+    WEBRTC_PEER_TO_PEER_SENDER(RelayWebRtcPeerToPeerSenderModule::new),
     WEBRTC_PEER_TO_PEER_LISTENER(WebRtcPeerToPeerListenerModule::new);
 
     @Getter
     private static final List<PeerModule> sortedModules =
             Stream.of(PeerModule.values()).sorted().toList();
 
-    private static final Set<PeerModule> MODULES_FOR_SERVER = Set.of(
-            EVENT_BUS, RELAY_SERVER_MODULE, PEER_LISTENER_MODULE, PEER_TO_PEER_SENDER, PEER_TURN_REFRESHER_MODULE);
+    private static final Set<PeerModule> MODULES_FOR_SERVER =
+            Set.of(EVENT_BUS, RELAY_SERVER_MODULE, WEBRTC_PEER_TO_PEER_LISTENER, WEBRTC_PEER_TO_PEER_SENDER);
 
     @Getter
     private static final Set<PeerModule> modulesDisableForServer = Stream.of(PeerModule.values())

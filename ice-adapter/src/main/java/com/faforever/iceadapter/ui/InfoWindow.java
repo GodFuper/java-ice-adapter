@@ -1,18 +1,18 @@
 package com.faforever.iceadapter.ui;
 
+import static javafx.application.Application.STYLESHEET_MODENA;
+import static javafx.application.Application.setUserAgentStylesheet;
+
 import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.ui.controller.InfoWindowController;
+
+import java.io.IOException;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-
-import static javafx.application.Application.STYLESHEET_MODENA;
-import static javafx.application.Application.setUserAgentStylesheet;
 
 @Slf4j
 public class InfoWindow {

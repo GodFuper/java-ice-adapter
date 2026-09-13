@@ -2,6 +2,11 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.services.UIAdapter;
+
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TabPane;
@@ -10,11 +15,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.VBox;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @NoArgsConstructor
@@ -147,7 +147,8 @@ public class InfoWebRtcPeerController {
 
     private void initColumns() {
         // Connection Tab
-        peerIdColumn1.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        peerIdColumn1.setCellValueFactory(
+                cellData -> cellData.getValue().getPeerId().asObject());
         loginColumn1.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         peerConnColumn.setCellValueFactory(cellData -> cellData.getValue().getPeerConnectionState());
         iceConnColumn.setCellValueFactory(cellData -> cellData.getValue().getIceConnectionState());
@@ -158,7 +159,8 @@ public class InfoWebRtcPeerController {
         nominatedColumn.setCellValueFactory(cellData -> cellData.getValue().getNominated());
 
         // Candidates Tab
-        peerIdColumn2.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        peerIdColumn2.setCellValueFactory(
+                cellData -> cellData.getValue().getPeerId().asObject());
         loginColumn2.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         localTypeColumn.setCellValueFactory(cellData -> cellData.getValue().getLocalCandidateType());
         localAddressColumn.setCellValueFactory(cellData -> cellData.getValue().getLocalAddress());
@@ -166,7 +168,8 @@ public class InfoWebRtcPeerController {
         remoteAddressColumn.setCellValueFactory(cellData -> cellData.getValue().getRemoteAddress());
 
         // DataChannel Tab
-        peerIdColumn3.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        peerIdColumn3.setCellValueFactory(
+                cellData -> cellData.getValue().getPeerId().asObject());
         loginColumn3.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         channelLabelColumn.setCellValueFactory(cellData -> cellData.getValue().getDataChannelLabel());
         channelStateColumn.setCellValueFactory(cellData -> cellData.getValue().getDataChannelState());
@@ -176,13 +179,15 @@ public class InfoWebRtcPeerController {
         bytesRecvColumn.setCellValueFactory(cellData -> cellData.getValue().getBytesReceived());
 
         // Transport Tab
-        peerIdColumn4.setCellValueFactory(cellData -> cellData.getValue().getPeerId().asObject());
+        peerIdColumn4.setCellValueFactory(
+                cellData -> cellData.getValue().getPeerId().asObject());
         loginColumn4.setCellValueFactory(cellData -> cellData.getValue().getLogin());
         outBitrateColumn.setCellValueFactory(cellData -> cellData.getValue().getAvailableOutgoingBitrate());
         inBitrateColumn.setCellValueFactory(cellData -> cellData.getValue().getAvailableIncomingBitrate());
         packetsSentColumn.setCellValueFactory(cellData -> cellData.getValue().getPacketsSent());
         packetsRecvColumn.setCellValueFactory(cellData -> cellData.getValue().getPacketsReceived());
-        packetsDiscardedColumn.setCellValueFactory(cellData -> cellData.getValue().getPacketsDiscarded());
+        packetsDiscardedColumn.setCellValueFactory(
+                cellData -> cellData.getValue().getPacketsDiscarded());
     }
 
     private void updateAllInfo() {
@@ -209,9 +214,6 @@ public class InfoWebRtcPeerController {
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
         updateScheduler.scheduleAtFixedRate(
-                () -> Platform.runLater(this::updateAllInfo),
-                0,
-                500,
-                TimeUnit.MILLISECONDS);
+                () -> Platform.runLater(this::updateAllInfo), 0, 500, TimeUnit.MILLISECONDS);
     }
 }

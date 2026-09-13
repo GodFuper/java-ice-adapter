@@ -1,5 +1,8 @@
 package com.faforever.iceadapter.webrtc;
 
+import static com.faforever.iceadapter.ice.IceState.*;
+
+import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
@@ -7,8 +10,6 @@ import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.util.LockUtil;
 import lombok.extern.slf4j.Slf4j;
-
-import static com.faforever.iceadapter.ice.IceState.*;
 
 /**
  * WebRTC-based connect service for controlling peer (offerer).
@@ -105,12 +106,12 @@ public class WebRtcConnectServiceControlledImpl extends WebRtcConnectServiceComm
 
     @Override
     public void onMessageFromRPC(Peer peer, Object message) {
-        if (message instanceof com.faforever.iceadapter.ice.CandidatesMessage candidatesMessage) {
+        if (message instanceof CandidatesMessage candidatesMessage) {
             processCandidatesMessage(peer, candidatesMessage);
         }
     }
 
-    private void processCandidatesMessage(Peer peer, com.faforever.iceadapter.ice.CandidatesMessage message) {
+    private void processCandidatesMessage(Peer peer, CandidatesMessage message) {
         if (peer.isClosing()) {
             log.warn("Peer not connected anymore, discarding signaling message");
             return;
@@ -118,18 +119,24 @@ public class WebRtcConnectServiceControlledImpl extends WebRtcConnectServiceComm
 
         // Guard against late/delayed messages after connection is established or already checking
         if (peer.getIceState() != AWAITING_CANDIDATES) {
-            if (peer.getIceState() == CHECKING && (message.isAnswer() || (message.password() != null && message.password().contains("v=0")))) {
-                log.info("Controlled peer received duplicate Answer CandidatesMessage in CHECKING state for peer {}, ignoring duplicate",
+            if (peer.getIceState() == CHECKING
+                    && (message.isAnswer()
+                    || (message.password() != null && message.password().contains("v=0")))) {
+                log.info(
+                        "Controlled peer received duplicate Answer CandidatesMessage in CHECKING state for peer {}, ignoring duplicate",
                         peer.getPeerIdentifier());
                 return;
             }
-            log.warn("Controlled peer received CandidatesMessage in state {}, ignoring late message",
+            log.warn(
+                    "Controlled peer received CandidatesMessage in state {}, ignoring late message",
                     peer.getIceState());
             return;
         }
 
-        log.debug("Got CandidatesMessage for controlled peer: ufrag={}, candidates={}",
-                message.ufrag(), message.candidates().size());
+        log.debug(
+                "Got CandidatesMessage for controlled peer: ufrag={}, candidates={}",
+                message.ufrag(),
+                message.candidates().size());
 
         WebRtcSignalingService signalingService = peer.getWebRtcSignalingService();
         if (signalingService == null) {
@@ -137,7 +144,8 @@ public class WebRtcConnectServiceControlledImpl extends WebRtcConnectServiceComm
             return;
         }
 
-        if (message.isAnswer() || (message.password() != null && message.password().contains("v=0"))) {
+        if (message.isAnswer()
+                || (message.password() != null && message.password().contains("v=0"))) {
             // Transition to CHECKING immediately to reject late duplicate messages
             peer.setIceState(CHECKING);
             signalingService.processRemoteAnswer(message.password(), message.candidates());

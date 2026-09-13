@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.ice;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.IceOptions.TransportMode;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
@@ -12,17 +14,15 @@ import com.faforever.iceadapter.services.*;
 import com.faforever.iceadapter.services.impl.*;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.ExecutorHolder;
+import com.faforever.iceadapter.util.Pair;
 import com.faforever.iceadapter.webrtc.*;
-import kotlin.Pair;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static com.faforever.iceadapter.debug.Debug.debug;
 
 /**
  * Represents a game session and the current ICE status/communication with all peers
@@ -47,12 +47,6 @@ public class GameSession implements IceGameSession {
     private final MessageService messageService = new MessageServiceImpl();
     private final IceAsync iceAsync =
             new IceAsyncImpl(ExecutorHolder.getExecutor(), ExecutorHolder.getScheduledExecutor());
-    private final ConnectService controlledConnectService =
-            new ConnectServiceControlledImpl(messageService, this, iceAsync);
-    private final ConnectService notControlledConnectService =
-            new ConnectServiceNotControlledImpl(messageService, this, iceAsync);
-    private final ConnectService connectServiceHandler =
-            new ConnectServiceHandler(controlledConnectService, notControlledConnectService);
     private IceTrigger iceTrigger;
     private IceServerChecker iceServerChecker;
     private WebRtcConnectService webRtcConnectService;
@@ -62,55 +56,47 @@ public class GameSession implements IceGameSession {
     private volatile boolean gameEnded = false;
 
     // WebRTC fields
-    private TransportMode transportMode;
+    private TransportMode transportMode = TransportMode.WEBRTC;
     private WebRtcConnectionFactory webRtcConnectionFactory;
 
     /**
-     * Constructor for ICE or WebRTC mode (with TCP RPC).
+     * Primary constructor for WebRTC mode (with TCP RPC).
      */
     public GameSession(RpcConnection rpcConnection, IceOptions options) {
         init(options);
-        if (options.getTransport() == TransportMode.WEBRTC) {
-            this.transportMode = TransportMode.WEBRTC;
-            this.webRtcConnectionFactory = WebRtcConnectionFactory.getInstance();
-            WebRtcConnectService controlledService = new WebRtcConnectServiceControlledImpl(
-                    messageService, this, iceAsync);
-            WebRtcConnectService notControlledService = new WebRtcConnectServiceNotControlledImpl(
-                    messageService, this, iceAsync);
-            this.webRtcConnectService = new WebRtcConnectServiceHandler(controlledService, notControlledService);
-            this.iceTrigger = new IceTrigger(iceAsync, connectServiceHandler, webRtcConnectService, rpcConnection);
-        } else {
-            this.iceTrigger = new IceTrigger(iceAsync, connectServiceHandler, null, rpcConnection);
-        }
+        this.webRtcConnectionFactory = WebRtcConnectionFactory.getInstance();
+        WebRtcConnectService controlledService = new WebRtcConnectServiceControlledImpl(messageService, this, iceAsync);
+        WebRtcConnectService notControlledService =
+                new WebRtcConnectServiceNotControlledImpl(messageService, this, iceAsync);
+        this.webRtcConnectService = new WebRtcConnectServiceHandler(controlledService, notControlledService);
+        this.iceTrigger = new IceTrigger(iceAsync, webRtcConnectService, rpcConnection);
     }
 
     /**
-     * Constructor for WebRTC mode.
+     * Constructor for WebRTC mode with custom factory.
      */
-    public GameSession(IceOptions options, WebRtcConnectionFactory webRtcConnectionFactory, RpcConnection rpcConnection) {
+    public GameSession(
+            IceOptions options, WebRtcConnectionFactory webRtcConnectionFactory, RpcConnection rpcConnection) {
         init(options);
-        this.transportMode = TransportMode.WEBRTC;
         this.webRtcConnectionFactory = webRtcConnectionFactory;
 
-        // Create WebRTC connect service
-        WebRtcConnectService controlledService = new WebRtcConnectServiceControlledImpl(
-                messageService, this, iceAsync);
-        WebRtcConnectService notControlledService = new WebRtcConnectServiceNotControlledImpl(
-                messageService, this, iceAsync);
-        webRtcConnectService = new WebRtcConnectServiceHandler(controlledService, notControlledService);
+        WebRtcConnectService controlledService = new WebRtcConnectServiceControlledImpl(messageService, this, iceAsync);
+        WebRtcConnectService notControlledService =
+                new WebRtcConnectServiceNotControlledImpl(messageService, this, iceAsync);
+        this.webRtcConnectService = new WebRtcConnectServiceHandler(controlledService, notControlledService);
 
-        this.iceTrigger = new IceTrigger(iceAsync, connectServiceHandler, webRtcConnectService, rpcConnection);
+        this.iceTrigger = new IceTrigger(iceAsync, webRtcConnectService, rpcConnection);
     }
 
     private void init(IceOptions options) {
         this.options = options;
-        this.transportMode = options.getTransport();
+        this.transportMode = TransportMode.WEBRTC;
         iceServerChecker = new IceServerChecker(options, this);
         iceServerChecker.start();
     }
 
     /**
-     * Initiates a connection to a peer (ICE or WebRTC)
+     * Initiates a connection to a peer (WebRTC)
      *
      * @return the port the ice adapter will be listening/sending for FA
      */
@@ -140,7 +126,6 @@ public class GameSession implements IceGameSession {
         peer.init();
         peer.setCombination(combination);
         peer.setGameSession(this);
-        peer.setSendMode(options.getSendMode());
         peer.initModules();
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();
@@ -149,9 +134,8 @@ public class GameSession implements IceGameSession {
         return peer.getLocalPort();
     }
 
-
     /**
-     * Disconnects from a peer (ICE or WebRTC)
+     * Disconnects from a peer
      */
     public void disconnectFromPeer(int remotePlayerId) {
         Peer removedPeer = peers.remove(remotePlayerId);
@@ -162,7 +146,7 @@ public class GameSession implements IceGameSession {
     }
 
     /**
-     * Stops the connection to all peers and all ice agents
+     * Stops the connection to all peers
      */
     public void close() {
         log.info("Closing gameSession");
@@ -195,26 +179,12 @@ public class GameSession implements IceGameSession {
 
     private Set<PeerModule> getDisabledModules() {
         Set<PeerModule> disabledModules = new HashSet<>();
-        if (!options.isManualStrategyConnection()) {
-            disabledModules.add(PeerModule.CHANGE_AGENT_STRATEGY);
-        }
         if (options.isForceRelay()) {
             disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
         }
-
-        if (transportMode == TransportMode.WEBRTC) {
-            disabledModules.add(PeerModule.KCP_OFFERER_PEER_TO_PEER_TRANSPORT);
-            disabledModules.add(PeerModule.PEER_LISTENER_MODULE);
-            disabledModules.add(PeerModule.PEER_TO_PEER_SENDER);
-            disabledModules.add(PeerModule.PEER_TURN_REFRESHER_MODULE);
-            disabledModules.add(PeerModule.CHANGE_AGENT_STRATEGY);
-            disabledModules.add(PeerModule.AUTO_RELAY_CALCULATE_RTT);
-            disabledModules.add(PeerModule.RELAY_CLIENT_MODULE);
-            disabledModules.add(PeerModule.RELAY_SERVER_MODULE);
-        } else {
-            disabledModules.add(PeerModule.WEBRTC_PEER_TO_PEER_SENDER);
-            disabledModules.add(PeerModule.WEBRTC_PEER_TO_PEER_LISTENER);
-        }
+        //        disabledModules.add(PeerModule.AUTO_RELAY_CALCULATE_RTT);
+        disabledModules.add(PeerModule.RELAY_CLIENT_MODULE);
+        disabledModules.add(PeerModule.RELAY_SERVER_MODULE);
 
         return disabledModules;
     }
@@ -250,8 +220,8 @@ public class GameSession implements IceGameSession {
 
         Pair<List<IceServer>, Set<CoturnServer>> pair = IceServer.mapperFromMap(iceServersData);
 
-        iceServers.addAll(pair.getFirst());
-        debug().updateCoturnList(pair.getSecond());
+        iceServers.addAll(pair.first());
+        debug().updateCoturnList(pair.second());
 
         log.info("Ice Servers set, total addresses: {}", iceServers.size());
     }

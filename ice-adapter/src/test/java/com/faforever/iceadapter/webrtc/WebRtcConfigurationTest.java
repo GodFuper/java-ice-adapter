@@ -1,16 +1,14 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.IceServer;
 import dev.onvoid.webrtc.RTCIceServer;
 import dev.onvoid.webrtc.RTCIceTransportPolicy;
-import org.ice4j.Transport;
-import org.ice4j.TransportAddress;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class WebRtcConfigurationTest {
 
@@ -18,8 +16,7 @@ class WebRtcConfigurationTest {
     void testIceServerToWebRtcServerStun() {
         IceServer stunServer = new IceServer(
                 IceServer.TypeServer.STUN,
-                new TransportAddress("stun.l.google.com", 19302, Transport.UDP)
-        );
+                new IceServer.ServerAddress("stun.l.google.com", 19302, IceServer.TransportProtocol.UDP));
 
         RTCIceServer rtcServer = stunServer.toWebRtcServer();
         assertNotNull(rtcServer);
@@ -32,8 +29,7 @@ class WebRtcConfigurationTest {
     void testIceServerToWebRtcServerTurnUdp() {
         IceServer turnServer = new IceServer(
                 IceServer.TypeServer.TURN,
-                new TransportAddress("turn.faforever.com", 3478, Transport.UDP)
-        );
+                new IceServer.ServerAddress("turn.faforever.com", 3478, IceServer.TransportProtocol.UDP));
         turnServer.setTurnUsername("testUser");
         turnServer.setTurnCredential("testPass");
 
@@ -48,8 +44,7 @@ class WebRtcConfigurationTest {
     void testIceServerToWebRtcServerTurnTcp() {
         IceServer turnServer = new IceServer(
                 IceServer.TypeServer.TURN,
-                new TransportAddress("turn.faforever.com", 3478, Transport.TCP)
-        );
+                new IceServer.ServerAddress("turn.faforever.com", 3478, IceServer.TransportProtocol.TCP));
         turnServer.setTurnUsername("testUser");
         turnServer.setTurnCredential("testPass");
 
@@ -70,15 +65,16 @@ class WebRtcConfigurationTest {
 
         IceServer enabledStun = new IceServer(
                 IceServer.TypeServer.STUN,
-                new TransportAddress("stun.cloudflare.com", 3478, Transport.UDP)
-        );
+                new IceServer.ServerAddress("stun.cloudflare.com", 3478, IceServer.TransportProtocol.UDP));
         IceServer disabledStun = new IceServer(
                 IceServer.TypeServer.STUN,
-                new TransportAddress("stun.disabled.com", 3478, Transport.UDP)
-        );
+                new IceServer.ServerAddress("stun.disabled.com", 3478, IceServer.TransportProtocol.UDP));
         disabledStun.setEnabled(false);
 
-        session.init(true, List.of(enabledStun, disabledStun), options,
+        session.init(
+                true,
+                List.of(enabledStun, disabledStun),
+                options,
                 (data, isBinary) -> {
                 },
                 new WebRtcSession.SessionStateHandler() {

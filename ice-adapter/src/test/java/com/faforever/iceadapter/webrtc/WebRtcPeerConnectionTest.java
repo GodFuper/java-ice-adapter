@@ -1,12 +1,10 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,7 +14,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Integration test demonstrating two WebRTC peers connecting to each other
@@ -227,8 +227,7 @@ class WebRtcPeerConnectionTest {
             assertEquals(RTCPeerConnectionState.CONNECTED, callee.getConnectionState());
 
             // Wait for data channel to be open on caller side
-            assertTrue(waitForDataChannelOpen(callerChannel, 5_000),
-                    "Caller data channel should reach OPEN state");
+            assertTrue(waitForDataChannelOpen(callerChannel, 5_000), "Caller data channel should reach OPEN state");
 
             // Set up message observer on callee side
             List<String> receivedMessages = Collections.synchronizedList(new ArrayList<>());
@@ -264,8 +263,7 @@ class WebRtcPeerConnectionTest {
             Thread.sleep(1_000); // Wait for delivery
 
             // Verify callee received messages
-            assertEquals(2, receivedMessages.size(),
-                    "Callee should receive 2 messages from caller");
+            assertEquals(2, receivedMessages.size(), "Callee should receive 2 messages from caller");
             assertEquals("Hello from caller", receivedMessages.get(0));
             assertEquals("WebRTC is awesome", receivedMessages.get(1));
 
@@ -297,8 +295,7 @@ class WebRtcPeerConnectionTest {
 
             Thread.sleep(1_000);
 
-            assertEquals(2, callerReceivedMessages.size(),
-                    "Caller should receive 2 messages from callee");
+            assertEquals(2, callerReceivedMessages.size(), "Caller should receive 2 messages from callee");
             assertEquals("Hello from callee", callerReceivedMessages.get(0));
             assertEquals("Bidirectional works!", callerReceivedMessages.get(1));
 
@@ -417,8 +414,7 @@ class WebRtcPeerConnectionTest {
     /**
      * Performs the SDP offer/answer exchange between caller and callee.
      */
-    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws Exception {
+    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee) throws Exception {
         // Caller creates offer
         AtomicReference<RTCSessionDescription> offerRef = new AtomicReference<>();
         CountDownLatch offerLatch = new CountDownLatch(1);
@@ -468,8 +464,7 @@ class WebRtcPeerConnectionTest {
         setRemoteDescription(caller, answerRef.get());
     }
 
-    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setLocalDescription(description, new SetSessionDescriptionObserver() {
@@ -490,8 +485,7 @@ class WebRtcPeerConnectionTest {
         }
     }
 
-    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setRemoteDescription(description, new SetSessionDescriptionObserver() {
@@ -515,9 +509,11 @@ class WebRtcPeerConnectionTest {
     /**
      * Exchanges ICE candidates between two peers using pre-collected lists.
      */
-    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee,
-                                       List<RTCIceCandidate> callerCands,
-                                       List<RTCIceCandidate> calleeCands)
+    private void exchangeIceCandidates(
+            RTCPeerConnection caller,
+            RTCPeerConnection callee,
+            List<RTCIceCandidate> callerCands,
+            List<RTCIceCandidate> calleeCands)
             throws InterruptedException {
         // Wait for ICE gathering to complete
         Thread.sleep(5000); // Allow time for candidate gathering
@@ -538,8 +534,7 @@ class WebRtcPeerConnectionTest {
     /**
      * Waits for ICE gathering to complete (candidates already forwarded in real-time via observers).
      */
-    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws InterruptedException {
+    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee) throws InterruptedException {
         // Candidates are already forwarded in real-time via calleeObserver.onIceCandidate()
         // Just wait for gathering to complete
         Thread.sleep(5000);
@@ -548,26 +543,25 @@ class WebRtcPeerConnectionTest {
     /**
      * Waits until both peers are connected or timeout is reached.
      */
-    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee,
-                                    long timeoutMs) throws InterruptedException {
+    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee, long timeoutMs)
+            throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
-            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED &&
-                    callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
+            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED
+                    && callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
                 return;
             }
             Thread.sleep(50);
         }
-        fail("Connection timeout after " + timeoutMs + "ms. " +
-                "Caller state: " + caller.getConnectionState() + ", " +
-                "Callee state: " + callee.getConnectionState());
+        fail("Connection timeout after " + timeoutMs + "ms. " + "Caller state: "
+                + caller.getConnectionState() + ", " + "Callee state: "
+                + callee.getConnectionState());
     }
 
     /**
      * Waits for a data channel to reach OPEN state.
      */
-    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs)
-            throws InterruptedException {
+    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
             if (channel.getState() == RTCDataChannelState.OPEN) {
@@ -616,8 +610,7 @@ class WebRtcPeerConnectionTest {
     private void assertByteArrayEquals(byte[] expected, byte[] actual) {
         assertEquals(expected.length, actual.length, "Byte array length mismatch");
         for (int i = 0; i < expected.length; i++) {
-            assertEquals(expected[i], actual[i],
-                    "Byte mismatch at index " + i);
+            assertEquals(expected[i], actual[i], "Byte mismatch at index " + i);
         }
     }
 

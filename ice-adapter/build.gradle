@@ -29,7 +29,6 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:$picocliVersion")
     implementation("info.picocli:picocli:$picocliVersion")
 
-    implementation("org.jitsi:ice4j:3.2-14-g8e0db06")
     implementation("com.github.faforever:JJsonRpc:37669e0fed")
     implementation("com.google.guava:guava:$guavaVersion")
     implementation("org.slf4j:slf4j-api:2.0.13")
@@ -41,12 +40,14 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-blackbird:2.21.3")
     implementation("com.github.luben:zstd-jni:1.5.7-9")
     implementation("org.apache.commons:commons-lang3:3.20.0")
-    implementation("io.jpower.kcp:kcp-netty:1.5.2")
     implementation "dev.onvoid.webrtc:webrtc-java:${webRtcVersion}"
+    def isArm = System.getProperty("os.arch").toLowerCase().matches(".*(aarch64|arm64).*")
     if (javafxPlatform == "win") {
-        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
+        def classifier = isArm ? "windows-aarch64" : "windows-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: classifier
     } else {
-        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
+        def classifier = isArm ? "linux-aarch64" : "linux-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: classifier
     }
 
 

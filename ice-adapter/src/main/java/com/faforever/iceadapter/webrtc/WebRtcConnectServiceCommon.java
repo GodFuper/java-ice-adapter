@@ -1,6 +1,9 @@
 package com.faforever.iceadapter.webrtc;
 
+import static com.faforever.iceadapter.ice.IceState.*;
+
 import com.faforever.iceadapter.ice.CandidatePacket;
+import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
@@ -9,12 +12,10 @@ import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerListener
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.util.LockUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-
-import static com.faforever.iceadapter.ice.IceState.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Common logic for WebRTC-based ICE connection.
@@ -77,29 +78,27 @@ public abstract class WebRtcConnectServiceCommon {
         closeWebRtcSession(peer);
 
         // Create WebRTC session
-        WebRtcSession webRtcSession = new WebRtcSession(
-                com.faforever.iceadapter.webrtc.WebRtcConnectionFactory.getInstance());
+        WebRtcSession webRtcSession = new WebRtcSession(WebRtcConnectionFactory.getInstance());
 
         // Set up signaling service
-        WebRtcSignalingService signalingService = new WebRtcSignalingService(
-                webRtcSession,
-                peer.getFromId(),
-                peer.getRemoteId(),
-                iceGameSession.getIceServers());
+        WebRtcSignalingService signalingService =
+                new WebRtcSignalingService(webRtcSession, peer.getFromId(), peer.getRemoteId());
         signalingService.setSignalingMessageSender(msg -> sendSignalingViaRpc(peer, msg));
 
         // Set up WebRTC session callbacks
-        webRtcSession.init(isOfferer, iceGameSession.getIceServers(), iceGameSession.getOptions(), peer.getCombination(),
+        webRtcSession.init(
+                isOfferer,
+                iceGameSession.getIceServers(),
+                iceGameSession.getOptions(),
+                peer.getCombination(),
                 // Message handler - data received from data channel
                 (data, isBinary) -> {
                     peer.getModule(PeerModule.WEBRTC_PEER_TO_PEER_LISTENER, WebRtcPeerToPeerListenerModule.class)
-                            .ifPresentOrElse(
-                                    m -> m.onMessageReceived(data, isBinary),
-                                    () -> {
-                                        if (isBinary) {
-                                            peer.handleData(data);
-                                        }
-                                    });
+                            .ifPresentOrElse(m -> m.onMessageReceived(data, isBinary), () -> {
+                                if (isBinary) {
+                                    peer.handleData(data);
+                                }
+                            });
                 },
                 // State handler
                 new WebRtcSession.SessionStateHandler() {
@@ -109,7 +108,9 @@ public abstract class WebRtcConnectServiceCommon {
                         // Signal connected state
                         iceAsync.runAsync(false, "onWebRtcConnected", peer, () -> {
                             if (peer.getWebRtcSession() != webRtcSession || webRtcSession.isClosed()) {
-                                log.debug("Ignoring onConnected from stale/closed WebRtcSession for peer {}", peer.getRemoteId());
+                                log.debug(
+                                        "Ignoring onConnected from stale/closed WebRtcSession for peer {}",
+                                        peer.getRemoteId());
                                 return;
                             }
                             peer.setIceState(CONNECTED);
@@ -121,7 +122,9 @@ public abstract class WebRtcConnectServiceCommon {
                         log.info("WebRTC session disconnected for peer {}", peer.getRemoteId());
                         iceAsync.runAsync(false, "onWebRtcDisconnected", peer, () -> {
                             if (peer.getWebRtcSession() != webRtcSession || webRtcSession.isClosed()) {
-                                log.debug("Ignoring onDisconnected from stale/closed WebRtcSession for peer {}", peer.getRemoteId());
+                                log.debug(
+                                        "Ignoring onDisconnected from stale/closed WebRtcSession for peer {}",
+                                        peer.getRemoteId());
                                 return;
                             }
                             peer.lostConnect();
@@ -153,8 +156,7 @@ public abstract class WebRtcConnectServiceCommon {
                     public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
                         signalingService.onIceCandidate(sdpMid, sdpMLineIndex, candidate);
                     }
-                }
-        );
+                });
 
         // Store in Peer
         peer.setWebRtcSession(webRtcSession);
@@ -229,10 +231,13 @@ public abstract class WebRtcConnectServiceCommon {
     /**
      * Send a signaling message via RPC to the remote peer.
      */
-    protected void sendSignalingViaRpc(Peer peer, com.faforever.iceadapter.ice.CandidatesMessage message) {
+    protected void sendSignalingViaRpc(Peer peer, CandidatesMessage message) {
         try {
-            log.debug("Sending CandidatesMessage via RPC: ufrag={}, src={}, dst={}",
-                    message.ufrag(), message.srcId(), message.destId());
+            log.debug(
+                    "Sending CandidatesMessage via RPC: ufrag={}, src={}, dst={}",
+                    message.ufrag(),
+                    message.srcId(),
+                    message.destId());
             peer.sendToRpc(message);
         } catch (Exception e) {
             log.error("Failed to send CandidatesMessage via RPC", e);

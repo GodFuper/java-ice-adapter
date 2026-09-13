@@ -1,23 +1,23 @@
 package com.faforever.iceadapter.ice.peer.modules.relay.auto;
 
+import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
+
 import com.faforever.iceadapter.dto.FullRelayMessage;
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
+import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.util.CollectionUtils;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 
-import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
+public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderModule {
 
     public static final char COMMAND_AUTO_RELAY = 'R';
 
-    public RelayPeerToPeerSenderModule(Peer peer) {
+    public RelayWebRtcPeerToPeerSenderModule(Peer peer) {
         super(peer);
     }
 
@@ -26,26 +26,24 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
 
         if (data[0] == COMMAND_AUTO_RELAY || data[0] == COMMAND_ECHO) {
             if (peer.isConnected()) {
-                sendDirect(data);
+                sendViaWebRtc(data);
             }
             return;
         }
 
         if (peer.isAdditionalPacketForwarding()) {
             if (peer.isConnected() && peer.existBestRelays()) {
-                sendDirect(data);
+                sendViaWebRtc(data);
                 trySendRelay(data);
             } else if (peer.isConnected()) {
-                sendDirect(data);
+                sendViaWebRtc(data);
             } else if (peer.existBestRelays()) {
                 trySendRelay(data);
             }
             return;
         }
 
-        if (!peer.isConnected() || !sendDirect(data)) {
-            trySendRelay(data);
-        }
+        sendViaWebRtc(data);
     }
 
     @Override
@@ -55,12 +53,11 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
         }
         byte[] data = command.bytes();
         if (command.isOnlyDirect()) {
-            sendDirect(data);
+            sendViaWebRtc(data);
             return;
         }
-        if (!peer.isConnected() || !sendDirect(data)) {
-            trySendRelay(data);
-        }
+
+        sendViaWebRtc(data);
     }
 
     @Override
@@ -107,7 +104,7 @@ public class RelayPeerToPeerSenderModule extends PeerToPeerSenderModule {
         }
 
         if (!peer.isSupportCommand()) {
-            sendDirect(data);
+            sendViaWebRtc(data);
             return;
         }
 

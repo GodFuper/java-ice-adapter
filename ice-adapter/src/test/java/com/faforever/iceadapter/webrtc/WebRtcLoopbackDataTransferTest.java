@@ -1,10 +1,8 @@
 package com.faforever.iceadapter.webrtc;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.junit.jupiter.api.Assertions.*;
 
+import dev.onvoid.webrtc.RTCDataChannelSendObserver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,7 +11,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 @DisplayName("WebRTC Loopback Data Transfer Test")
 class WebRtcLoopbackDataTransferTest {
@@ -173,6 +174,126 @@ class WebRtcLoopbackDataTransferTest {
             assertArrayEquals(callerPackets.get(i), calleeReceived.get(i), "Callee packet " + i + " mismatch");
             assertArrayEquals(calleePackets.get(i), callerReceived.get(i), "Caller packet " + i + " mismatch");
         }
+    }
+
+    @Test
+    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    @DisplayName("Two WebRtcSessions should transfer data using sendDataAsync with RTCDataChannelSendObserver")
+    void testAsyncDataTransferWithObserver() throws Exception {
+        WebRtcConnectionFactory factory = WebRtcConnectionFactory.getInstance();
+        assertNotNull(factory.getFactory());
+
+        callerSession = new WebRtcSession(factory);
+        calleeSession = new WebRtcSession(factory);
+
+        CountDownLatch callerConnectedLatch = new CountDownLatch(1);
+        CountDownLatch calleeConnectedLatch = new CountDownLatch(1);
+
+        WebRtcSession.SessionStateHandler callerHandler = new WebRtcSession.SessionStateHandler() {
+            @Override
+            public void onConnected() {
+                callerConnectedLatch.countDown();
+            }
+
+            @Override
+            public void onDisconnected() {
+            }
+
+            @Override
+            public void onError(String error) {
+                fail("Caller error: " + error);
+            }
+
+            @Override
+            public void onOfferCreated(String sdp) {
+                calleeSession.processRemoteOffer(sdp);
+            }
+
+            @Override
+            public void onAnswerCreated(String sdp) {
+            }
+
+            @Override
+            public void onRemoteDescriptionSet() {
+            }
+
+            @Override
+            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
+                calleeSession.addRemoteCandidate(sdpMid, sdpMLineIndex, candidate);
+            }
+        };
+
+        WebRtcSession.SessionStateHandler calleeHandler = new WebRtcSession.SessionStateHandler() {
+            @Override
+            public void onConnected() {
+                calleeConnectedLatch.countDown();
+            }
+
+            @Override
+            public void onDisconnected() {
+            }
+
+            @Override
+            public void onError(String error) {
+                fail("Callee error: " + error);
+            }
+
+            @Override
+            public void onOfferCreated(String sdp) {
+            }
+
+            @Override
+            public void onAnswerCreated(String sdp) {
+                callerSession.processRemoteAnswer(sdp);
+            }
+
+            @Override
+            public void onRemoteDescriptionSet() {
+            }
+
+            @Override
+            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
+                callerSession.addRemoteCandidate(sdpMid, sdpMLineIndex, candidate);
+            }
+        };
+
+        CountDownLatch receiveLatch = new CountDownLatch(1);
+        byte[] testData = new byte[]{1, 2, 3, 4, 5};
+
+        callerSession.init(true, List.of(), (data, isBinary) -> {
+        }, callerHandler);
+        calleeSession.init(
+                false,
+                List.of(),
+                (data, isBinary) -> {
+                    if (Arrays.equals(testData, data)) {
+                        receiveLatch.countDown();
+                    }
+                },
+                calleeHandler);
+
+        callerSession.createOffer();
+
+        assertTrue(callerConnectedLatch.await(15, TimeUnit.SECONDS), "Caller should connect within timeout");
+        assertTrue(calleeConnectedLatch.await(15, TimeUnit.SECONDS), "Callee should connect within timeout");
+
+        CountDownLatch successLatch = new CountDownLatch(1);
+
+        boolean accepted = callerSession.sendDataAsync(testData, true, new RTCDataChannelSendObserver() {
+            @Override
+            public void onSuccess() {
+                successLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(String error) {
+                fail("Send failed: " + error);
+            }
+        });
+
+        assertTrue(accepted, "sendDataAsync should return true");
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS), "Send observer onSuccess should be called");
+        assertTrue(receiveLatch.await(5, TimeUnit.SECONDS), "Callee should receive the packet");
     }
 
     private void waitForPackets(IntSupplier countSupplier, int target, long timeoutMs) {

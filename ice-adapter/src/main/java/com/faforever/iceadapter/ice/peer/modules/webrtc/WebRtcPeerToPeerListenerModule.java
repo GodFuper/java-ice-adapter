@@ -6,12 +6,11 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
-import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayPeerToPeerSenderModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Arrays;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * WebRTC-based peer-to-peer listener module.
@@ -64,11 +63,14 @@ public class WebRtcPeerToPeerListenerModule implements ModuleBase, PeerEventList
                 || data[0] == RelayServerModule.COMMAND_CLIENT
                 || data[0] == RelayServerModule.COMMAND_SERVER
                 || data[0] == CommandModule.COMMAND_BASE
-                || data[0] == RelayPeerToPeerSenderModule.COMMAND_AUTO_RELAY) {
+                || data[0] == 'R') {
             // Known protocol markers - silent
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
-            log.trace("STUN-like packet received via WebRTC, type: 0x{}, length: {}", String.format("%04X", type), length);
+            log.trace(
+                    "STUN-like packet received via WebRTC, type: 0x{}, length: {}",
+                    String.format("%04X", type),
+                    length);
         } else {
             peer.getInvalidPacket().incrementAndGet();
             log.warn(

@@ -1,19 +1,19 @@
 package com.faforever.iceadapter.ice;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Integration tests for WebRTC reconnection and resilience against late/duplicate CandidatesMessage.
@@ -33,7 +33,6 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
     @Override
     protected Set<PeerModule> getDisabledModules() {
         return Set.of(
-                PeerModule.PEER_TURN_REFRESHER_MODULE,
                 PeerModule.RELAY_CLIENT_MODULE,
                 PeerModule.RELAY_SERVER_MODULE,
                 PeerModule.AUTO_RELAY_CALCULATE_RTT,
@@ -71,7 +70,8 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
         assertTrue(peerA.isConnected(), "Peer A should be connected after reconnect");
         assertTrue(peerB.isConnected(), "Peer B should be connected after reconnect");
 
-        // Verify stability: wait 7 seconds to ensure no delayed disconnect happens (e.g. 5-second reinit timer or 1-second drop bug)
+        // Verify stability: wait 7 seconds to ensure no delayed disconnect happens (e.g. 5-second reinit timer or
+        // 1-second drop bug)
         log.info("Waiting 7 seconds to verify post-reconnect connection stability...");
         sleep(7_000);
         assertTrue(peerA.isConnected(), "Peer A must stay connected 7 seconds after reconnect");
@@ -84,8 +84,14 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
         sendPackets(socketB, "round2-B", NUM_PACKETS);
         sleep(DATA_WAIT_MS);
 
-        assertEquals(NUM_PACKETS, socketB.getReceivedBytes().size(), "Socket B should receive round 2 packets from A after reconnect");
-        assertEquals(NUM_PACKETS, socketA.getReceivedBytes().size(), "Socket A should receive round 2 packets from B after reconnect");
+        assertEquals(
+                NUM_PACKETS,
+                socketB.getReceivedBytes().size(),
+                "Socket B should receive round 2 packets from A after reconnect");
+        assertEquals(
+                NUM_PACKETS,
+                socketA.getReceivedBytes().size(),
+                "Socket A should receive round 2 packets from B after reconnect");
 
         for (int i = 0; i < NUM_PACKETS; i++) {
             String fromB = new String(socketB.getReceivedBytes().get(i), StandardCharsets.UTF_8);
@@ -105,9 +111,12 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
         assertTrue(peerB.isConnected(), "Peer B should be connected initially");
 
         // Simulate late duplicate messages arriving at peer A and peer B
-        CandidatesMessage lateOffer = new CandidatesMessage(1, 2, "v=0\r\no=- 12345 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n", "offer", List.of());
-        CandidatesMessage lateAnswer = new CandidatesMessage(2, 1, "v=0\r\no=- 54321 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n", "answer", List.of());
-        CandidatesMessage lateCandidate = new CandidatesMessage(1, 2, "candidate:1 1 udp 2113937151 127.0.0.1 50000 typ host", "candidate", List.of());
+        CandidatesMessage lateOffer = new CandidatesMessage(
+                1, 2, "v=0\r\no=- 12345 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n", "offer", List.of());
+        CandidatesMessage lateAnswer = new CandidatesMessage(
+                2, 1, "v=0\r\no=- 54321 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n", "answer", List.of());
+        CandidatesMessage lateCandidate = new CandidatesMessage(
+                1, 2, "candidate:1 1 udp 2113937151 127.0.0.1 50000 typ host", "candidate", List.of());
 
         log.info("Injecting late signaling messages into connected peers...");
         peerA.iceMessageFromRPC(lateAnswer);
@@ -129,8 +138,14 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
         sendPackets(socketB, "after-late-B", NUM_PACKETS);
         sleep(DATA_WAIT_MS);
 
-        assertEquals(NUM_PACKETS, socketB.getReceivedBytes().size(), "Socket B should still receive data after late messages");
-        assertEquals(NUM_PACKETS, socketA.getReceivedBytes().size(), "Socket A should still receive data after late messages");
+        assertEquals(
+                NUM_PACKETS,
+                socketB.getReceivedBytes().size(),
+                "Socket B should still receive data after late messages");
+        assertEquals(
+                NUM_PACKETS,
+                socketA.getReceivedBytes().size(),
+                "Socket A should still receive data after late messages");
     }
 
     private void sendPackets(InMemoryDatagramSocket socket, String prefix, int count) throws IOException {

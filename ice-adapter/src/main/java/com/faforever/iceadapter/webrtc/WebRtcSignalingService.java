@@ -2,11 +2,10 @@ package com.faforever.iceadapter.webrtc;
 
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
-import com.faforever.iceadapter.ice.IceServer;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages WebRTC signaling for a peer connection using standard {@link CandidatesMessage}.
@@ -18,7 +17,6 @@ public class WebRtcSignalingService {
     private final WebRtcSession webRtcSession;
     private final int localId;
     private final int remoteId;
-    private final List<IceServer> iceServers;
 
     // Callback for sending signaling messages via RPC
     private volatile SignalingMessageSender signalingMessageSender;
@@ -32,11 +30,10 @@ public class WebRtcSignalingService {
         void sendSignalingMessage(CandidatesMessage message);
     }
 
-    public WebRtcSignalingService(WebRtcSession webRtcSession, int localId, int remoteId, List<IceServer> iceServers) {
+    public WebRtcSignalingService(WebRtcSession webRtcSession, int localId, int remoteId) {
         this.webRtcSession = webRtcSession;
         this.localId = localId;
         this.remoteId = remoteId;
-        this.iceServers = iceServers;
     }
 
     public void setSignalingMessageSender(SignalingMessageSender sender) {
@@ -59,8 +56,10 @@ public class WebRtcSignalingService {
      * Process a remote SDP offer received via signaling.
      */
     public void processRemoteOffer(String sdp, List<CandidatePacket> candidates) {
-        log.info("Processing remote SDP offer with {} candidates for peer {}",
-                candidates != null ? candidates.size() : 0, remoteId);
+        log.info(
+                "Processing remote SDP offer with {} candidates for peer {}",
+                candidates != null ? candidates.size() : 0,
+                remoteId);
         webRtcSession.processRemoteOffer(sdp, candidates);
     }
 
@@ -72,8 +71,10 @@ public class WebRtcSignalingService {
      * Process a remote SDP answer received via signaling.
      */
     public void processRemoteAnswer(String sdp, List<CandidatePacket> candidates) {
-        log.info("Processing remote SDP answer with {} candidates for peer {}",
-                candidates != null ? candidates.size() : 0, remoteId);
+        log.info(
+                "Processing remote SDP answer with {} candidates for peer {}",
+                candidates != null ? candidates.size() : 0,
+                remoteId);
         webRtcSession.processRemoteAnswer(sdp, candidates);
     }
 
@@ -117,12 +118,14 @@ public class WebRtcSignalingService {
      * Called by WebRtcSession when an offer is created with gathered candidates.
      */
     public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
-        CandidatesMessage message = new CandidatesMessage(
-                localId, remoteId, sdp, "offer", candidates != null ? candidates : List.of());
+        CandidatesMessage message =
+                new CandidatesMessage(localId, remoteId, sdp, "offer", candidates != null ? candidates : List.of());
         if (signalingMessageSender != null) {
             signalingMessageSender.sendSignalingMessage(message);
-            log.info("Sent unified SDP offer with {} candidates via RPC to peer {}",
-                    message.candidates().size(), remoteId);
+            log.info(
+                    "Sent unified SDP offer with {} candidates via RPC to peer {}",
+                    message.candidates().size(),
+                    remoteId);
         } else {
             pendingOffer.put("offer", message);
             log.info("Stored unified SDP offer for peer {}", remoteId);
@@ -137,12 +140,14 @@ public class WebRtcSignalingService {
      * Called by WebRtcSession when an answer is created with gathered candidates.
      */
     public void onAnswerCreated(String sdp, List<CandidatePacket> candidates) {
-        CandidatesMessage message = new CandidatesMessage(
-                localId, remoteId, sdp, "answer", candidates != null ? candidates : List.of());
+        CandidatesMessage message =
+                new CandidatesMessage(localId, remoteId, sdp, "answer", candidates != null ? candidates : List.of());
         if (signalingMessageSender != null) {
             signalingMessageSender.sendSignalingMessage(message);
-            log.info("Sent unified SDP answer with {} candidates via RPC to peer {}",
-                    message.candidates().size(), remoteId);
+            log.info(
+                    "Sent unified SDP answer with {} candidates via RPC to peer {}",
+                    message.candidates().size(),
+                    remoteId);
         } else {
             pendingAnswer.put("answer", message);
             log.info("Stored unified SDP answer for peer {}", remoteId);

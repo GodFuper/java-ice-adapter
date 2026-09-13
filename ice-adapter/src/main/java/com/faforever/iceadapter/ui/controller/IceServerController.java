@@ -2,6 +2,11 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.IceServerView;
 import com.faforever.iceadapter.services.UIAdapter;
+
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
@@ -11,11 +16,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.VBox;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @NoArgsConstructor

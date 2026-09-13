@@ -1,13 +1,13 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class WebRtcTelemetryAndStatsTest {
 
@@ -111,8 +111,10 @@ class WebRtcTelemetryAndStatsTest {
 
         assertEquals(stats.getRttMs(), peer.getRtt());
         assertEquals(1, peer.getCandidateTypes().size());
-        assertEquals(stats.getLocalCandidateType(), peer.getCandidateTypes().get(0).getFirst());
-        assertEquals(stats.getRemoteCandidateType(), peer.getCandidateTypes().get(0).getSecond());
+        assertEquals(
+                stats.getLocalCandidateType(), peer.getCandidateTypes().get(0).first());
+        assertEquals(
+                stats.getRemoteCandidateType(), peer.getCandidateTypes().get(0).second());
 
         String fullInfo = peer.getFullInfoSelectedPair();
         assertNotNull(fullInfo);

@@ -1,10 +1,10 @@
 package com.faforever.iceadapter.webrtc;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class WebRtcResourceCleanupTest {
 
@@ -13,38 +13,36 @@ class WebRtcResourceCleanupTest {
         WebRtcConnectionFactory factory = WebRtcConnectionFactory.getInstance();
         WebRtcSession session = new WebRtcSession(factory);
 
-        session.init(true, List.of(),
-                (data, isBinary) -> {
-                },
-                new WebRtcSession.SessionStateHandler() {
-                    @Override
-                    public void onConnected() {
-                    }
+        session.init(true, List.of(), (data, isBinary) -> {
+        }, new WebRtcSession.SessionStateHandler() {
+            @Override
+            public void onConnected() {
+            }
 
-                    @Override
-                    public void onDisconnected() {
-                    }
+            @Override
+            public void onDisconnected() {
+            }
 
-                    @Override
-                    public void onError(String error) {
-                    }
+            @Override
+            public void onError(String error) {
+            }
 
-                    @Override
-                    public void onOfferCreated(String sdp) {
-                    }
+            @Override
+            public void onOfferCreated(String sdp) {
+            }
 
-                    @Override
-                    public void onAnswerCreated(String sdp) {
-                    }
+            @Override
+            public void onAnswerCreated(String sdp) {
+            }
 
-                    @Override
-                    public void onRemoteDescriptionSet() {
-                    }
+            @Override
+            public void onRemoteDescriptionSet() {
+            }
 
-                    @Override
-                    public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
-                    }
-                });
+            @Override
+            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
+            }
+        });
 
         // Close once
         assertDoesNotThrow(session::close);

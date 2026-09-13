@@ -8,12 +8,12 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.extern.slf4j.Slf4j;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Receives JSON messages from WebRTC data channel and routes them to the same handlers
@@ -80,12 +80,16 @@ public class WebRtcMessageDispatcher {
                 }
                 case "joinGame" -> {
                     if (params != null && params.size() > 1) {
-                        callbacks.onJoinGame(params.get(0).asText(), params.get(1).asInt());
+                        callbacks.onJoinGame(
+                                params.get(0).asText(), params.get(1).asInt());
                     }
                 }
                 case "connectToPeer" -> {
                     if (params != null && params.size() > 2) {
-                        callbacks.onConnectToPeer(params.get(0).asText(), params.get(1).asInt(), params.get(2).asBoolean());
+                        callbacks.onConnectToPeer(
+                                params.get(0).asText(),
+                                params.get(1).asInt(),
+                                params.get(2).asBoolean());
                     }
                 }
                 case "disconnectFromPeer" -> {
@@ -112,8 +116,7 @@ public class WebRtcMessageDispatcher {
                     if (params != null && params.size() > 0) {
                         List<Map<String, Object>> iceServers = objectMapper.convertValue(
                                 params.get(0),
-                                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class)
-                        );
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
                         GameSession.setIceServers(iceServers);
                     }
                 }

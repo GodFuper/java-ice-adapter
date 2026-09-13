@@ -3,7 +3,6 @@ package com.faforever.iceadapter.ice.base;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.RpcConnection;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,7 +75,9 @@ public class InMemoryRpcBus implements RpcConnection {
         if (target != null) {
             target.iceMessageFromRPC(message);
         } else {
-            pendingCandidates.computeIfAbsent(message.destId(), k -> new CopyOnWriteArrayList<>()).add(message);
+            pendingCandidates
+                    .computeIfAbsent(message.destId(), k -> new CopyOnWriteArrayList<>())
+                    .add(message);
         }
     }
 

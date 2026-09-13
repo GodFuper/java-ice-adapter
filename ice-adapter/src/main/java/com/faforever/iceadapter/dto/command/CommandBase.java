@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.dto.command;
 
+import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMMAND_BASE;
+
 import com.faforever.iceadapter.dto.command.relay.auto.info.RelayPingCommand;
 import com.faforever.iceadapter.dto.command.relay.manual.from_client.*;
 import com.faforever.iceadapter.dto.command.relay.manual.from_server.RpcMessageFromServerPeerCommand;
@@ -11,8 +13,6 @@ import com.faforever.iceadapter.util.ObjectMapperUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMMAND_BASE;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({

@@ -1,11 +1,10 @@
 package com.faforever.iceadapter.ice.peer.modules.fa;
 
+import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
+
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.util.LockUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -14,7 +13,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.faforever.iceadapter.util.DatagramSocketUtils.MAX_SIZE_PACKET;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -96,7 +96,9 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     private boolean isNeedReceive() {
-        return peer.isConnected() || (peer.isAdditionalPacketForwarding() && peer.existBestRelays()) || peer.existBestRelays();
+        return peer.isConnected()
+                || (peer.isAdditionalPacketForwarding() && peer.existBestRelays())
+                || peer.existBestRelays();
     }
 
     private void receive(DatagramSocket socket) throws IOException {

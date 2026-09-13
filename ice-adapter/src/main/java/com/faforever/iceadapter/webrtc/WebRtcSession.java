@@ -7,10 +7,6 @@ import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import dev.onvoid.webrtc.*;
-import lombok.Data;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -23,6 +19,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Manages the full WebRTC lifecycle for ONE peer connection.
  * Handles SDP offer/answer exchange, ICE candidate exchange, and data channel lifecycle.
@@ -33,9 +33,12 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     private static final long GATHER_TIMEOUT_MS = 2500;
 
     private final WebRtcConnectionFactory factory;
+
     @Getter
     private volatile RTCPeerConnection peerConnection;
+
     private volatile RTCDataChannel dataChannel;
+
     @Getter
     private RTCConfiguration config;
 
@@ -55,28 +58,27 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      */
     @Getter
     private volatile boolean connected = false;
+
     @Getter
     private volatile boolean closed = false;
+
     private volatile boolean initialized = false;
 
     // Pending ICE candidates received before remote description is set
     private final List<RTCIceCandidate> pendingCandidates;
-    private volatile boolean remoteDescriptionSet = false;
 
     // Latches for async operations
     private final CountDownLatch connectedLatch = new CountDownLatch(1);
-    private final CountDownLatch dataChannelOpenLatch = new CountDownLatch(1);
 
     // Vanilla ICE candidate gathering (gathered before sending offer/answer)
     private final List<CandidatePacket> gatheredCandidatePackets = new CopyOnWriteArrayList<>();
-    private final List<RTCIceCandidate> gatheredIceCandidates = new CopyOnWriteArrayList<>();
     private volatile CountDownLatch gatheringLatch;
 
     @Data
     public static class SessionStats {
         private volatile float rttMs = 0.0f;
-        private volatile String localCandidateType = "unknown";
-        private volatile String remoteCandidateType = "unknown";
+        private volatile String localCandidateType = "";
+        private volatile String remoteCandidateType = "";
         private volatile String localAddress = "";
         private volatile String remoteAddress = "";
         private volatile long bytesSent = 0;
@@ -99,6 +101,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
     @Getter
     private final SessionStats stats = new SessionStats();
+
     private ScheduledFuture<?> statsFuture;
 
     /**
@@ -111,10 +114,12 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         try {
             try {
                 if (peerConnection.getConnectionState() != null) {
-                    stats.setPeerConnectionState(peerConnection.getConnectionState().toString());
+                    stats.setPeerConnectionState(
+                            peerConnection.getConnectionState().toString());
                 }
                 if (peerConnection.getIceConnectionState() != null) {
-                    stats.setIceConnectionState(peerConnection.getIceConnectionState().toString());
+                    stats.setIceConnectionState(
+                            peerConnection.getIceConnectionState().toString());
                 }
             } catch (Exception ignored) {
             }
@@ -191,14 +196,16 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
                     Object localId = attrs.get("localCandidateId");
                     if (localId != null && statsMap.containsKey(localId.toString())) {
-                        Map<String, Object> localAttrs = statsMap.get(localId.toString()).getAttributes();
+                        Map<String, Object> localAttrs =
+                                statsMap.get(localId.toString()).getAttributes();
                         stats.setLocalCandidateType(String.valueOf(localAttrs.get("candidateType")));
                         stats.setLocalAddress(localAttrs.get("address") + ":" + localAttrs.get("port"));
                     }
 
                     Object remoteId = attrs.get("remoteCandidateId");
                     if (remoteId != null && statsMap.containsKey(remoteId.toString())) {
-                        Map<String, Object> remoteAttrs = statsMap.get(remoteId.toString()).getAttributes();
+                        Map<String, Object> remoteAttrs =
+                                statsMap.get(remoteId.toString()).getAttributes();
                         stats.setRemoteCandidateType(String.valueOf(remoteAttrs.get("candidateType")));
                         stats.setRemoteAddress(remoteAttrs.get("address") + ":" + remoteAttrs.get("port"));
                     }
@@ -277,27 +284,36 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     /**
      * Initialize the session with configuration and callbacks.
      */
-    public synchronized void init(boolean offerer, List<IceServer> iceServers,
-                                  DataChannelMessageHandler messageHandler, SessionStateHandler stateHandler) {
+    public synchronized void init(
+            boolean offerer,
+            List<IceServer> iceServers,
+            DataChannelMessageHandler messageHandler,
+            SessionStateHandler stateHandler) {
         init(offerer, iceServers, null, messageHandler, stateHandler);
     }
 
     /**
      * Initialize the session with configuration, options, and callbacks.
      */
-    public synchronized void init(boolean offerer, List<IceServer> iceServers,
-                                  IceOptions options,
-                                  DataChannelMessageHandler messageHandler, SessionStateHandler stateHandler) {
+    public synchronized void init(
+            boolean offerer,
+            List<IceServer> iceServers,
+            IceOptions options,
+            DataChannelMessageHandler messageHandler,
+            SessionStateHandler stateHandler) {
         init(offerer, iceServers, options, AllowCombination.ALL, messageHandler, stateHandler);
     }
 
     /**
      * Initialize the session with configuration, options, combination, and callbacks.
      */
-    public synchronized void init(boolean offerer, List<IceServer> iceServers,
-                                  IceOptions options,
-                                  AllowCombination combination,
-                                  DataChannelMessageHandler messageHandler, SessionStateHandler stateHandler) {
+    public synchronized void init(
+            boolean offerer,
+            List<IceServer> iceServers,
+            IceOptions options,
+            AllowCombination combination,
+            DataChannelMessageHandler messageHandler,
+            SessionStateHandler stateHandler) {
         this.isOfferer = offerer;
         this.messageHandler = messageHandler;
         this.stateHandler = stateHandler;
@@ -361,8 +377,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             log.warn("Could not schedule stats task", e);
         }
 
-        log.info("WebRtcSession initialized (offerer={}, iceServers={}, combination={}, forceRelay={}, minPort={}, maxPort={})",
-                offerer, config.iceServers.size(),
+        log.info(
+                "WebRtcSession initialized (offerer={}, iceServers={}, combination={}, forceRelay={}, minPort={}, maxPort={})",
+                offerer,
+                config.iceServers.size(),
                 this.allowCombination,
                 options != null && options.isForceRelay(),
                 options != null ? options.getMinPort() : 0,
@@ -381,7 +399,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         AtomicReference<RTCSessionDescription> offerRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        peerConnection.createOffer(new dev.onvoid.webrtc.RTCOfferOptions(), new CreateSessionDescriptionObserver() {
+        peerConnection.createOffer(new RTCOfferOptions(), new CreateSessionDescriptionObserver() {
             @Override
             public void onSuccess(RTCSessionDescription description) {
                 offerRef.set(description);
@@ -414,7 +432,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         // Clear previously gathered candidates
         gatheredCandidatePackets.clear();
-        gatheredIceCandidates.clear();
         CountDownLatch gatherLatch = new CountDownLatch(1);
         gatheringLatch = gatherLatch;
 
@@ -426,8 +443,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         // Wait for ICE candidate gathering to complete (Vanilla ICE)
         try {
             boolean completed = gatherLatch.await(GATHER_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            log.info("ICE candidate gathering for offer finished (completed={}, gatheredCandidates={})",
-                    completed, gatheredCandidatePackets.size());
+            log.info(
+                    "ICE candidate gathering for offer finished (completed={}, gatheredCandidates={})",
+                    completed,
+                    gatheredCandidatePackets.size());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Interrupted while waiting for ICE candidate gathering");
@@ -559,6 +578,13 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Send data asynchronously without blocking calling thread on native WebRTC network thread.
      */
     public boolean sendDataAsync(byte[] data, boolean isBinary) {
+        return sendDataAsync(data, isBinary, null);
+    }
+
+    /**
+     * Send data asynchronously and report the result via observer.
+     */
+    public boolean sendDataAsync(byte[] data, boolean isBinary, RTCDataChannelSendObserver observer) {
         if (closed) {
             return false;
         }
@@ -570,7 +596,11 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         try {
             ByteBuffer buffer = ByteBuffer.wrap(data);
             RTCDataChannelBuffer bufferData = new RTCDataChannelBuffer(buffer, isBinary);
-            dc.sendAsync(bufferData);
+            if (observer != null) {
+                dc.sendAsync(bufferData, observer);
+            } else {
+                dc.sendAsync(bufferData);
+            }
             return true;
         } catch (Exception e) {
             log.error("Failed to send data async over data channel", e);
@@ -645,7 +675,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     public void onIceCandidate(RTCIceCandidate candidate) {
         if (candidate != null && candidate.sdp != null) {
             log.debug("ICE candidate gathered: {}:{}:{}", candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
-            gatheredIceCandidates.add(candidate);
             CandidatePacket packet = CandidateUtil.webRtcCandidateToPacket(candidate.sdp);
             if (packet != null) {
                 gatheredCandidatePackets.add(packet);
@@ -681,7 +710,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         if (dataChannel.getState() == RTCDataChannelState.OPEN) {
             connected = true;
             connectedLatch.countDown();
-            dataChannelOpenLatch.countDown();
             SessionStateHandler handler = stateHandler;
             if (handler != null) {
                 handler.onConnected();
@@ -709,8 +737,8 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     // ==================== RTCDataChannelObserver ====================
 
     @Override
-    public void onBufferedAmountChange(long previousAmount) {
-        // ignore
+    public void onBufferedAmountChange(long sentDataSize) {
+        log.trace("Data channel buffered amount decreased by {} bytes", sentDataSize);
     }
 
     @Override
@@ -727,7 +755,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         if (state == RTCDataChannelState.OPEN) {
             connected = true;
             connectedLatch.countDown();
-            dataChannelOpenLatch.countDown();
             SessionStateHandler handler = stateHandler;
             if (handler != null && !closed) {
                 handler.onConnected();
@@ -791,7 +818,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         // Clear previously gathered candidates
         gatheredCandidatePackets.clear();
-        gatheredIceCandidates.clear();
         CountDownLatch gatherLatch = new CountDownLatch(1);
         gatheringLatch = gatherLatch;
 
@@ -802,8 +828,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         // Wait for ICE candidate gathering to complete (Vanilla ICE)
         try {
             boolean completed = gatherLatch.await(GATHER_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            log.info("ICE candidate gathering for answer finished (completed={}, gatheredCandidates={})",
-                    completed, gatheredCandidatePackets.size());
+            log.info(
+                    "ICE candidate gathering for answer finished (completed={}, gatheredCandidates={})",
+                    completed,
+                    gatheredCandidatePackets.size());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Interrupted while waiting for ICE candidate gathering");
@@ -899,5 +927,4 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             pendingCandidates.clear();
         }
     }
-
 }

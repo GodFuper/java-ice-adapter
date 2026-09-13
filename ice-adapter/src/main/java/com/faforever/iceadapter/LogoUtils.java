@@ -1,11 +1,11 @@
 package com.faforever.iceadapter;
 
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-
 import java.awt.*;
 import java.net.URL;
 import java.util.Optional;
+
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 @UtilityClass
 @Slf4j

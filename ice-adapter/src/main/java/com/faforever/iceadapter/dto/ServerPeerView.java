@@ -4,14 +4,13 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+
+import java.util.Objects;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.Data;
-import org.ice4j.ice.Agent;
-
-import java.util.Objects;
 
 @Data
 public class ServerPeerView implements PeerEventListener {
@@ -22,7 +21,6 @@ public class ServerPeerView implements PeerEventListener {
     private final StringProperty remoteCand = new SimpleStringProperty();
     private final StringProperty pairConnection = new SimpleStringProperty();
     private final StringProperty state = new SimpleStringProperty();
-    private final StringProperty agent = new SimpleStringProperty();
     private final StringProperty offer = new SimpleStringProperty();
     private final BooleanProperty allowHost = new SimpleBooleanProperty();
     private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
@@ -44,11 +42,6 @@ public class ServerPeerView implements PeerEventListener {
     }
 
     @Override
-    public void onAgentChange(Peer peer, Agent agent) {
-        update(peer);
-    }
-
-    @Override
     public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
         update(peer);
     }
@@ -63,7 +56,6 @@ public class ServerPeerView implements PeerEventListener {
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         getState().set(String.valueOf(peer.getState()));
-        getAgent().set(peer.getAgentState().map(String::valueOf).orElse("-"));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         AllowCombination combination = peer.getCombination();

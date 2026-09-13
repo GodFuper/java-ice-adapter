@@ -1,5 +1,7 @@
 package com.faforever.iceadapter;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.debug.TelemetryDebugger;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
@@ -11,14 +13,12 @@ import com.faforever.iceadapter.services.RpcConnection;
 import com.faforever.iceadapter.services.impl.rpc.RpcConnectionImpl;
 import com.faforever.iceadapter.util.TrayIcon;
 import com.faforever.iceadapter.webrtc.WebRtcConnectionFactory;
+
+import java.util.concurrent.Callable;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
-
-import java.util.concurrent.Callable;
-
-import static com.faforever.iceadapter.debug.Debug.debug;
 
 @CommandLine.Command(
         name = "faf-ice-adapter",
@@ -80,11 +80,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
         TrayIcon.create();
 
-        if (iceOptions.getTransport() == IceOptions.TransportMode.WEBRTC) {
-            startWebRtcMode();
-        } else {
-            startIceMode();
-        }
+        startWebRtcMode();
 
         registerShutdownHook();
 
@@ -92,26 +88,25 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     }
 
     private void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("JVM shutdown hook triggered");
-            IceAdapter instance = INSTANCE;
-            if (instance != null) {
-                try {
-                    instance.onFAShutdown();
-                } catch (Exception ignored) {
-                }
-                if (instance.webRtcConnectionFactory != null) {
-                    try {
-                        instance.webRtcConnectionFactory.shutdown();
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-        }, "ice-adapter-shutdown-hook"));
-    }
-
-    private void startIceMode() {
-        log.info("Starting in ICE mode (ice4j + TCP RPC)");
+        Runtime.getRuntime()
+                .addShutdownHook(new Thread(
+                        () -> {
+                            log.info("JVM shutdown hook triggered");
+                            IceAdapter instance = INSTANCE;
+                            if (instance != null) {
+                                try {
+                                    instance.onFAShutdown();
+                                } catch (Exception ignored) {
+                                }
+                                if (instance.webRtcConnectionFactory != null) {
+                                    try {
+                                        instance.webRtcConnectionFactory.shutdown();
+                                    } catch (Exception ignored) {
+                                    }
+                                }
+                            }
+                        },
+                        "ice-adapter-shutdown-hook"));
     }
 
     private void startWebRtcMode() {
@@ -202,7 +197,6 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         setGameSession(newGameSession);
         return newGameSession;
     }
-
 
     /**
      * Triggered by losing gpgnet connection to FA.

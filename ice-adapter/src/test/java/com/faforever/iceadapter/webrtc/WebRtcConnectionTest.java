@@ -1,15 +1,15 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.faforever.iceadapter.FafRpcCallbacks;
+import com.faforever.iceadapter.ice.CandidatePacket;
+import com.faforever.iceadapter.ice.CandidateType;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
-import org.ice4j.ice.CandidateType;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -19,7 +19,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Tests for WebRtcConnectionImpl - verifies JSON serialization/deserialization
@@ -127,8 +129,7 @@ class WebRtcConnectionTest {
             waitUntilConnected(caller, callee, 15_000);
 
             // Wait for data channel to open
-            assertTrue(waitForDataChannelOpen(callerChannel, 5_000),
-                    "Caller data channel should reach OPEN state");
+            assertTrue(waitForDataChannelOpen(callerChannel, 5_000), "Caller data channel should reach OPEN state");
 
             // Track received messages on callee side
             List<byte[]> receivedMessages = Collections.synchronizedList(new ArrayList<>());
@@ -161,13 +162,21 @@ class WebRtcConnectionTest {
 
             // Create a CandidatesMessage and send it via caller's data channel
             CandidatesMessage message = new CandidatesMessage(
-                    1, 2, "password", "ufrag1",
-                    List.of(
-                            new com.faforever.iceadapter.ice.CandidatePacket(
-                                    "f1", "udp", 1694498879L, "127.0.0.1", 8080,
-                                    CandidateType.HOST_CANDIDATE, 0, "u1", "", 0)
-                    )
-            );
+                    1,
+                    2,
+                    "password",
+                    "ufrag1",
+                    List.of(new CandidatePacket(
+                            "f1",
+                            "udp",
+                            1694498879L,
+                            "127.0.0.1",
+                            8080,
+                            CandidateType.HOST_CANDIDATE,
+                            0,
+                            "u1",
+                            "",
+                            0)));
 
             // Serialize and send (simulating WebRtcConnectionImpl.sendToRpc behavior)
             String json = objectMapper.writeValueAsString(message);
@@ -188,7 +197,8 @@ class WebRtcConnectionTest {
             assertEquals(message.destId(), receivedMessage.destId());
             assertEquals(message.password(), receivedMessage.password());
             assertEquals(message.ufrag(), receivedMessage.ufrag());
-            assertEquals(message.candidates().size(), receivedMessage.candidates().size());
+            assertEquals(
+                    message.candidates().size(), receivedMessage.candidates().size());
 
         } finally {
             RTCPeerConnection c = callerRef.get();
@@ -209,7 +219,7 @@ class WebRtcConnectionTest {
         AtomicReference<Exception> errorRef = new AtomicReference<>();
 
         // Create a mock FafRpcCallbacks that captures iceMsg calls
-        com.faforever.iceadapter.FafRpcCallbacks mockCallbacks = new com.faforever.iceadapter.FafRpcCallbacks() {
+        FafRpcCallbacks mockCallbacks = new FafRpcCallbacks() {
             @Override
             public void onHostGame(String mapName) {
             }
@@ -238,7 +248,8 @@ class WebRtcConnectionTest {
         WebRtcMessageDispatcher dispatcher = new WebRtcMessageDispatcher(mockCallbacks);
 
         // Simulate receiving an iceMsg JSON-RPC call
-        String iceMsgJson = "{\"method\":\"iceMsg\",\"params\":[1,\"{\\\"srcId\\\":1,\\\"destId\\\":2,\\\"password\\\":\\\"pwd\\\",\\\"ufrag\\\":\\\"uf\\\",\\\"candidates\\\":[]}\"]}";
+        String iceMsgJson =
+                "{\"method\":\"iceMsg\",\"params\":[1,\"{\\\"srcId\\\":1,\\\"destId\\\":2,\\\"password\\\":\\\"pwd\\\",\\\"ufrag\\\":\\\"uf\\\",\\\"candidates\\\":[]}\"]}";
 
         // This will fail because there's no game session, but we can verify parsing happens
         try {
@@ -256,16 +267,15 @@ class WebRtcConnectionTest {
 
     private RTCConfiguration createLocalConfig() {
         RTCConfiguration config = new RTCConfiguration();
-        config.iceTransportPolicy = dev.onvoid.webrtc.RTCIceTransportPolicy.ALL;
+        config.iceTransportPolicy = RTCIceTransportPolicy.ALL;
         return config;
     }
 
-    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws Exception {
+    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee) throws Exception {
         // Caller creates offer
         AtomicReference<RTCSessionDescription> offerRef = new AtomicReference<>();
         CountDownLatch offerLatch = new CountDownLatch(1);
-        caller.createOffer(new RTCOfferOptions(), new dev.onvoid.webrtc.CreateSessionDescriptionObserver() {
+        caller.createOffer(new RTCOfferOptions(), new CreateSessionDescriptionObserver() {
             @Override
             public void onSuccess(RTCSessionDescription desc) {
                 offerRef.set(desc);
@@ -285,7 +295,7 @@ class WebRtcConnectionTest {
         // Callee creates answer
         AtomicReference<RTCSessionDescription> answerRef = new AtomicReference<>();
         CountDownLatch answerLatch = new CountDownLatch(1);
-        callee.createAnswer(new dev.onvoid.webrtc.RTCAnswerOptions(), new dev.onvoid.webrtc.CreateSessionDescriptionObserver() {
+        callee.createAnswer(new RTCAnswerOptions(), new CreateSessionDescriptionObserver() {
             @Override
             public void onSuccess(RTCSessionDescription desc) {
                 answerRef.set(desc);
@@ -303,8 +313,7 @@ class WebRtcConnectionTest {
         setRemoteDescription(caller, answerRef.get());
     }
 
-    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setLocalDescription(description, new SetSessionDescriptionObserver() {
@@ -325,8 +334,7 @@ class WebRtcConnectionTest {
         }
     }
 
-    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setRemoteDescription(description, new SetSessionDescriptionObserver() {
@@ -347,23 +355,22 @@ class WebRtcConnectionTest {
         }
     }
 
-    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee,
-                                    long timeoutMs) throws InterruptedException {
+    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee, long timeoutMs)
+            throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
-            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED &&
-                    callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
+            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED
+                    && callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
                 return;
             }
             Thread.sleep(50);
         }
-        throw new AssertionError("Connection timeout after " + timeoutMs + "ms. " +
-                "Caller state: " + caller.getConnectionState() + ", " +
-                "Callee state: " + callee.getConnectionState());
+        throw new AssertionError("Connection timeout after " + timeoutMs + "ms. " + "Caller state: "
+                + caller.getConnectionState() + ", " + "Callee state: "
+                + callee.getConnectionState());
     }
 
-    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs)
-            throws InterruptedException {
+    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
             if (channel.getState() == RTCDataChannelState.OPEN) {

@@ -1,12 +1,10 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,7 +14,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Integration test demonstrating WebRTC peer connection with STUN server.
@@ -136,7 +136,8 @@ class WebRtcStunConnectionTest {
 
             // Verify STUN candidates were gathered
             int srflxCandidateCount = countSrflxCandidates(callerCandidates);
-            assertTrue(srflxCandidateCount >= 0,
+            assertTrue(
+                    srflxCandidateCount >= 0,
                     "Should have some srflx candidates from STUN server, got: " + srflxCandidateCount);
 
         } finally {
@@ -200,8 +201,7 @@ class WebRtcStunConnectionTest {
             waitUntilConnected(caller, callee, 20_000);
 
             // Wait for data channel to open
-            assertTrue(waitForDataChannelOpen(callerChannel, 5_000),
-                    "Caller data channel should reach OPEN state");
+            assertTrue(waitForDataChannelOpen(callerChannel, 5_000), "Caller data channel should reach OPEN state");
 
             // Set up message observer on callee side
             List<String> receivedMessages = Collections.synchronizedList(new ArrayList<>());
@@ -237,8 +237,7 @@ class WebRtcStunConnectionTest {
             Thread.sleep(2_000);
 
             // Verify
-            assertEquals(2, receivedMessages.size(),
-                    "Callee should receive 2 messages via STUN connection");
+            assertEquals(2, receivedMessages.size(), "Callee should receive 2 messages via STUN connection");
             assertEquals("Hello via STUN!", receivedMessages.get(0));
             assertEquals("STUN traversal works!", receivedMessages.get(1));
 
@@ -324,8 +323,7 @@ class WebRtcStunConnectionTest {
         return count;
     }
 
-    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws Exception {
+    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee) throws Exception {
         // Caller creates offer
         AtomicReference<RTCSessionDescription> offerRef = new AtomicReference<>();
         CountDownLatch offerLatch = new CountDownLatch(1);
@@ -369,8 +367,7 @@ class WebRtcStunConnectionTest {
         setRemoteDescription(caller, answerRef.get());
     }
 
-    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setLocalDescription(description, new SetSessionDescriptionObserver() {
@@ -391,8 +388,7 @@ class WebRtcStunConnectionTest {
         }
     }
 
-    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setRemoteDescription(description, new SetSessionDescriptionObserver() {
@@ -413,8 +409,7 @@ class WebRtcStunConnectionTest {
         }
     }
 
-    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws InterruptedException {
+    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee) throws InterruptedException {
         Thread.sleep(5000);
 
         synchronized (callerCandidates) {
@@ -429,23 +424,22 @@ class WebRtcStunConnectionTest {
         }
     }
 
-    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee,
-                                    long timeoutMs) throws InterruptedException {
+    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee, long timeoutMs)
+            throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
-            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED &&
-                    callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
+            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED
+                    && callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
                 return;
             }
             Thread.sleep(50);
         }
-        fail("Connection timeout after " + timeoutMs + "ms. " +
-                "Caller state: " + caller.getConnectionState() + ", " +
-                "Callee state: " + callee.getConnectionState());
+        fail("Connection timeout after " + timeoutMs + "ms. " + "Caller state: "
+                + caller.getConnectionState() + ", " + "Callee state: "
+                + callee.getConnectionState());
     }
 
-    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs)
-            throws InterruptedException {
+    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
             if (channel.getState() == RTCDataChannelState.OPEN) {

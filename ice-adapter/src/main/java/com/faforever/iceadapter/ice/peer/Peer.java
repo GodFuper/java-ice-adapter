@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.ice.peer;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
@@ -7,18 +9,11 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.ice.peer.modules.EventBusModule;
-import com.faforever.iceadapter.ice.peer.modules.ice.kcp.KcpStatistics;
 import com.faforever.iceadapter.ice.peer.modules.other.AutoSettingAllowCandidates;
-import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.CollectionUtils;
+import com.faforever.iceadapter.util.Pair;
 import com.faforever.iceadapter.webrtc.WebRtcSession;
 import com.faforever.iceadapter.webrtc.WebRtcSignalingService;
-import kotlin.Pair;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.*;
-
 import java.net.DatagramSocket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +23,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents a peer in the current game session which we are connected to
@@ -67,19 +65,13 @@ public abstract class Peer {
 
     private volatile boolean autoRelay = false;
     private volatile boolean connected = false;
-    private volatile KeepAliveStrategy keepAliveStrategy;
-    private volatile Agent agent;
-    private volatile IceMediaStream mediaStream;
-    private volatile Component component;
 
-    // WebRTC fields (used when --transport=webrtc)
+    // WebRTC fields
     private volatile WebRtcSession webRtcSession;
     private volatile WebRtcSignalingService webRtcSignalingService;
-    
-    private IceAgentStrategy agentStrategy = IceAgentStrategy.FIRST;
+
     private AllowCombination combination = AllowCombination.ALL;
     private boolean disableConnectService = false;
-    private PeerSendMode sendMode = PeerSendMode.DIRECT_ONLY;
 
     private final AtomicInteger awaitingCandidatesEventId = new AtomicInteger(0);
     private final AtomicInteger reInitEventId = new AtomicInteger(0);
@@ -87,8 +79,6 @@ public abstract class Peer {
 
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
     private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
-
-    private final KcpStatistics kcpStatistics = new KcpStatistics();
 
     private int version = 1;
 
@@ -131,7 +121,7 @@ public abstract class Peer {
     }
 
     public boolean isConnected() {
-        return iceState == IceState.CONNECTED && component != null || connected;
+        return (iceState == IceState.CONNECTED && webRtcSession != null && webRtcSession.isConnected()) || connected;
     }
 
     public void startInitPeer() {
@@ -139,23 +129,6 @@ public abstract class Peer {
                 "Peer created: {}, localOffer: {}, preferredPort: {}", getPeerIdentifier(), localOffer, preferredPort);
 
         setIceState(IceState.NEW);
-    }
-
-    public void setSendMode(PeerSendMode sendMode) {
-        PeerSendMode oldMode = this.sendMode;
-        if (Objects.equals(oldMode, sendMode)) {
-            return;
-        }
-        this.sendMode = sendMode;
-        event(bus -> bus.onPeerSendModeChange(this, oldMode, sendMode));
-    }
-
-    public boolean isKcpTransportEnabled() {
-        return sendMode == PeerSendMode.BOTH || sendMode == PeerSendMode.KCP_ONLY;
-    }
-
-    public boolean isDirectTransportEnabled() {
-        return sendMode == PeerSendMode.DIRECT_ONLY || sendMode == PeerSendMode.BOTH;
     }
 
     public void setIceState(IceState iceState) {
@@ -209,21 +182,6 @@ public abstract class Peer {
         getEventBus().ifPresent(bus -> bus.unregister(listener));
     }
 
-    public void setAgent(Agent agent) {
-        this.agent = agent;
-        event(bus -> bus.onAgentChange(this, agent));
-    }
-
-    public void setMediaStream(IceMediaStream mediaStream) {
-        this.mediaStream = mediaStream;
-        event(bus -> bus.onIceMediaStreamChange(this, mediaStream));
-    }
-
-    public void setComponent(Component component) {
-        this.component = component;
-        event(bus -> bus.onIceComponentChange(this, component));
-    }
-
     public WebRtcSession getWebRtcSession() {
         return webRtcSession;
     }
@@ -263,8 +221,11 @@ public abstract class Peer {
         }
 
         if (triggerReconnect && webRtcSession != null && oldCombination != combination) {
-            log.info("AllowCombination changed for WebRTC peer {} from {} to {}, reconnecting",
-                    getPeerIdentifier(), oldCombination, combination);
+            log.info(
+                    "AllowCombination changed for WebRTC peer {} from {} to {}, reconnecting",
+                    getPeerIdentifier(),
+                    oldCombination,
+                    combination);
             reconnect();
         }
     }
@@ -286,20 +247,23 @@ public abstract class Peer {
         event(bus -> bus.onConnectingChange(this, connected));
     }
 
-    public CandidatePair getSelectedPair() {
-        return getActiveComponent().map(Component::getSelectedPair).orElse(null);
-    }
-
     public String getFullInfoSelectedPair() {
         if (webRtcSession != null) {
             WebRtcSession.SessionStats s = webRtcSession.getStats();
             return "WebRTC DataChannel: %s\nLocal: %s (%s)\nRemote: %s (%s)\nRTT: %.1f ms\nBytes: %d sent / %d recv\nMessages: %d sent / %d recv"
-                    .formatted(s.getDataChannelState(), s.getLocalAddress(), s.getLocalCandidateType(),
-                            s.getRemoteAddress(), s.getRemoteCandidateType(),
-                            s.getRttMs(), s.getBytesSent(), s.getBytesReceived(),
-                            s.getMessagesSent(), s.getMessagesReceived());
+                    .formatted(
+                            s.getDataChannelState(),
+                            s.getLocalAddress(),
+                            s.getLocalCandidateType(),
+                            s.getRemoteAddress(),
+                            s.getRemoteCandidateType(),
+                            s.getRttMs(),
+                            s.getBytesSent(),
+                            s.getBytesReceived(),
+                            s.getMessagesSent(),
+                            s.getMessagesReceived());
         }
-        return CandidateUtil.infoCandidate(getSelectedPair());
+        return "N/A";
     }
 
     public float getRtt() {
@@ -313,49 +277,29 @@ public abstract class Peer {
         return rtt;
     }
 
-    public Optional<Component> getActiveComponent() {
-        return Optional.ofNullable(component);
-    }
-
-    public Optional<CandidatePair> getActiveCandidatePair() {
-        return Optional.ofNullable(component).map(Component::getSelectedPair);
-    }
-
-    public Collection<CandidatePair> getCandidatePairs() {
-        Collection<CandidatePair> pairs = new ArrayList<>();
-        Optional.ofNullable(getSelectedPair()).ifPresent(pairs::add);
-        return pairs;
-    }
-
     public List<Pair<String, String>> getCandidateTypes() {
-        if (webRtcSession != null) {
-            WebRtcSession.SessionStats s = webRtcSession.getStats();
-            return List.of(new Pair<>(s.getLocalCandidateType(), s.getRemoteCandidateType()));
-        }
-        List<Pair<String, String>> candidates = new ArrayList<>();
-        for (CandidatePair pair : getCandidatePairs()) {
-            candidates.add(new Pair<>(
-                    String.valueOf(pair.getLocalCandidate().getType()),
-                    String.valueOf(pair.getRemoteCandidate().getType())));
+        if (webRtcSession == null) {
+            return List.of();
         }
 
-        return candidates;
+        List<Pair<String, String>> pairs = new ArrayList<>();
+        WebRtcSession.SessionStats s = webRtcSession.getStats();
+        if (StringUtils.isNotEmpty(s.getLocalCandidateType()) || StringUtils.isNotEmpty(s.getRemoteCandidateType())) {
+            pairs.add(new Pair<>(s.getLocalCandidateType(), s.getRemoteCandidateType()));
+        }
+        return pairs;
     }
 
     public String getStrCandidateTypes(String delimiter) {
         StringJoiner pairCandidates = new StringJoiner(delimiter);
         for (Pair<String, String> pair : getCandidateTypes()) {
-            pairCandidates.add("%s<->%s".formatted(pair.getFirst(), pair.getSecond()));
+            pairCandidates.add("%s<->%s".formatted(pair.first(), pair.second()));
         }
         return pairCandidates.toString();
     }
 
     public IceState getState() {
         return iceState;
-    }
-
-    public Optional<IceProcessingState> getAgentState() {
-        return Optional.ofNullable(agent).map(Agent::getState);
     }
 
     public Optional<Float> getAverageRtt() {

@@ -5,6 +5,10 @@ import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.services.impl.UIAdapterImpl;
 import com.faforever.iceadapter.ui.controller.WindowController;
+
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -13,10 +17,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = false)

@@ -1,8 +1,5 @@
 package com.faforever.iceadapter.ice;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -16,6 +13,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * In-memory analog for UDP datagram sockets used in tests.

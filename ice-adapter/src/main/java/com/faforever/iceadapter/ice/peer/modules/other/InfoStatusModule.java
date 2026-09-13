@@ -26,7 +26,6 @@ public class InfoStatusModule implements ModuleBase, PeerEventListener {
         }
     }
 
-
     private InfoRelayStatusCommand createStatusCommand(MainPeer peer) {
         return new InfoRelayStatusCommand(peer.isServerMode());
     }

@@ -1,9 +1,9 @@
 package com.faforever.iceadapter.dto;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public record FullRelayMessage(int fromId, int targetId, byte[] data) {

@@ -2,7 +2,6 @@ package com.faforever.iceadapter.ice;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.List;
 import java.util.stream.Collectors;
 

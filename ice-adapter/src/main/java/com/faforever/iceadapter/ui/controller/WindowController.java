@@ -1,14 +1,17 @@
 package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.PeerView;
-import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
-import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.ui.IceServerWindow;
-import com.faforever.iceadapter.ui.InfoKcpPeerWindow;
 import com.faforever.iceadapter.ui.InfoServerPeerWindow;
 import com.faforever.iceadapter.ui.InfoWebRtcPeerWindow;
+
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.collections.FXCollections;
@@ -23,12 +26,6 @@ import javafx.stage.Stage;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @NoArgsConstructor
@@ -62,9 +59,6 @@ public class WindowController {
 
     @FXML
     private TableColumn<PeerView, String> stateColumn;
-
-    @FXML
-    private TableColumn<PeerView, String> agentStateColumn;
 
     @FXML
     private TableColumn<PeerView, String> offerColumn;
@@ -115,9 +109,6 @@ public class WindowController {
     private ComboBox<AllowCombination> allowCombinationComboBox;
 
     @FXML
-    private ComboBox<IceAgentStrategy> connectionStrategyComboBox;
-
-    @FXML
     private VBox pairCandidateInfoAreaPane;
 
     @FXML
@@ -125,9 +116,6 @@ public class WindowController {
 
     @FXML
     private ComboBox<PeerView> relayPeerComboBox;
-
-    @FXML
-    private ComboBox<PeerSendMode> peerSendModeComboBox;
 
     @FXML
     private CheckBox additionalPacketForwardingCheckbox;
@@ -143,10 +131,6 @@ public class WindowController {
 
     public void openPanelServerPeers() {
         CompletableFuture.runAsync(() -> runOnUIThread(InfoServerPeerWindow::launch));
-    }
-
-    public void openPanelKcpPeers() {
-        CompletableFuture.runAsync(() -> runOnUIThread(InfoKcpPeerWindow::launch));
     }
 
     public void openPanelWebRtcPeers() {
@@ -173,12 +157,6 @@ public class WindowController {
             AllowCombination newValue = allowCombinationComboBox.getValue();
             if (newValue != null && adapter != null) {
                 adapter.setAllowCombination(selectedPeer, newValue);
-            }
-        });
-        connectionStrategyComboBox.setOnAction(event -> {
-            IceAgentStrategy newValue = connectionStrategyComboBox.getValue();
-            if (newValue != null && adapter != null) {
-                adapter.setStrategy(selectedPeer, newValue);
             }
         });
     }
@@ -208,7 +186,6 @@ public class WindowController {
 
         pairConColumn.setCellValueFactory(cellData -> cellData.getValue().getPairConnection());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
-        agentStateColumn.setCellValueFactory(cellData -> cellData.getValue().getAgent());
         offerColumn.setCellValueFactory(cellData -> cellData.getValue().getOffer());
         rttColumn.setCellValueFactory(cellData -> cellData.getValue().getRtt());
         lastColumn.setCellValueFactory(cellData -> cellData.getValue().getLastRecv());
@@ -308,16 +285,7 @@ public class WindowController {
             }
         });
 
-        peerSendModeComboBox.setOnAction(event -> {
-            PeerSendMode newValue = peerSendModeComboBox.getValue();
-            if (newValue != null && adapter != null) {
-                adapter.setPeerSendMode(selectedPeer, newValue);
-            }
-        });
-
         allowCombinationComboBox.getItems().setAll(AllowCombination.values());
-        connectionStrategyComboBox.getItems().setAll(IceAgentStrategy.values());
-        peerSendModeComboBox.getItems().setAll(PeerSendMode.values());
     }
 
     @FXML
@@ -335,12 +303,7 @@ public class WindowController {
 
     private void setSelectedPeer(PeerView peer) {
 
-        setVisible(
-                actionsPeerLabel,
-                adapter == null
-                        || adapter.isEnabledManualStrategyConnection()
-                        || adapter.isEnabledManualCombinationConnection());
-        setVisible(connectionStrategyComboBox, adapter == null || adapter.isEnabledManualStrategyConnection());
+        setVisible(actionsPeerLabel, adapter == null || adapter.isEnabledManualCombinationConnection());
         setVisible(allowCombinationComboBox, adapter == null || adapter.isEnabledManualCombinationConnection());
         setVisible(pairCandidateInfoAreaPane, adapter == null || adapter.isEnabledAdditionalPeerInfo());
 
@@ -368,10 +331,6 @@ public class WindowController {
         selectComboBox(relayPeerComboBox, peerToSelect);
 
         selectComboBox(allowCombinationComboBox, peer.getAdditionalInfo().getCombination());
-
-        selectComboBox(connectionStrategyComboBox, peer.getAdditionalInfo().getAgentStrategy());
-
-        selectComboBox(peerSendModeComboBox, peer.getAdditionalInfo().getPeerSendMode());
 
         selectCheckBox(
                 additionalPacketForwardingCheckbox,

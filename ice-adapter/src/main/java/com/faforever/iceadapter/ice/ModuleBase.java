@@ -24,7 +24,4 @@ public interface ModuleBase {
 
     default void disable() {
     }
-
-    default void refresh() {
-    }
 }

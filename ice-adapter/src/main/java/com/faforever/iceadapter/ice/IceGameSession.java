@@ -3,7 +3,6 @@ package com.faforever.iceadapter.ice;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.webrtc;
 
 import dev.onvoid.webrtc.PeerConnectionFactory;
+import dev.onvoid.webrtc.logging.Logging;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,21 @@ public final class WebRtcConnectionFactory {
 
     private void init() {
         try {
+            try {
+                Logging.addLogSink(Logging.Severity.INFO, (severity, message) -> {
+                    switch (severity) {
+                        case VERBOSE -> log.trace("[WebRTC] {}", message);
+                        case INFO -> log.debug("[WebRTC] {}", message);
+                        case WARNING -> log.warn("[WebRTC] {}", message);
+                        case ERROR -> log.error("[WebRTC] {}", message);
+                        default -> {
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Failed to register WebRTC log sink", e);
+            }
+
             audioDeviceModule = new AudioDeviceModule(AudioLayer.kDummyAudio);
             factory = new PeerConnectionFactory(audioDeviceModule);
             log.info("WebRtcConnectionFactory initialized");

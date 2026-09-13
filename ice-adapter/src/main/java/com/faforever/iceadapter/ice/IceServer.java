@@ -2,35 +2,73 @@ package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.telemetry.CoturnServer;
+import com.faforever.iceadapter.util.Pair;
 import com.faforever.iceadapter.util.PingUtil;
 import dev.onvoid.webrtc.RTCIceServer;
-import kotlin.Pair;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.Transport;
-import org.ice4j.TransportAddress;
-
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Data
 @Slf4j
 @RequiredArgsConstructor
 public class IceServer {
-    private static final List<TransportAddress> PUBLIC_STUN_SERVERS = List.of(
-            new TransportAddress("stun.cloudflare.com", 3478, Transport.UDP),
-            new TransportAddress("stun.l.google.com", 19302, Transport.UDP),
-            new TransportAddress("stun.sipgate.net", 3478, Transport.UDP));
+
+    public enum TransportProtocol {
+        UDP,
+        TCP;
+
+        public static TransportProtocol parse(String str) {
+            if (str != null && str.equalsIgnoreCase("tcp")) {
+                return TCP;
+            }
+            return UDP;
+        }
+    }
+
+    public record ServerAddress(String host, int port, TransportProtocol transport) {
+        public ServerAddress(String host, int port) {
+            this(host, port, TransportProtocol.UDP);
+        }
+
+        public String getHostName() {
+            return host;
+        }
+
+        public String getHostString() {
+            return host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public TransportProtocol getTransport() {
+            return transport;
+        }
+
+        @Override
+        public String toString() {
+            return host + ":" + port + (transport == TransportProtocol.TCP ? "?transport=tcp" : "");
+        }
+    }
+
+    private static final List<ServerAddress> PUBLIC_STUN_SERVERS = List.of(
+            new ServerAddress("stun.cloudflare.com", 3478, TransportProtocol.UDP),
+            new ServerAddress("stun.l.google.com", 19302, TransportProtocol.UDP),
+            new ServerAddress("stun.sipgate.net", 3478, TransportProtocol.UDP));
 
     private static final String STUN = "stun";
     private static final String TURN = "turn";
     private static final String TURNS = "turns";
 
     private final TypeServer type;
-    private final TransportAddress address;
+    private final ServerAddress address;
     private String turnUsername = "";
     private String turnCredential = "";
     private boolean enabled = true;
@@ -69,9 +107,9 @@ public class IceServer {
     public RTCIceServer toWebRtcServer() {
         RTCIceServer webrtcServer = new RTCIceServer();
         String protocol = type == TypeServer.STUN ? "stun" : "turn";
-        String host = address.getHostString();
-        int port = address.getPort();
-        String transport = address.getTransport() == Transport.TCP ? "?transport=tcp" : "";
+        String host = address.host();
+        int port = address.port();
+        String transport = address.transport() == TransportProtocol.TCP ? "?transport=tcp" : "";
         webrtcServer.urls.add(protocol + ":" + host + ":" + port + transport);
         if (turnUsername != null && !turnUsername.isEmpty()) {
             webrtcServer.username = turnUsername;
@@ -90,7 +128,6 @@ public class IceServer {
 
     public static Pair<List<IceServer>, Set<CoturnServer>> mapperFromMap(List<Map<String, Object>> iceServersData) {
         List<IceServer> iceServers = new ArrayList<>();
-
         Set<CoturnServer> coturnServers = new HashSet<>();
 
         for (Map<String, Object> iceServerData : iceServersData) {
@@ -117,17 +154,17 @@ public class IceServer {
                         .forEach(uri -> {
                             String host = uri.getHost();
                             int port = uri.getPort() == -1 ? 3478 : uri.getPort();
-                            Transport transport = Optional.ofNullable(uri.getQuery()).stream()
+                            TransportProtocol transport = Optional.ofNullable(uri.getQuery()).stream()
                                     .flatMap(query -> Arrays.stream(query.split("&")))
                                     .map(param -> param.split("="))
                                     .filter(param -> param.length == 2)
                                     .filter(param -> param[0].equals("transport"))
                                     .map(param -> param[1])
-                                    .map(Transport::parse)
+                                    .map(TransportProtocol::parse)
                                     .findFirst()
-                                    .orElse(Transport.UDP);
+                                    .orElse(TransportProtocol.UDP);
 
-                            TransportAddress address = new TransportAddress(host, port, transport);
+                            ServerAddress address = new ServerAddress(host, port, transport);
                             TypeServer type = TypeServer.TURN;
                             switch (uri.getScheme()) {
                                 case STUN -> type = TypeServer.STUN;

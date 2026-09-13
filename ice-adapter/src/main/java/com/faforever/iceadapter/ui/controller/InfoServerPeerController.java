@@ -2,6 +2,11 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.services.UIAdapter;
+
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
@@ -10,11 +15,6 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.VBox;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @NoArgsConstructor
@@ -37,9 +37,6 @@ public class InfoServerPeerController {
 
     @FXML
     private TableColumn<ServerPeerView, String> stateColumn;
-
-    @FXML
-    private TableColumn<ServerPeerView, String> agentStateColumn;
 
     @FXML
     private TableColumn<ServerPeerView, String> offerColumn;
@@ -72,7 +69,6 @@ public class InfoServerPeerController {
 
         pairConColumn.setCellValueFactory(cellData -> cellData.getValue().getPairConnection());
         stateColumn.setCellValueFactory(cellData -> cellData.getValue().getState());
-        agentStateColumn.setCellValueFactory(cellData -> cellData.getValue().getAgent());
         offerColumn.setCellValueFactory(cellData -> cellData.getValue().getOffer());
 
         hostColumn.setCellValueFactory(param -> param.getValue().getAllowHost());

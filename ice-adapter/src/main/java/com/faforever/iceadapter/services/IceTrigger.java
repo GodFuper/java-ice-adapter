@@ -1,4 +1,5 @@
 package com.faforever.iceadapter.services;
+
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.MainPeer;
@@ -13,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class IceTrigger implements PeerEventListener {
     private final IceAsync iceAsync;
-    private final ConnectService connectService;
     private final WebRtcConnectService webRtcConnectService;
     private final RpcConnection rpcConnection;
 
@@ -23,14 +23,11 @@ public class IceTrigger implements PeerEventListener {
             return;
         }
 
-        iceAsync.runAsync(
-                false, "onIceStateChange", peer, () -> {
-                    if (webRtcConnectService != null) {
-                        webRtcConnectService.onChangeIceState(peer, oldState, newState);
-                    } else {
-                        connectService.onChangeIceState(peer, oldState, newState);
-                    }
-                });
+        iceAsync.runAsync(false, "onIceStateChange", peer, () -> {
+            if (webRtcConnectService != null) {
+                webRtcConnectService.onChangeIceState(peer, oldState, newState);
+            }
+        });
     }
 
     @Override
@@ -38,8 +35,6 @@ public class IceTrigger implements PeerEventListener {
         iceAsync.runAsync(true, "onConnectionLost", peer, () -> {
             if (webRtcConnectService != null) {
                 webRtcConnectService.onConnectionLost(peer, clearIceState);
-            } else {
-                connectService.onConnectionLost(peer, clearIceState);
             }
         });
     }
@@ -61,8 +56,6 @@ public class IceTrigger implements PeerEventListener {
         iceAsync.runAsync(true, "onIceMessageFromRPC", peer, () -> {
             if (webRtcConnectService != null) {
                 webRtcConnectService.onMessageFromRPC(peer, message);
-            } else {
-                connectService.onMessageFromRPC(peer, message);
             }
         });
     }

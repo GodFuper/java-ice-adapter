@@ -1,8 +1,6 @@
 package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.dto.*;
-import com.faforever.iceadapter.ice.peer.IceAgentStrategy;
-import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.collections.ObservableList;
 
@@ -92,13 +90,6 @@ public interface UIAdapter {
     ObservableList<ServerPeerView> getServerPeerInfoList();
 
     /**
-     * Returns an observable list of KCP statistics for peers using KCP UDP transport.
-     *
-     * @return observable list of KCP peer info objects
-     */
-    ObservableList<KcpPeerView> getKcpPeerInfoList();
-
-    /**
      * Returns an observable list of WebRTC statistics for peers using WebRTC transport.
      *
      * @return observable list of WebRTC peer info objects
@@ -144,23 +135,11 @@ public interface UIAdapter {
      */
     void setAllowCombination(PeerView peer, AllowCombination combination);
 
-    /**
-     * Changes the ICE agent strategy for the specified peer.
-     *
-     * @param peer        the target peer
-     * @param newStrategy the new strategy to apply
-     */
-    void setStrategy(PeerView peer, IceAgentStrategy newStrategy);
-
     void setRelayPeer(PeerView peer, PeerView relayPeer);
 
     void setAdditionalPacketForwarding(PeerView peer, boolean enabled);
 
-    void setPeerSendMode(PeerView peer, PeerSendMode peerSendMode);
-
     boolean isEnabledManualCombinationConnection();
-
-    boolean isEnabledManualStrategyConnection();
 
     boolean isEnabledAdditionalPeerInfo();
 

@@ -1,13 +1,10 @@
 package com.faforever.iceadapter.webrtc;
 
-import com.faforever.iceadapter.ice.CandidatePacket;
-import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import org.ice4j.ice.CandidateType;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.faforever.iceadapter.ice.CandidatePacket;
+import com.faforever.iceadapter.ice.CandidateType;
+import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,7 +12,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("WebRtcSession Offer/Answer Gathering with AllowCombination")
 class WebRtcAllowCombinationIntegrationTest {
@@ -43,33 +43,39 @@ class WebRtcAllowCombinationIntegrationTest {
         AtomicReference<String> offerSdpRef = new AtomicReference<>();
         List<CandidatePacket> gatheredCandidates = Collections.synchronizedList(new ArrayList<>());
 
-        session.init(true, List.of(), null, AllowCombination.REFLEXIVE_RELAY, (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
-            @Override
-            public void onConnected() {
-            }
+        session.init(
+                true,
+                List.of(),
+                null,
+                AllowCombination.REFLEXIVE_RELAY,
+                (d, b) -> {
+                },
+                new WebRtcSession.SessionStateHandler() {
+                    @Override
+                    public void onConnected() {
+                    }
 
-            @Override
-            public void onDisconnected() {
-            }
+                    @Override
+                    public void onDisconnected() {
+                    }
 
-            @Override
-            public void onError(String error) {
-            }
+                    @Override
+                    public void onError(String error) {
+                    }
 
-            @Override
-            public void onRemoteDescriptionSet() {
-            }
+                    @Override
+                    public void onRemoteDescriptionSet() {
+                    }
 
-            @Override
-            public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
-                offerSdpRef.set(sdp);
-                if (candidates != null) {
-                    gatheredCandidates.addAll(candidates);
-                }
-                offerLatch.countDown();
-            }
-        });
+                    @Override
+                    public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
+                        offerSdpRef.set(sdp);
+                        if (candidates != null) {
+                            gatheredCandidates.addAll(candidates);
+                        }
+                        offerLatch.countDown();
+                    }
+                });
 
         session.createOffer();
         assertTrue(offerLatch.await(10, TimeUnit.SECONDS), "Offer creation timed out");
@@ -90,33 +96,34 @@ class WebRtcAllowCombinationIntegrationTest {
         AtomicReference<String> offerSdpRef = new AtomicReference<>();
         List<CandidatePacket> gatheredCandidates = Collections.synchronizedList(new ArrayList<>());
 
-        session.init(true, List.of(), null, AllowCombination.ALL, (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
-            @Override
-            public void onConnected() {
-            }
+        session.init(
+                true, List.of(), null, AllowCombination.ALL, (d, b) -> {
+                }, new WebRtcSession.SessionStateHandler() {
+                    @Override
+                    public void onConnected() {
+                    }
 
-            @Override
-            public void onDisconnected() {
-            }
+                    @Override
+                    public void onDisconnected() {
+                    }
 
-            @Override
-            public void onError(String error) {
-            }
+                    @Override
+                    public void onError(String error) {
+                    }
 
-            @Override
-            public void onRemoteDescriptionSet() {
-            }
+                    @Override
+                    public void onRemoteDescriptionSet() {
+                    }
 
-            @Override
-            public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
-                offerSdpRef.set(sdp);
-                if (candidates != null) {
-                    gatheredCandidates.addAll(candidates);
-                }
-                offerLatch.countDown();
-            }
-        });
+                    @Override
+                    public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
+                        offerSdpRef.set(sdp);
+                        if (candidates != null) {
+                            gatheredCandidates.addAll(candidates);
+                        }
+                        offerLatch.countDown();
+                    }
+                });
 
         session.createOffer();
         assertTrue(offerLatch.await(10, TimeUnit.SECONDS), "Offer creation timed out");
@@ -124,7 +131,8 @@ class WebRtcAllowCombinationIntegrationTest {
         assertNotNull(offerSdpRef.get());
         // In local environment, ALL should gather at least one host candidate
         assertFalse(gatheredCandidates.isEmpty(), "Candidates should be gathered for ALL");
-        assertTrue(gatheredCandidates.stream().anyMatch(p -> p.type() == CandidateType.HOST_CANDIDATE),
+        assertTrue(
+                gatheredCandidates.stream().anyMatch(p -> p.type() == CandidateType.HOST_CANDIDATE),
                 "At least one HOST candidate should be gathered for ALL");
     }
 }

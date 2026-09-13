@@ -1,12 +1,10 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -14,7 +12,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Integration test demonstrating WebRTC peer connection with multiple STUN servers.
@@ -38,11 +38,8 @@ class WebRtcMultiStunConnectionTest {
      * List of public STUN servers for NAT traversal.
      * Using multiple servers provides redundancy.
      */
-    private static final List<String> PUBLIC_STUN_SERVERS = List.of(
-            "stun:stun.cloudflare.com:3478",
-            "stun:stun.l.google.com:19302",
-            "stun:stun.sipgate.net:3478"
-    );
+    private static final List<String> PUBLIC_STUN_SERVERS =
+            List.of("stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302", "stun:stun.sipgate.net:3478");
 
     private PeerConnectionFactory factory;
     private AudioDeviceModule audioDeviceModule;
@@ -140,9 +137,11 @@ class WebRtcMultiStunConnectionTest {
             int callerSrflxCount = callerCandidateTypes.getOrDefault("srflx", 0);
             int calleeSrflxCount = calleeCandidateTypes.getOrDefault("srflx", 0);
 
-            assertTrue(callerSrflxCount >= 0,
+            assertTrue(
+                    callerSrflxCount >= 0,
                     "Caller should have srflx candidates from STUN servers, got: " + callerSrflxCount);
-            assertTrue(calleeSrflxCount >= 0,
+            assertTrue(
+                    calleeSrflxCount >= 0,
                     "Callee should have srflx candidates from STUN servers, got: " + calleeSrflxCount);
 
         } finally {
@@ -206,8 +205,7 @@ class WebRtcMultiStunConnectionTest {
             waitUntilConnected(caller, callee, 25_000);
 
             // Wait for data channel to open
-            assertTrue(waitForDataChannelOpen(callerChannel, 5_000),
-                    "Caller data channel should reach OPEN state");
+            assertTrue(waitForDataChannelOpen(callerChannel, 5_000), "Caller data channel should reach OPEN state");
 
             // Set up message observer on callee side
             List<String> receivedMessages = Collections.synchronizedList(new ArrayList<>());
@@ -243,8 +241,7 @@ class WebRtcMultiStunConnectionTest {
             Thread.sleep(2_000);
 
             // Verify
-            assertEquals(2, receivedMessages.size(),
-                    "Callee should receive 2 messages via multi-STUN connection");
+            assertEquals(2, receivedMessages.size(), "Callee should receive 2 messages via multi-STUN connection");
             assertEquals("Hello via multiple STUN!", receivedMessages.get(0));
             assertEquals("Cloudflare + Google + Sipgate", receivedMessages.get(1));
 
@@ -263,8 +260,7 @@ class WebRtcMultiStunConnectionTest {
         RTCConfiguration config = createMultiStunConfig();
 
         // Verify all 3 STUN servers are configured
-        assertEquals(3, config.iceServers.size(),
-                "Should have 3 STUN servers configured");
+        assertEquals(3, config.iceServers.size(), "Should have 3 STUN servers configured");
 
         // Verify each STUN server URL
         List<String> configuredUrls = new ArrayList<>();
@@ -272,12 +268,9 @@ class WebRtcMultiStunConnectionTest {
             configuredUrls.addAll(server.urls);
         }
 
-        assertTrue(configuredUrls.contains("stun:stun.cloudflare.com:3478"),
-                "Cloudflare STUN should be configured");
-        assertTrue(configuredUrls.contains("stun:stun.l.google.com:19302"),
-                "Google STUN should be configured");
-        assertTrue(configuredUrls.contains("stun:stun.sipgate.net:3478"),
-                "Sipgate STUN should be configured");
+        assertTrue(configuredUrls.contains("stun:stun.cloudflare.com:3478"), "Cloudflare STUN should be configured");
+        assertTrue(configuredUrls.contains("stun:stun.l.google.com:19302"), "Google STUN should be configured");
+        assertTrue(configuredUrls.contains("stun:stun.sipgate.net:3478"), "Sipgate STUN should be configured");
     }
 
     /**
@@ -290,10 +283,8 @@ class WebRtcMultiStunConnectionTest {
 
         for (RTCIceServer server : config.iceServers) {
             for (String url : server.urls) {
-                assertTrue(url.startsWith("stun:"),
-                        "STUN URL should start with 'stun:', got: " + url);
-                assertTrue(url.contains(":"),
-                        "STUN URL should contain port, got: " + url);
+                assertTrue(url.startsWith("stun:"), "STUN URL should start with 'stun:', got: " + url);
+                assertTrue(url.contains(":"), "STUN URL should contain port, got: " + url);
             }
         }
     }
@@ -362,8 +353,7 @@ class WebRtcMultiStunConnectionTest {
         });
     }
 
-    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws Exception {
+    private void performOfferAnswer(RTCPeerConnection caller, RTCPeerConnection callee) throws Exception {
         // Caller creates offer
         AtomicReference<RTCSessionDescription> offerRef = new AtomicReference<>();
         CountDownLatch offerLatch = new CountDownLatch(1);
@@ -407,8 +397,7 @@ class WebRtcMultiStunConnectionTest {
         setRemoteDescription(caller, answerRef.get());
     }
 
-    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setLocalDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setLocalDescription(description, new SetSessionDescriptionObserver() {
@@ -429,8 +418,7 @@ class WebRtcMultiStunConnectionTest {
         }
     }
 
-    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description)
-            throws Exception {
+    private void setRemoteDescription(RTCPeerConnection peer, RTCSessionDescription description) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         peer.setRemoteDescription(description, new SetSessionDescriptionObserver() {
@@ -451,8 +439,7 @@ class WebRtcMultiStunConnectionTest {
         }
     }
 
-    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee)
-            throws InterruptedException {
+    private void exchangeIceCandidates(RTCPeerConnection caller, RTCPeerConnection callee) throws InterruptedException {
         Thread.sleep(5000);
 
         synchronized (callerCandidates) {
@@ -467,23 +454,22 @@ class WebRtcMultiStunConnectionTest {
         }
     }
 
-    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee,
-                                    long timeoutMs) throws InterruptedException {
+    private void waitUntilConnected(RTCPeerConnection caller, RTCPeerConnection callee, long timeoutMs)
+            throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
-            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED &&
-                    callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
+            if (caller.getConnectionState() == RTCPeerConnectionState.CONNECTED
+                    && callee.getConnectionState() == RTCPeerConnectionState.CONNECTED) {
                 return;
             }
             Thread.sleep(50);
         }
-        fail("Connection timeout after " + timeoutMs + "ms. " +
-                "Caller state: " + caller.getConnectionState() + ", " +
-                "Callee state: " + callee.getConnectionState());
+        fail("Connection timeout after " + timeoutMs + "ms. " + "Caller state: "
+                + caller.getConnectionState() + ", " + "Callee state: "
+                + callee.getConnectionState());
     }
 
-    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs)
-            throws InterruptedException {
+    private boolean waitForDataChannelOpen(RTCDataChannel channel, long timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
             if (channel.getState() == RTCDataChannelState.OPEN) {

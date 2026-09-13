@@ -1,9 +1,9 @@
 package com.faforever.iceadapter.util;
 
-import lombok.experimental.UtilityClass;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
+
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class LockUtil {

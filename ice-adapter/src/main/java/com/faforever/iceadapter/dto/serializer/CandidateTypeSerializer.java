@@ -1,15 +1,15 @@
 package com.faforever.iceadapter.dto.serializer;
 
+import com.faforever.iceadapter.ice.CandidateType;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.apache.commons.lang3.StringUtils;
-import org.ice4j.ice.CandidateType;
-
 import java.io.IOException;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class CandidateTypeSerializer {
 

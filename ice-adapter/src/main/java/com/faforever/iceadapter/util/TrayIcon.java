@@ -3,12 +3,12 @@ package com.faforever.iceadapter.util;
 import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.ui.InfoWindow;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import javax.swing.*;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TrayIcon {

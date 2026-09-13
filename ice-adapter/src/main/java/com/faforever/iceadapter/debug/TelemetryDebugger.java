@@ -2,6 +2,7 @@ package com.faforever.iceadapter.debug;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
+import com.faforever.iceadapter.ice.CandidateType;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.telemetry.*;
 import com.faforever.iceadapter.webrtc.WebRtcSession;
@@ -9,25 +10,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.util.concurrent.RateLimiter;
 import com.nbarraille.jjsonrpc.JJsonPeer;
-import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Candidate;
-import org.ice4j.ice.CandidatePair;
-import org.ice4j.ice.CandidateType;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-import org.java_websocket.handshake.ServerHandshake;
-
 import java.net.ConnectException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
+
+import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
+import org.java_websocket.handshake.ServerHandshake;
 
 @Slf4j
 @EqualsAndHashCode
@@ -230,22 +227,10 @@ public class TelemetryDebugger implements Debugger, AutoCloseable {
             WebRtcSession.SessionStats s = peer.getWebRtcSession().getStats();
             localType = parseWebRtcCandidateType(s.getLocalCandidateType());
             remoteType = parseWebRtcCandidateType(s.getRemoteCandidateType());
-        } else {
-            Optional<CandidatePair> pair = peer.getActiveCandidatePair();
-            localType = pair.map(CandidatePair::getLocalCandidate)
-                    .map(Candidate::getType)
-                    .orElse(null);
-            remoteType = pair.map(CandidatePair::getRemoteCandidate)
-                    .map(Candidate::getType)
-                    .orElse(null);
         }
 
-        sendMessage(new UpdatePeerState(
-                UUID.randomUUID(),
-                peer.getRemoteId(),
-                peer.getIceState(),
-                localType,
-                remoteType));
+        sendMessage(
+                new UpdatePeerState(UUID.randomUUID(), peer.getRemoteId(), peer.getIceState(), localType, remoteType));
     }
 
     private static CandidateType parseWebRtcCandidateType(String typeStr) {

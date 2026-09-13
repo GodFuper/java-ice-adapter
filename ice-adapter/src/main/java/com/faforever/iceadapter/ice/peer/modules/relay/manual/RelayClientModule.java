@@ -1,5 +1,8 @@
 package com.faforever.iceadapter.ice.peer.modules.relay.manual;
 
+import static com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule.COMMAND_CLIENT;
+import static com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule.COMMAND_SERVER;
+
 import com.faforever.iceadapter.dto.RelayMessage;
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.dto.command.relay.manual.from_client.*;
@@ -10,18 +13,15 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import com.faforever.iceadapter.ice.peer.modules.ice.PeerToPeerSenderModule;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-
+import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerSenderModule;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule.COMMAND_CLIENT;
-import static com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule.COMMAND_SERVER;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -142,8 +142,8 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
 
         mainPeer.setRelayPeer(newRelayPeer, false);
         newRelayPeer.getLinkClient().put(mainPeer.getRemoteId(), mainPeer);
-        mainPeer.getModule(PeerModule.PEER_TO_PEER_SENDER, PeerToPeerSenderModule.class)
-                .ifPresent(PeerToPeerSenderModule::disable);
+        mainPeer.getModule(PeerModule.WEBRTC_PEER_TO_PEER_SENDER, WebRtcPeerToPeerSenderModule.class)
+                .ifPresent(WebRtcPeerToPeerSenderModule::disable);
         newRelayPeer.sendCommand(new StartRelayServerCommand(
                 mainPeer.getRemoteId(), mainPeer.getRemoteLogin(), mainPeer.isLocalOffer(), mainPeer.getCombination()));
     }
@@ -157,7 +157,7 @@ public class RelayClientModule implements ModuleBase, PeerEventListener {
             mainPeer.lostConnect();
         }
 
-        mainPeer.getModule(PeerModule.PEER_TO_PEER_SENDER, PeerToPeerSenderModule.class)
+        mainPeer.getModule(PeerModule.WEBRTC_PEER_TO_PEER_SENDER, WebRtcPeerToPeerSenderModule.class)
                 .ifPresent(m -> {
                     if (!m.isEnabled()) {
                         m.enable();

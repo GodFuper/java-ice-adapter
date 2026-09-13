@@ -1,15 +1,12 @@
 package com.faforever.iceadapter.gpgnet;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.util.LockUtil;
 import com.faforever.iceadapter.util.NetworkToolbox;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
@@ -23,9 +20,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Data
@@ -345,6 +346,6 @@ public class GPGNetServer implements AutoCloseable {
     private static String formatArgs(Object... args) {
         return Stream.of(args)
                 .map(arg -> arg instanceof Double d ? d.intValue() + "" : String.valueOf(arg))
-                .collect(java.util.stream.Collectors.joining(" "));
+                .collect(Collectors.joining(" "));
     }
 }

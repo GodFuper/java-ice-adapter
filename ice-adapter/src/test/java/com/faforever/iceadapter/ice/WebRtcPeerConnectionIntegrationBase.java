@@ -1,23 +1,22 @@
 package com.faforever.iceadapter.ice;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.base.InMemoryRpcBus;
 import com.faforever.iceadapter.ice.base.TestGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
-import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * Base class for WebRTC peer connection integration tests.
@@ -50,9 +49,43 @@ public abstract class WebRtcPeerConnectionIntegrationBase {
         socketB = new InMemoryDatagramSocket();
 
         IceOptions optionsA = new IceOptions(
-                1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY, IceOptions.TransportMode.WEBRTC);
+                1,
+                0,
+                "PlayerA",
+                0,
+                0,
+                0,
+                false,
+                false,
+                false,
+                0,
+                0,
+                250.0,
+                null,
+                true,
+                true,
+                false,
+                true,
+                IceOptions.TransportMode.WEBRTC);
         IceOptions optionsB = new IceOptions(
-                2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, true, false, true, PeerSendMode.DIRECT_ONLY, IceOptions.TransportMode.WEBRTC);
+                2,
+                0,
+                "PlayerB",
+                0,
+                0,
+                0,
+                false,
+                false,
+                false,
+                0,
+                0,
+                250.0,
+                null,
+                true,
+                true,
+                false,
+                true,
+                IceOptions.TransportMode.WEBRTC);
 
         gameA = new TestGameSession(bus, optionsA, getDisabledModules());
         gameA.setLobbyPort(socketA.getLocalPort());
@@ -131,7 +164,8 @@ public abstract class WebRtcPeerConnectionIntegrationBase {
         }
 
         Assertions.fail("WebRTC connection timeout after " + ICE_READY_TIMEOUT_MS + "ms (A=" + peerA.getIceState()
-                + ", B=" + peerB.getIceState() + ", A.connected=" + peerA.isConnected() + ", B.connected=" + peerB.isConnected() + ")");
+                + ", B=" + peerB.getIceState() + ", A.connected=" + peerA.isConnected() + ", B.connected="
+                + peerB.isConnected() + ")");
     }
 
     protected void sleep(long ms) {

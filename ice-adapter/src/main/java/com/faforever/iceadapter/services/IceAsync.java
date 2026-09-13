@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.ice.peer.Peer;
-
 import java.util.concurrent.CompletableFuture;
 
 public interface IceAsync {

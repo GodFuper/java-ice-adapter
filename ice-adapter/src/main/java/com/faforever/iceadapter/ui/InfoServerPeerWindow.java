@@ -1,5 +1,8 @@
 package com.faforever.iceadapter.ui;
 
+import static javafx.application.Application.STYLESHEET_MODENA;
+import static javafx.application.Application.setUserAgentStylesheet;
+
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.services.impl.UIAdapterImpl;
@@ -10,9 +13,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
-
-import static javafx.application.Application.STYLESHEET_MODENA;
-import static javafx.application.Application.setUserAgentStylesheet;
 
 @Slf4j
 public class InfoServerPeerWindow {

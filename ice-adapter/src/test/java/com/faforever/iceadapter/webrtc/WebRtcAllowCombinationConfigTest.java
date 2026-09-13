@@ -1,17 +1,17 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import dev.onvoid.webrtc.PortAllocatorConfig;
 import dev.onvoid.webrtc.RTCConfiguration;
 import dev.onvoid.webrtc.RTCIceTransportPolicy;
+
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("WebRtcSession Configuration with AllowCombination")
 class WebRtcAllowCombinationConfigTest {
@@ -35,24 +35,25 @@ class WebRtcAllowCombinationConfigTest {
     @Test
     @DisplayName("Combination ALL configures RTCIceTransportPolicy.ALL and keeps all flags unblocked")
     void testConfigCombinationAll() {
-        session.init(true, List.of(), null, AllowCombination.ALL, (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
-            @Override
-            public void onConnected() {
-            }
+        session.init(
+                true, List.of(), null, AllowCombination.ALL, (d, b) -> {
+                }, new WebRtcSession.SessionStateHandler() {
+                    @Override
+                    public void onConnected() {
+                    }
 
-            @Override
-            public void onDisconnected() {
-            }
+                    @Override
+                    public void onDisconnected() {
+                    }
 
-            @Override
-            public void onError(String error) {
-            }
+                    @Override
+                    public void onError(String error) {
+                    }
 
-            @Override
-            public void onRemoteDescriptionSet() {
-            }
-        });
+                    @Override
+                    public void onRemoteDescriptionSet() {
+                    }
+                });
 
         RTCConfiguration config = session.getConfig();
         assertEquals(RTCIceTransportPolicy.ALL, config.iceTransportPolicy);
@@ -67,24 +68,25 @@ class WebRtcAllowCombinationConfigTest {
     @Test
     @DisplayName("Combination RELAY configures RTCIceTransportPolicy.RELAY and disables local candidates")
     void testConfigCombinationRelay() {
-        session.init(true, List.of(), null, AllowCombination.RELAY, (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
-            @Override
-            public void onConnected() {
-            }
+        session.init(
+                true, List.of(), null, AllowCombination.RELAY, (d, b) -> {
+                }, new WebRtcSession.SessionStateHandler() {
+                    @Override
+                    public void onConnected() {
+                    }
 
-            @Override
-            public void onDisconnected() {
-            }
+                    @Override
+                    public void onDisconnected() {
+                    }
 
-            @Override
-            public void onError(String error) {
-            }
+                    @Override
+                    public void onError(String error) {
+                    }
 
-            @Override
-            public void onRemoteDescriptionSet() {
-            }
-        });
+                    @Override
+                    public void onRemoteDescriptionSet() {
+                    }
+                });
 
         RTCConfiguration config = session.getConfig();
         assertEquals(RTCIceTransportPolicy.RELAY, config.iceTransportPolicy);
@@ -97,24 +99,30 @@ class WebRtcAllowCombinationConfigTest {
     @Test
     @DisplayName("Combination REFLEXIVE_RELAY disables adapter enumeration and default local candidate")
     void testConfigCombinationReflexiveRelay() {
-        session.init(true, List.of(), null, AllowCombination.REFLEXIVE_RELAY, (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
-            @Override
-            public void onConnected() {
-            }
+        session.init(
+                true,
+                List.of(),
+                null,
+                AllowCombination.REFLEXIVE_RELAY,
+                (d, b) -> {
+                },
+                new WebRtcSession.SessionStateHandler() {
+                    @Override
+                    public void onConnected() {
+                    }
 
-            @Override
-            public void onDisconnected() {
-            }
+                    @Override
+                    public void onDisconnected() {
+                    }
 
-            @Override
-            public void onError(String error) {
-            }
+                    @Override
+                    public void onError(String error) {
+                    }
 
-            @Override
-            public void onRemoteDescriptionSet() {
-            }
-        });
+                    @Override
+                    public void onRemoteDescriptionSet() {
+                    }
+                });
 
         RTCConfiguration config = session.getConfig();
         assertEquals(RTCIceTransportPolicy.ALL, config.iceTransportPolicy);
@@ -128,24 +136,30 @@ class WebRtcAllowCombinationConfigTest {
     @Test
     @DisplayName("Combination HOST_RELAY disables STUN gathering")
     void testConfigCombinationHostRelay() {
-        session.init(true, List.of(), null, AllowCombination.HOST_RELAY, (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
-            @Override
-            public void onConnected() {
-            }
+        session.init(
+                true,
+                List.of(),
+                null,
+                AllowCombination.HOST_RELAY,
+                (d, b) -> {
+                },
+                new WebRtcSession.SessionStateHandler() {
+                    @Override
+                    public void onConnected() {
+                    }
 
-            @Override
-            public void onDisconnected() {
-            }
+                    @Override
+                    public void onDisconnected() {
+                    }
 
-            @Override
-            public void onError(String error) {
-            }
+                    @Override
+                    public void onError(String error) {
+                    }
 
-            @Override
-            public void onRemoteDescriptionSet() {
-            }
-        });
+                    @Override
+                    public void onRemoteDescriptionSet() {
+                    }
+                });
 
         RTCConfiguration config = session.getConfig();
         assertEquals(RTCIceTransportPolicy.ALL, config.iceTransportPolicy);

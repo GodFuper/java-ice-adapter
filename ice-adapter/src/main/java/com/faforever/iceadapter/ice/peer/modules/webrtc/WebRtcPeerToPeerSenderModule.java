@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.webrtc;
 
+import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
@@ -14,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
-    private final Peer peer;
+    protected final Peer peer;
     private volatile WebRtcSession webRtcSession;
     private boolean enabled = true;
 
@@ -42,14 +43,14 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
     }
 
     @Override
-    public void onSendCommand(Peer peer, com.faforever.iceadapter.dto.command.CommandBase command, boolean force) {
+    public void onSendCommand(Peer peer, CommandBase command, boolean force) {
         if (!peer.isSupportCommand() && !force) {
             return;
         }
         sendViaWebRtc(command.bytes());
     }
 
-    private void sendViaWebRtc(byte[] data) {
+    protected void sendViaWebRtc(byte[] data) {
         if (!enabled || peer.isClosing()) {
             return;
         }
@@ -61,7 +62,10 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
 
         boolean sent = session.sendDataAsync(data, true);
         if (!sent) {
-            log.warn("Failed to send {} bytes via WebRTC data channel to peer {}", data.length, peer.getPeerIdentifier());
+            log.warn(
+                    "Failed to send {} bytes via WebRTC data channel to peer {}",
+                    data.length,
+                    peer.getPeerIdentifier());
             peer.lostConnect();
         } else {
             log.trace("Sent {} bytes via WebRTC to peer {}", data.length, peer.getPeerIdentifier());

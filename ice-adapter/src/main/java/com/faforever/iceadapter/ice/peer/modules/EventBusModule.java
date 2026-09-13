@@ -6,15 +6,11 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
-import com.faforever.iceadapter.ice.peer.PeerSendMode;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.ice.Agent;
-import org.ice4j.ice.Component;
-import org.ice4j.ice.IceMediaStream;
 
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -35,7 +31,8 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
 
     public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
         log.info("Peer {} change iceState {} -> {}", peer.getPeerIdentifier(), oldState, newState);
-        listeners.forEach(l -> callMethod(peer, "onIceStateChange", () -> l.onIceStateChange(peer, oldState, newState)));
+        listeners.forEach(
+                l -> callMethod(peer, "onIceStateChange", () -> l.onIceStateChange(peer, oldState, newState)));
     }
 
     @Override
@@ -50,31 +47,10 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
         listeners.forEach(l -> callMethod(peer, "onCombinationChange", () -> l.onCombinationChange(peer, combination)));
     }
 
-    public void onAgentChange(Peer peer, Agent newAgent) {
-        log.trace("Peer {} agent changed. now = {}", peer.getPeerIdentifier(), newAgent);
-        listeners.forEach(l -> callMethod(peer, "onAgentChange", () -> l.onAgentChange(peer, newAgent)));
-    }
-
-    public void onIceMediaStreamChange(Peer peer, IceMediaStream stream) {
-        log.trace("Peer {} iceMediaStream changed. now = {}", peer.getPeerIdentifier(), stream);
-        listeners.forEach(l -> callMethod(peer, "onIceMediaStreamChange", () -> l.onIceMediaStreamChange(peer, stream)));
-    }
-
-    public void onIceComponentChange(Peer peer, Component component) {
-        log.trace("Peer {} component changed. now = {}", peer.getPeerIdentifier(), component);
-        listeners.forEach(l -> callMethod(peer, "onIceComponentChange", () -> l.onIceComponentChange(peer, component)));
-    }
-
     @Override
     public void onRelayPeerChange(Peer peer, Peer relay) {
         log.info("Peer {} relayPeer changed. now = {}", peer.getPeerIdentifier(), relay);
         listeners.forEach(l -> callMethod(peer, "onRelayPeerChange", () -> l.onRelayPeerChange(peer, relay)));
-    }
-
-    @Override
-    public void onPeerSendModeChange(Peer peer, PeerSendMode oldMode, PeerSendMode newMode) {
-        log.info("Peer {} sendMode changed: {} -> {}", peer.getPeerIdentifier(), oldMode, newMode);
-        listeners.forEach(l -> callMethod(peer, "onPeerSendModeChange", () -> l.onPeerSendModeChange(peer, oldMode, newMode)));
     }
 
     @Override

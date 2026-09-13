@@ -1,18 +1,19 @@
 package com.faforever.iceadapter.dto;
 
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.peer.*;
+import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.ice.peer.PeerEventListener;
+import com.faforever.iceadapter.ice.peer.RelayPing;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CollectionUtils;
-import javafx.beans.property.*;
-import lombok.Data;
-import org.ice4j.ice.Agent;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
+
+import javafx.beans.property.*;
+import lombok.Data;
 
 @Data
 public class PeerView implements PeerEventListener {
@@ -23,7 +24,6 @@ public class PeerView implements PeerEventListener {
     private final StringProperty remoteCand = new SimpleStringProperty();
     private final StringProperty pairConnection = new SimpleStringProperty();
     private final StringProperty state = new SimpleStringProperty();
-    private final StringProperty agent = new SimpleStringProperty();
     private final StringProperty offer = new SimpleStringProperty();
     private final StringProperty rtt = new SimpleStringProperty();
     private final StringProperty lastRecv = new SimpleStringProperty();
@@ -38,11 +38,9 @@ public class PeerView implements PeerEventListener {
         private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
         private final BooleanProperty allowRelay = new SimpleBooleanProperty();
         private AllowCombination combination;
-        private IceAgentStrategy agentStrategy;
         private Supplier<String> getFullCandidateInfo;
         private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
         private final BooleanProperty sendDirectAndRelay = new SimpleBooleanProperty(true);
-        private PeerSendMode peerSendMode;
     }
 
     public PeerView(int id, String login) {
@@ -61,11 +59,6 @@ public class PeerView implements PeerEventListener {
     }
 
     @Override
-    public void onAgentChange(Peer peer, Agent agent) {
-        update(peer);
-    }
-
-    @Override
     public void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
         update(peer);
     }
@@ -80,7 +73,6 @@ public class PeerView implements PeerEventListener {
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
         getState().set(String.valueOf(peer.getState()));
-        getAgent().set(peer.getAgentState().map(String::valueOf).orElse("-"));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         getRtt().set(rttStr(peer));
@@ -106,13 +98,11 @@ public class PeerView implements PeerEventListener {
         getAdditionalInfo().getAllowHost().set(combination.isAllowHost());
         getAdditionalInfo().getAllowReflexive().set(combination.isAllowReflexive());
         getAdditionalInfo().getAllowRelay().set(combination.isAllowRelay());
-        getAdditionalInfo().setAgentStrategy(peer.getAgentStrategy());
         getAdditionalInfo().getRelayPeerId().set(peer.getRelayPeerId().orElse(-1));
         getAdditionalInfo().setCombination(combination);
 
         getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);
         getAdditionalInfo().getSendDirectAndRelay().set(peer.isAdditionalPacketForwarding());
-        getAdditionalInfo().setPeerSendMode(peer.getSendMode());
     }
 
     private static String rttStr(Peer peer) {
@@ -123,10 +113,7 @@ public class PeerView implements PeerEventListener {
                         .map(String::valueOf)
                         .orElse("–")));
         Map<Integer, RelayPing> rtts = peer.getRtts();
-        List<Integer> ids = peer.getBestRelays()
-                .stream()
-                .limit(1)
-                .toList();
+        List<Integer> ids = peer.getBestRelays().stream().limit(1).toList();
         if (!CollectionUtils.isEmpty(ids)) {
             for (Integer idPeer : ids) {
                 RelayPing ping = rtts.get(idPeer);

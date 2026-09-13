@@ -1,10 +1,10 @@
 package com.faforever.iceadapter.ice.peer;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor

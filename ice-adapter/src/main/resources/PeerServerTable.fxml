@@ -16,7 +16,6 @@
             <TableColumn fx:id="relayColumn" text="relay"/>
             <TableColumn fx:id="stateColumn" text="state"/>
             <TableColumn fx:id="pairConColumn" text="pair" prefWidth="100"/>
-            <TableColumn fx:id="agentStateColumn" text="agent"/>
             <TableColumn fx:id="offerColumn" text="localOffer"/>
         </columns>
     </TableView>

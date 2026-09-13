@@ -9,23 +9,19 @@ import com.faforever.iceadapter.gpgnet.LobbyInitMode;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.webrtc.WebRtcSession;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.ice4j.TransportAddress;
-import org.ice4j.ice.Candidate;
-import org.ice4j.ice.CandidatePair;
-import org.ice4j.ice.CandidateType;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles calls from JsonRPC (the client)
@@ -97,9 +93,7 @@ public class RPCHandler {
 
             if (remotePlayerId != idFrom) {
                 log.error(
-                        "The sender {} != {} does not match the IceMsg source. IceMsg ignored",
-                        remotePlayerId,
-                        idFrom);
+                        "The sender {} != {} does not match the IceMsg source. IceMsg ignored", remotePlayerId, idFrom);
                 return;
             }
 
@@ -133,7 +127,8 @@ public class RPCHandler {
             try {
                 gameSession.getPeers().values().stream()
                         .map(peer -> {
-                            Optional<CandidatePair> pair = peer.getActiveCandidatePair();
+                            WebRtcSession session = peer.getWebRtcSession();
+                            WebRtcSession.SessionStats stats = session != null ? session.getStats() : null;
                             IceStatus.IceRelay.IceRelayICEState iceRelayICEState =
                                     new IceStatus.IceRelay.IceRelayICEState(
                                             peer.isLocalOffer(),
@@ -141,23 +136,11 @@ public class RPCHandler {
                                             "",
                                             "",
                                             peer.isConnected(),
-                                            pair.map(CandidatePair::getLocalCandidate)
-                                                    .map(Candidate::getHostAddress)
-                                                    .map(TransportAddress::toString)
-                                                    .orElse(""),
-                                            pair.map(CandidatePair::getRemoteCandidate)
-                                                    .map(Candidate::getHostAddress)
-                                                    .map(TransportAddress::toString)
-                                                    .orElse(""),
-                                            pair.map(CandidatePair::getLocalCandidate)
-                                                    .map(Candidate::getType)
-                                                    .map(CandidateType::toString)
-                                                    .orElse(""),
-                                            pair.map(CandidatePair::getRemoteCandidate)
-                                                    .map(Candidate::getType)
-                                                    .map(CandidateType::toString)
-                                                    .orElse(""),
-                                            -1.0);
+                                            stats != null ? stats.getLocalAddress() : "",
+                                            stats != null ? stats.getRemoteAddress() : "",
+                                            stats != null ? stats.getLocalCandidateType() : "",
+                                            stats != null ? stats.getRemoteCandidateType() : "",
+                                            stats != null ? (double) stats.getRttMs() : -1.0);
 
                             return new IceStatus.IceRelay(
                                     peer.getRemoteId(), peer.getRemoteLogin(), peer.getLocalPort(), iceRelayICEState);
