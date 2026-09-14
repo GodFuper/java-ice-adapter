@@ -1,12 +1,10 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -15,8 +13,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Integration test demonstrating two WebRTC peers connecting to each other
@@ -380,7 +379,7 @@ class WebRtcPeerConnectionTest {
 
             // Send binary data
             Thread.sleep(500);
-            byte[] binaryData1 = new byte[]{0x00, 0x01, 0x02, (byte) 0xFF, (byte) 0xFE, (byte) 0xFD};
+            byte[] binaryData1 = new byte[] {0x00, 0x01, 0x02, (byte) 0xFF, (byte) 0xFE, (byte) 0xFD};
             byte[] binaryData2 = new byte[1024];
             for (int i = 0; i < 1024; i++) {
                 binaryData2[i] = (byte) (i & 0xFF);

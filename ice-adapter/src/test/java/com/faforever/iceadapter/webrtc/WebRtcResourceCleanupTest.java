@@ -3,7 +3,6 @@ package com.faforever.iceadapter.webrtc;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
 class WebRtcResourceCleanupTest {
@@ -13,35 +12,27 @@ class WebRtcResourceCleanupTest {
         WebRtcConnectionFactory factory = WebRtcConnectionFactory.getInstance();
         WebRtcSession session = new WebRtcSession(factory);
 
-        session.init(true, List.of(), (data, isBinary) -> {
-        }, new WebRtcSession.SessionStateHandler() {
+        session.init(true, List.of(), (data, isBinary) -> {}, new WebRtcSession.SessionStateHandler() {
             @Override
-            public void onConnected() {
-            }
+            public void onConnected() {}
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
-            public void onError(String error) {
-            }
+            public void onError(String error) {}
 
             @Override
-            public void onOfferCreated(String sdp) {
-            }
+            public void onOfferCreated(String sdp) {}
 
             @Override
-            public void onAnswerCreated(String sdp) {
-            }
+            public void onAnswerCreated(String sdp) {}
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
-            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
-            }
+            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {}
         });
 
         // Close once
@@ -51,7 +42,7 @@ class WebRtcResourceCleanupTest {
         assertDoesNotThrow(session::close);
 
         // Sending data after close must return false without exceptions
-        assertFalse(session.sendData(new byte[]{1, 2, 3}, true));
+        assertFalse(session.sendData(new byte[] {1, 2, 3}, true));
     }
 
     @Test
@@ -73,35 +64,27 @@ class WebRtcResourceCleanupTest {
 
         // Create and close session with re-obtained factory
         WebRtcSession session = new WebRtcSession(factory2);
-        session.init(false, List.of(), (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
+        session.init(false, List.of(), (d, b) -> {}, new WebRtcSession.SessionStateHandler() {
             @Override
-            public void onConnected() {
-            }
+            public void onConnected() {}
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
-            public void onError(String error) {
-            }
+            public void onError(String error) {}
 
             @Override
-            public void onOfferCreated(String sdp) {
-            }
+            public void onOfferCreated(String sdp) {}
 
             @Override
-            public void onAnswerCreated(String sdp) {
-            }
+            public void onAnswerCreated(String sdp) {}
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
-            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
-            }
+            public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {}
         });
 
         assertDoesNotThrow(session::close);

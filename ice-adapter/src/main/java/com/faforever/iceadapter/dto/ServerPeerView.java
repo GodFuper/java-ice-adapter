@@ -4,16 +4,17 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import java.util.Objects;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.Data;
 
-import java.util.Objects;
-
 @Data
 public class ServerPeerView implements PeerEventListener {
+    private final int fromId;
+    private final int remoteId;
     private final StringProperty main = new SimpleStringProperty();
     private final StringProperty remote = new SimpleStringProperty();
     private final BooleanProperty connected = new SimpleBooleanProperty();
@@ -26,8 +27,10 @@ public class ServerPeerView implements PeerEventListener {
     private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
     private final BooleanProperty allowRelay = new SimpleBooleanProperty();
 
-    public ServerPeerView(int id, String login, int remoteId, String remoteLogin) {
-        this.main.set(prettyPrint(login, id));
+    public ServerPeerView(int fromId, String login, int remoteId, String remoteLogin) {
+        this.fromId = fromId;
+        this.remoteId = remoteId;
+        this.main.set(prettyPrint(login, fromId));
         this.remote.set(prettyPrint(remoteLogin, remoteId));
     }
 

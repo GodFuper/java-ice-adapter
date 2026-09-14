@@ -1,14 +1,13 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.IceServer;
 import dev.onvoid.webrtc.RTCIceServer;
 import dev.onvoid.webrtc.RTCIceTransportPolicy;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class WebRtcConfigurationTest {
 
@@ -75,36 +74,28 @@ class WebRtcConfigurationTest {
                 true,
                 List.of(enabledStun, disabledStun),
                 options,
-                (data, isBinary) -> {
-                },
+                (data, isBinary) -> {},
                 new WebRtcSession.SessionStateHandler() {
                     @Override
-                    public void onConnected() {
-                    }
+                    public void onConnected() {}
 
                     @Override
-                    public void onDisconnected() {
-                    }
+                    public void onDisconnected() {}
 
                     @Override
-                    public void onError(String error) {
-                    }
+                    public void onError(String error) {}
 
                     @Override
-                    public void onOfferCreated(String sdp) {
-                    }
+                    public void onOfferCreated(String sdp) {}
 
                     @Override
-                    public void onAnswerCreated(String sdp) {
-                    }
+                    public void onAnswerCreated(String sdp) {}
 
                     @Override
-                    public void onRemoteDescriptionSet() {
-                    }
+                    public void onRemoteDescriptionSet() {}
 
                     @Override
-                    public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
-                    }
+                    public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {}
                 });
 
         assertEquals(RTCIceTransportPolicy.RELAY, session.getConfig().iceTransportPolicy);

@@ -1,8 +1,6 @@
 package com.faforever.iceadapter.gpgnet;
 
 import com.google.common.io.LittleEndianDataOutputStream;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -12,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Writes data to Forged Alliance (the forgedalliance, not the lobby).

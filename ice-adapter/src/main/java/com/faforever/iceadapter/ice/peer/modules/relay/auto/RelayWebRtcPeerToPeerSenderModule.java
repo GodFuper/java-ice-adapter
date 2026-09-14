@@ -1,16 +1,15 @@
 package com.faforever.iceadapter.ice.peer.modules.relay.auto;
 
+import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
+
 import com.faforever.iceadapter.dto.FullRelayMessage;
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.util.CollectionUtils;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
-
-import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderModule {

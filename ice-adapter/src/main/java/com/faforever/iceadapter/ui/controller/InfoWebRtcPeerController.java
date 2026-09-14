@@ -2,8 +2,6 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.services.UIAdapter;
-
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -195,25 +193,33 @@ public class InfoWebRtcPeerController {
             return;
         }
 
-        Platform.runLater(() -> {
-            var webRtcPeerList = adapter.getWebRtcPeerInfoList();
-            if (!Objects.equals(webRtcPeerList, connectionTable.getItems())) {
-                connectionTable.setItems(webRtcPeerList);
-                candidatesTable.setItems(webRtcPeerList);
-                dataChannelTable.setItems(webRtcPeerList);
-                transportTable.setItems(webRtcPeerList);
-            }
-
-            connectionTable.refresh();
-            candidatesTable.refresh();
-            dataChannelTable.refresh();
-            transportTable.refresh();
-        });
+        var webRtcPeerList = adapter.getWebRtcPeerInfoList();
+        if (connectionTable.getItems() != webRtcPeerList) {
+            connectionTable.setItems(webRtcPeerList);
+            candidatesTable.setItems(webRtcPeerList);
+            dataChannelTable.setItems(webRtcPeerList);
+            transportTable.setItems(webRtcPeerList);
+        }
     }
 
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
         updateScheduler.scheduleAtFixedRate(
-                () -> Platform.runLater(this::updateAllInfo), 0, 500, TimeUnit.MILLISECONDS);
+                () -> {
+                    if (root.getScene() != null
+                            && root.getScene().getWindow() != null
+                            && root.getScene().getWindow().isShowing()) {
+                        Platform.runLater(this::updateAllInfo);
+                    }
+                },
+                0,
+                500,
+                TimeUnit.MILLISECONDS);
+    }
+
+    public void dispose() {
+        if (updateScheduler != null && !updateScheduler.isShutdown()) {
+            updateScheduler.shutdownNow();
+        }
     }
 }

@@ -1,10 +1,9 @@
 package com.faforever.iceadapter.util;
 
 import com.faforever.iceadapter.ice.peer.Peer;
-import lombok.Data;
-
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Data;
 
 @Data
 public class Task implements Runnable {

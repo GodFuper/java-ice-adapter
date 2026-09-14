@@ -2,7 +2,6 @@ package com.faforever.iceadapter.util;
 
 import java.net.DatagramSocket;
 import java.net.SocketException;
-
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 

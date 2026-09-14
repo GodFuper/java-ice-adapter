@@ -8,7 +8,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,6 +15,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PeerToFaModule implements ModuleBase, PeerEventListener {
     private static final String LOCALHOST = "127.0.0.1";
+    private static final InetAddress LOCALHOST_ADDR;
+
+    static {
+        try {
+            LOCALHOST_ADDR = InetAddress.getByName(LOCALHOST);
+        } catch (UnknownHostException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private final Peer peer;
 
@@ -44,12 +52,8 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
 
     private void send(DatagramSocket socket, byte[] data, int offset, int length) {
         try {
-            DatagramPacket packet =
-                    new DatagramPacket(data, offset, length, InetAddress.getByName(LOCALHOST), peer.getLobbyPort());
+            DatagramPacket packet = new DatagramPacket(data, offset, length, LOCALHOST_ADDR, peer.getLobbyPort());
             socket.send(packet);
-        } catch (UnknownHostException e) {
-            // should never happen for 127.0.0.1 but log at debug if it does
-            log.debug("UnknownHostException when forwarding to FA for {}", peer.getPeerIdentifier(), e);
         } catch (IOException e) {
             if (peer.isClosing()) {
                 log.debug(

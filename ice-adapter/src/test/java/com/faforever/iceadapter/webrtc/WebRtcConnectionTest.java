@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidateType;
@@ -8,10 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -20,8 +18,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Tests for WebRtcConnectionImpl - verifies JSON serialization/deserialization
@@ -138,12 +137,10 @@ class WebRtcConnectionTest {
 
             calleeChannel.registerObserver(new RTCDataChannelObserver() {
                 @Override
-                public void onBufferedAmountChange(long previousAmount) {
-                }
+                public void onBufferedAmountChange(long previousAmount) {}
 
                 @Override
-                public void onStateChange() {
-                }
+                public void onStateChange() {}
 
                 @Override
                 public void onMessage(RTCDataChannelBuffer buffer) {
@@ -221,28 +218,22 @@ class WebRtcConnectionTest {
         // Create a mock FafRpcCallbacks that captures iceMsg calls
         FafRpcCallbacks mockCallbacks = new FafRpcCallbacks() {
             @Override
-            public void onHostGame(String mapName) {
-            }
+            public void onHostGame(String mapName) {}
 
             @Override
-            public void onJoinGame(String remotePlayerLogin, int remotePlayerId) {
-            }
+            public void onJoinGame(String remotePlayerLogin, int remotePlayerId) {}
 
             @Override
-            public void onConnectToPeer(String remotePlayerLogin, int remotePlayerId, boolean offer) {
-            }
+            public void onConnectToPeer(String remotePlayerLogin, int remotePlayerId, boolean offer) {}
 
             @Override
-            public void onDisconnectFromPeer(int remotePlayerId) {
-            }
+            public void onDisconnectFromPeer(int remotePlayerId) {}
 
             @Override
-            public void close() {
-            }
+            public void close() {}
 
             @Override
-            public void sendToGpgNet(String header, Object... args) {
-            }
+            public void sendToGpgNet(String header, Object... args) {}
         };
 
         WebRtcMessageDispatcher dispatcher = new WebRtcMessageDispatcher(mockCallbacks);

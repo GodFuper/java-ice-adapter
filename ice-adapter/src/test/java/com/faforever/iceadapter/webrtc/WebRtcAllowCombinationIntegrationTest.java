@@ -1,21 +1,20 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidateType;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("WebRtcSession Offer/Answer Gathering with AllowCombination")
 class WebRtcAllowCombinationIntegrationTest {
@@ -48,24 +47,19 @@ class WebRtcAllowCombinationIntegrationTest {
                 List.of(),
                 null,
                 AllowCombination.REFLEXIVE_RELAY,
-                (d, b) -> {
-                },
+                (d, b) -> {},
                 new WebRtcSession.SessionStateHandler() {
                     @Override
-                    public void onConnected() {
-                    }
+                    public void onConnected() {}
 
                     @Override
-                    public void onDisconnected() {
-                    }
+                    public void onDisconnected() {}
 
                     @Override
-                    public void onError(String error) {
-                    }
+                    public void onError(String error) {}
 
                     @Override
-                    public void onRemoteDescriptionSet() {
-                    }
+                    public void onRemoteDescriptionSet() {}
 
                     @Override
                     public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
@@ -97,23 +91,18 @@ class WebRtcAllowCombinationIntegrationTest {
         List<CandidatePacket> gatheredCandidates = Collections.synchronizedList(new ArrayList<>());
 
         session.init(
-                true, List.of(), null, AllowCombination.ALL, (d, b) -> {
-                }, new WebRtcSession.SessionStateHandler() {
+                true, List.of(), null, AllowCombination.ALL, (d, b) -> {}, new WebRtcSession.SessionStateHandler() {
                     @Override
-                    public void onConnected() {
-                    }
+                    public void onConnected() {}
 
                     @Override
-                    public void onDisconnected() {
-                    }
+                    public void onDisconnected() {}
 
                     @Override
-                    public void onError(String error) {
-                    }
+                    public void onError(String error) {}
 
                     @Override
-                    public void onRemoteDescriptionSet() {
-                    }
+                    public void onRemoteDescriptionSet() {}
 
                     @Override
                     public void onOfferCreated(String sdp, List<CandidatePacket> candidates) {

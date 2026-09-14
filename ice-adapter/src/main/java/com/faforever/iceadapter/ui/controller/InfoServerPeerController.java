@@ -2,17 +2,17 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.services.UIAdapter;
-
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.VBox;
+import javafx.util.Callback;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,11 +72,33 @@ public class InfoServerPeerController {
         offerColumn.setCellValueFactory(cellData -> cellData.getValue().getOffer());
 
         hostColumn.setCellValueFactory(param -> param.getValue().getAllowHost());
-        hostColumn.setCellFactory(CheckBoxTableCell.forTableColumn(hostColumn));
+        hostColumn.setCellFactory(createCheckBoxCellFactory());
         reflexiveColumn.setCellValueFactory(peer -> peer.getValue().getAllowReflexive());
-        reflexiveColumn.setCellFactory(CheckBoxTableCell.forTableColumn(reflexiveColumn));
+        reflexiveColumn.setCellFactory(createCheckBoxCellFactory());
         relayColumn.setCellValueFactory(peer -> peer.getValue().getAllowRelay());
-        relayColumn.setCellFactory(CheckBoxTableCell.forTableColumn(relayColumn));
+        relayColumn.setCellFactory(createCheckBoxCellFactory());
+    }
+
+    private static Callback<TableColumn<ServerPeerView, Boolean>, TableCell<ServerPeerView, Boolean>>
+            createCheckBoxCellFactory() {
+        return col -> new TableCell<>() {
+            private final CheckBox checkBox = new CheckBox();
+
+            {
+                checkBox.setDisable(true);
+            }
+
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                } else {
+                    checkBox.setSelected(item);
+                    setGraphic(checkBox);
+                }
+            }
+        };
     }
 
     private void updateAllInfo() {
@@ -84,24 +106,30 @@ public class InfoServerPeerController {
             return;
         }
 
-        Platform.runLater(() -> {
-            var serverPeerList = adapter.getServerPeerInfoList();
-            if (!Objects.equals(serverPeerList, tableView.getItems())) {
-                tableView.setItems(serverPeerList);
-            }
-
-            tableView.refresh();
-        });
+        var serverPeerList = adapter.getServerPeerInfoList();
+        if (tableView.getItems() != serverPeerList) {
+            tableView.setItems(serverPeerList);
+        }
     }
 
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
         updateScheduler.scheduleAtFixedRate(
                 () -> {
-                    Platform.runLater(this::updateAllInfo);
+                    if (root.getScene() != null
+                            && root.getScene().getWindow() != null
+                            && root.getScene().getWindow().isShowing()) {
+                        Platform.runLater(this::updateAllInfo);
+                    }
                 },
                 0,
                 500,
                 TimeUnit.MILLISECONDS);
+    }
+
+    public void dispose() {
+        if (updateScheduler != null && !updateScheduler.isShutdown()) {
+            updateScheduler.shutdownNow();
+        }
     }
 }

@@ -13,7 +13,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,6 +55,19 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
             if (!scheduledFuture.isCancelled()) {
                 scheduledFuture.cancel(true);
             }
+        }
+        scheduledExecutorService.shutdownNow();
+    }
+
+    @Override
+    public void stop() {
+        if (peer.isClosing()) {
+            for (ScheduledFuture<?> scheduledFuture : scheduledFutures) {
+                if (!scheduledFuture.isCancelled()) {
+                    scheduledFuture.cancel(true);
+                }
+            }
+            scheduledExecutorService.shutdownNow();
         }
     }
 

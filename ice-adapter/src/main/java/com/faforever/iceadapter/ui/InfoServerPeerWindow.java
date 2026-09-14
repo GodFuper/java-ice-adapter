@@ -35,7 +35,6 @@ public class InfoServerPeerWindow {
             root = loader.load();
             controller = loader.getController();
             controller.setAdapter(new UIAdapterImpl(IceAdapter.INSTANCE));
-            controller.initialize();
         } catch (Exception e) {
             log.error("Failed to load FXML", e);
             return;

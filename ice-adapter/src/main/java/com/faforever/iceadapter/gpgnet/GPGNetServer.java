@@ -22,7 +22,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -201,7 +200,7 @@ public class GPGNetServer implements AutoCloseable {
         private void listenerLoop() {
             log.debug("Listening for GPG messages from {}", socket.getRemoteSocketAddress());
             try (InputStream in = socket.getInputStream();
-                 var gpgnetIn = new FaDataInputStream(in)) {
+                    var gpgnetIn = new FaDataInputStream(in)) {
                 while (!stopping) {
                     String command = gpgnetIn.readString();
                     List<Object> args = gpgnetIn.readChunks();

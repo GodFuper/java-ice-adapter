@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.services.impl;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.dto.IceServerView;
@@ -15,16 +17,13 @@ import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.util.Pair;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import static com.faforever.iceadapter.debug.Debug.debug;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -35,6 +34,10 @@ public class UIAdapterImpl implements UIAdapter {
     private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
     private final Map<Pair<Integer, Integer>, ServerPeerView> uiServerPeers = new ConcurrentHashMap<>();
     private final Map<Integer, WebRtcPeerView> uiWebRtcPeers = new ConcurrentHashMap<>();
+    private final ObservableList<PeerView> peerInfoList = FXCollections.observableArrayList();
+    private final ObservableList<ServerPeerView> serverPeerInfoList = FXCollections.observableArrayList();
+    private final ObservableList<WebRtcPeerView> webRtcPeerInfoList = FXCollections.observableArrayList();
+    private final ObservableList<IceServerView> iceServersList = FXCollections.observableArrayList();
 
     private Optional<IceGameSession> getGameSession() {
         return Optional.ofNullable(iceAdapter.getGameSession());
@@ -119,13 +122,34 @@ public class UIAdapterImpl implements UIAdapter {
         Set<Pair<Integer, Integer>> ids = uiServerPeers.keySet();
 
         if (!Objects.equals(ids, keys)) {
-            ids.stream().filter(pair -> !keys.contains(pair)).forEach(uiServerPeers::remove);
+            uiServerPeers.keySet().removeIf(pair -> !keys.contains(pair));
         }
 
-        return FXCollections.observableArrayList(peers.stream()
-                .sorted((p1, p2) -> Comparator.comparingInt(Peer::getRemoteId).compare(p1, p2))
-                .map(this::toServerPeerInfo)
-                .collect(Collectors.toList()));
+        for (ServerPeer peer : peers) {
+            toServerPeerInfo(peer);
+        }
+
+        boolean structureChanged = serverPeerInfoList.size() != peers.size();
+        if (!structureChanged) {
+            for (int i = 0; i < serverPeerInfoList.size(); i++) {
+                ServerPeerView view = serverPeerInfoList.get(i);
+                Pair<Integer, Integer> key = new Pair<>(view.getFromId(), view.getRemoteId());
+                if (!keys.contains(key)) {
+                    structureChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (structureChanged) {
+            List<ServerPeerView> sorted = peers.stream()
+                    .sorted(Comparator.comparingInt(Peer::getRemoteId))
+                    .map(this::toServerPeerInfo)
+                    .toList();
+            serverPeerInfoList.setAll(sorted);
+        }
+
+        return serverPeerInfoList;
     }
 
     @Override
@@ -133,14 +157,35 @@ public class UIAdapterImpl implements UIAdapter {
         Map<Integer, Peer> peers =
                 getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
 
-        Set<Integer> peerIds = peers.values().stream().map(Peer::getRemoteId).collect(Collectors.toSet());
+        Set<Integer> peerIds = peers.keySet();
 
-        uiWebRtcPeers.keySet().stream().filter(id -> !peerIds.contains(id)).forEach(uiWebRtcPeers::remove);
+        if (!Objects.equals(uiWebRtcPeers.keySet(), peerIds)) {
+            uiWebRtcPeers.keySet().removeIf(id -> !peerIds.contains(id));
+        }
 
-        return FXCollections.observableArrayList(peers.values().stream()
-                .sorted((p1, p2) -> Comparator.comparingInt(Peer::getRemoteId).compare(p1, p2))
-                .map(this::toWebRtcPeerInfo)
-                .collect(Collectors.toList()));
+        for (Peer peer : peers.values()) {
+            toWebRtcPeerInfo(peer);
+        }
+
+        boolean structureChanged = webRtcPeerInfoList.size() != peers.size();
+        if (!structureChanged) {
+            for (int i = 0; i < webRtcPeerInfoList.size(); i++) {
+                if (!peerIds.contains(webRtcPeerInfoList.get(i).getPeerId().get())) {
+                    structureChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (structureChanged) {
+            List<WebRtcPeerView> sorted = peers.values().stream()
+                    .sorted(Comparator.comparingInt(Peer::getRemoteId))
+                    .map(this::toWebRtcPeerInfo)
+                    .toList();
+            webRtcPeerInfoList.setAll(sorted);
+        }
+
+        return webRtcPeerInfoList;
     }
 
     @Override
@@ -151,18 +196,34 @@ public class UIAdapterImpl implements UIAdapter {
         Set<Integer> ids = peers.keySet();
 
         if (!Objects.equals(uiPeers.keySet(), ids)) {
-            uiPeers.keySet().stream().filter(id -> !ids.contains(id)).forEach(uiPeers::remove);
+            uiPeers.keySet().removeIf(id -> !ids.contains(id));
         }
 
         peers.values().forEach(peer -> {
             debug().peerStateChanged(peer);
             debug().peerConnectivityUpdate(peer);
+            toPeerInfo(peer);
         });
 
-        return FXCollections.observableArrayList(peers.values().stream()
-                .sorted((p1, p2) -> Comparator.comparingInt(Peer::getRemoteId).compare(p1, p2))
-                .map(this::toPeerInfo)
-                .collect(Collectors.toList()));
+        boolean structureChanged = peerInfoList.size() != peers.size();
+        if (!structureChanged) {
+            for (int i = 0; i < peerInfoList.size(); i++) {
+                if (!ids.contains(peerInfoList.get(i).getId().get())) {
+                    structureChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (structureChanged) {
+            List<PeerView> sorted = peers.values().stream()
+                    .sorted(Comparator.comparingInt(Peer::getRemoteId))
+                    .map(this::toPeerInfo)
+                    .toList();
+            peerInfoList.setAll(sorted);
+        }
+
+        return peerInfoList;
     }
 
     @Override
@@ -187,8 +248,11 @@ public class UIAdapterImpl implements UIAdapter {
         List<IceServer> servers =
                 getGameSession().map(IceGameSession::getIceServers).orElse(Collections.emptyList());
 
-        return FXCollections.observableArrayList(
-                servers.stream().map(IceServerView::new).toList());
+        if (iceServersList.size() != servers.size()) {
+            iceServersList.setAll(servers.stream().map(IceServerView::new).toList());
+        }
+
+        return iceServersList;
     }
 
     @Override
@@ -216,10 +280,7 @@ public class UIAdapterImpl implements UIAdapter {
     private ServerPeerView toServerPeerInfo(ServerPeer peer) {
         ServerPeerView info = uiServerPeers.computeIfAbsent(new Pair<>(peer.getFromId(), peer.getRemoteId()), id -> {
             ServerPeerView uiInfo = new ServerPeerView(
-                    peer.getRemoteId(),
-                    peer.getRemoteLogin(),
-                    peer.getFrom().getRemoteId(),
-                    peer.getFrom().getRemoteLogin());
+                    peer.getFromId(), peer.getFrom().getRemoteLogin(), peer.getRemoteId(), peer.getRemoteLogin());
             peer.addEventListener(uiInfo);
             return uiInfo;
         });

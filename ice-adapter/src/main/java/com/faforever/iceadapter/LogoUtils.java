@@ -3,7 +3,6 @@ package com.faforever.iceadapter;
 import java.awt.*;
 import java.net.URL;
 import java.util.Optional;
-
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 

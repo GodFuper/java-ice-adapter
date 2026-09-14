@@ -3,12 +3,11 @@ package com.faforever.iceadapter.util;
 import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.ui.InfoWindow;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import javax.swing.*;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TrayIcon {
@@ -33,8 +32,7 @@ public class TrayIcon {
 
         trayIcon.addMouseListener(new MouseListener() {
             @Override
-            public void mouseClicked(MouseEvent mouseEvent) {
-            }
+            public void mouseClicked(MouseEvent mouseEvent) {}
 
             @Override
             public void mousePressed(MouseEvent mouseEvent) {
@@ -48,16 +46,13 @@ public class TrayIcon {
             }
 
             @Override
-            public void mouseReleased(MouseEvent mouseEvent) {
-            }
+            public void mouseReleased(MouseEvent mouseEvent) {}
 
             @Override
-            public void mouseEntered(MouseEvent mouseEvent) {
-            }
+            public void mouseEntered(MouseEvent mouseEvent) {}
 
             @Override
-            public void mouseExited(MouseEvent mouseEvent) {
-            }
+            public void mouseExited(MouseEvent mouseEvent) {}
         });
 
         try {

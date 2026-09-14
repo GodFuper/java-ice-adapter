@@ -5,7 +5,6 @@ import com.faforever.iceadapter.LogoUtils;
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.services.impl.UIAdapterImpl;
 import com.faforever.iceadapter.ui.controller.WindowController;
-
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +51,16 @@ public class IceWindow extends Application {
 
         stage.setScene(scene);
         stage.setTitle("FAF ICE adapter - Debugger - Build: %s".formatted(IceAdapter.getVersion()));
+        stage.setOnCloseRequest(event -> {
+            if (controller != null) {
+                controller.dispose();
+            }
+        });
+        stage.setOnHidden(event -> {
+            if (controller != null) {
+                controller.dispose();
+            }
+        });
 
         if (Debug.ENABLE_DEBUG_WINDOW) {
             CompletableFuture.runAsync(

@@ -4,10 +4,9 @@ import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.services.RpcConnection;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Set;
 
 /**
  * Test extension of {@link GameSession} that allows overriding lobby port

@@ -10,13 +10,16 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-import com.faforever.iceadapter.services.*;
-import com.faforever.iceadapter.services.impl.*;
+import com.faforever.iceadapter.services.IceAsync;
+import com.faforever.iceadapter.services.IceTrigger;
+import com.faforever.iceadapter.services.MessageService;
+import com.faforever.iceadapter.services.RpcConnection;
+import com.faforever.iceadapter.services.impl.IceAsyncImpl;
+import com.faforever.iceadapter.services.impl.MessageServiceImpl;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.Pair;
 import com.faforever.iceadapter.webrtc.*;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
@@ -183,8 +186,6 @@ public class GameSession implements IceGameSession {
             disabledModules.add(PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);
         }
         //        disabledModules.add(PeerModule.AUTO_RELAY_CALCULATE_RTT);
-        disabledModules.add(PeerModule.RELAY_CLIENT_MODULE);
-        disabledModules.add(PeerModule.RELAY_SERVER_MODULE);
 
         return disabledModules;
     }

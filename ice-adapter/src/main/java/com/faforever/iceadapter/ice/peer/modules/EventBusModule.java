@@ -7,7 +7,6 @@ import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.ServerPeer;
-
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

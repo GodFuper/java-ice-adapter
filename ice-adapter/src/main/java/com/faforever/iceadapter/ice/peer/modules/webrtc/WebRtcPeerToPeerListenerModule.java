@@ -8,9 +8,8 @@ import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * WebRTC-based peer-to-peer listener module.

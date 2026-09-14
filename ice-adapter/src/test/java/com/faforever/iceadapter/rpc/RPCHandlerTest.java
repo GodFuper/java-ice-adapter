@@ -1,5 +1,8 @@
 package com.faforever.iceadapter.rpc;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
@@ -7,15 +10,11 @@ import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class RPCHandlerTest {
 

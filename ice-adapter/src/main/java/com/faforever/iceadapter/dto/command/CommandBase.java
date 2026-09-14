@@ -1,5 +1,7 @@
 package com.faforever.iceadapter.dto.command;
 
+import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMMAND_BASE;
+
 import com.faforever.iceadapter.dto.command.relay.auto.info.RelayPingCommand;
 import com.faforever.iceadapter.dto.command.relay.manual.info.InfoRelayStatusCommand;
 import com.faforever.iceadapter.ice.peer.Peer;
@@ -8,12 +10,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import static com.faforever.iceadapter.ice.peer.modules.other.CommandModule.COMMAND_BASE;
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = InfoRelayStatusCommand.class, name = "info_relay_status"),
-        @JsonSubTypes.Type(value = RelayPingCommand.class, name = "relay_ping"),
+    @JsonSubTypes.Type(value = InfoRelayStatusCommand.class, name = "info_relay_status"),
+    @JsonSubTypes.Type(value = RelayPingCommand.class, name = "relay_ping"),
 })
 public abstract class CommandBase {
     private static final boolean COMPRESSION = true;

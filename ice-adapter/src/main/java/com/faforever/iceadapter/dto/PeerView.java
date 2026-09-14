@@ -6,14 +6,13 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.RelayPing;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CollectionUtils;
-import javafx.beans.property.*;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
+import javafx.beans.property.*;
+import lombok.Data;
 
 @Data
 public class PeerView implements PeerEventListener {
@@ -77,14 +76,12 @@ public class PeerView implements PeerEventListener {
         getOffer().set(String.valueOf(peer.isLocalOffer()));
         getRtt().set(rttStr(peer));
         getLastRecv()
-                .set(peer.getLastReceived()
-                        .map(ts -> "%.1fs ago".formatted((System.currentTimeMillis() - ts) / 1000f))
-                        .orElse("never"));
+                .set(peer.getLastReceived().map(PeerView::formatElapsedTime).orElse("never"));
         getLastRelayRecv()
                 .set(peer.getRelayLastReceived()
                         .map(ts -> {
                             long elapsed = (System.currentTimeMillis() - ts) / 1000;
-                            return elapsed <= 30 ? "%.1fs ago".formatted(elapsed / 10f) : "";
+                            return elapsed <= 30 ? formatElapsedTime(ts) : "";
                         })
                         .orElse(""));
         getEchosReceived()
@@ -124,6 +121,23 @@ public class PeerView implements PeerEventListener {
             }
         }
         return joiner.toString();
+    }
+
+    public static String formatElapsedTime(long timestamp) {
+        long elapsedMs = System.currentTimeMillis() - timestamp;
+        if (elapsedMs < 1000) {
+            return "< 1s ago";
+        }
+        long elapsedSec = elapsedMs / 1000;
+        if (elapsedSec < 60) {
+            return elapsedSec + "s ago";
+        }
+        long elapsedMin = elapsedSec / 60;
+        if (elapsedMin < 60) {
+            return elapsedMin + "m ago";
+        }
+        long elapsedHours = elapsedMin / 60;
+        return elapsedHours + "h ago";
     }
 
     @Override

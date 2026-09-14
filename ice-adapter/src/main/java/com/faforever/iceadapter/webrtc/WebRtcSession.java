@@ -7,10 +7,6 @@ import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import dev.onvoid.webrtc.*;
-import lombok.Data;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -22,6 +18,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages the full WebRTC lifecycle for ONE peer connection.
@@ -256,15 +255,13 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         void onError(String error);
 
-        default void onOfferCreated(String sdp) {
-        }
+        default void onOfferCreated(String sdp) {}
 
         default void onOfferCreated(String sdp, List<CandidatePacket> candidates) {
             onOfferCreated(sdp);
         }
 
-        default void onAnswerCreated(String sdp) {
-        }
+        default void onAnswerCreated(String sdp) {}
 
         default void onAnswerCreated(String sdp, List<CandidatePacket> candidates) {
             onAnswerCreated(sdp);
@@ -272,8 +269,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         void onRemoteDescriptionSet();
 
-        default void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
-        }
+        default void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {}
     }
 
     public WebRtcSession(WebRtcConnectionFactory factory) {
@@ -772,7 +768,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     public void onMessage(RTCDataChannelBuffer buffer) {
         ByteBuffer data = buffer.data;
         byte[] payload = new byte[data.remaining()];
-        data.duplicate().get(payload);
+        data.get(payload);
         log.trace("Data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
         if (messageHandler != null) {
             messageHandler.onMessage(payload, buffer.binary);

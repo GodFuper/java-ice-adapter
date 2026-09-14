@@ -12,7 +12,6 @@ import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,9 +42,12 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     private void stopListeners() {
-        if (peer.isClosing() && listener != null && !listener.isDone()) {
-            listener.cancel(true);
-            listener = null;
+        if (peer.isClosing()) {
+            if (listener != null && !listener.isDone()) {
+                listener.cancel(true);
+                listener = null;
+            }
+            executor.shutdownNow();
         }
     }
 
@@ -53,10 +55,12 @@ public class FaToPeerModule implements ModuleBase {
      * This method get's invoked by the thread listening for data from FA
      */
     private void faListener() {
+        byte[] buffer = new byte[MAX_SIZE_PACKET];
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
         while (!peer.isClosing()) {
             DatagramSocket socket = peer.getFaSocket();
             if (socket != null) {
-                receiveCatch(socket);
+                receiveCatch(socket, packet, buffer);
             } else {
                 log.error("Socket is null. Receive from FA skipped");
                 break;
@@ -65,9 +69,9 @@ public class FaToPeerModule implements ModuleBase {
         log.debug("No longer listening for messages from FA for peer");
     }
 
-    private void receiveCatch(DatagramSocket socket) {
+    private void receiveCatch(DatagramSocket socket, DatagramPacket packet, byte[] buffer) {
         try {
-            receive(socket);
+            receive(socket, packet, buffer);
         } catch (SocketException se) {
             // socket closed or network error
             if (peer.isClosing()) {
@@ -101,22 +105,25 @@ public class FaToPeerModule implements ModuleBase {
                 || peer.existBestRelays();
     }
 
-    private void receive(DatagramSocket socket) throws IOException {
+    private void receive(DatagramSocket socket, DatagramPacket packet, byte[] buffer) throws IOException {
         if (!isNeedReceive()) {
             return;
         }
-        byte[] data = new byte[MAX_SIZE_PACKET];
-        DatagramPacket packet = new DatagramPacket(data, data.length);
+        packet.setData(buffer, 0, buffer.length);
         socket.receive(packet);
-        if (packet.getLength() == 0) {
+        int length = packet.getLength();
+        if (length == 0) {
             return;
         }
-        // Defensive copy of payload to avoid races with the receive buffer
-        byte[] copy = new byte[packet.getLength()];
-        System.arraycopy(packet.getData(), packet.getOffset(), copy, 0, packet.getLength());
 
-        // Forward to ICE - this method will drop packets if ICE isn't ready
-        onFaDataReceived(copy);
+        onFaDataReceived(buffer, packet.getOffset(), length);
+    }
+
+    void onFaDataReceived(byte[] buffer, int offset, int length) {
+        byte[] data = new byte[length + 1];
+        data[0] = COMMAND_FA;
+        System.arraycopy(buffer, offset, data, 1, length);
+        peer.sendToPeer(data);
     }
 
     /**
@@ -125,10 +132,6 @@ public class FaToPeerModule implements ModuleBase {
      * @param faData
      */
     void onFaDataReceived(byte[] faData) {
-        int length = faData.length;
-        byte[] data = new byte[length + 1];
-        data[0] = COMMAND_FA;
-        System.arraycopy(faData, 0, data, 1, length);
-        peer.sendToPeer(data);
+        onFaDataReceived(faData, 0, faData.length);
     }
 }

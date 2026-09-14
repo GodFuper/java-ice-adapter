@@ -2,7 +2,6 @@ package com.faforever.iceadapter.dto;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -1,11 +1,8 @@
 package com.faforever.iceadapter.webrtc;
 
-import dev.onvoid.webrtc.RTCDataChannelSendObserver;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.junit.jupiter.api.Assertions.*;
 
+import dev.onvoid.webrtc.RTCDataChannelSendObserver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,8 +10,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 @DisplayName("WebRTC Loopback Data Transfer Test")
 class WebRtcLoopbackDataTransferTest {
@@ -55,8 +54,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
             public void onError(String error) {
@@ -70,12 +68,10 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onAnswerCreated(String sdp) {
-            }
+            public void onAnswerCreated(String sdp) {}
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
             public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
@@ -91,8 +87,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
             public void onError(String error) {
@@ -100,8 +95,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onOfferCreated(String sdp) {
-            }
+            public void onOfferCreated(String sdp) {}
 
             @Override
             public void onAnswerCreated(String sdp) {
@@ -110,8 +104,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
             public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
@@ -196,8 +189,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
             public void onError(String error) {
@@ -210,12 +202,10 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onAnswerCreated(String sdp) {
-            }
+            public void onAnswerCreated(String sdp) {}
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
             public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
@@ -230,8 +220,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
             public void onError(String error) {
@@ -239,8 +228,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onOfferCreated(String sdp) {
-            }
+            public void onOfferCreated(String sdp) {}
 
             @Override
             public void onAnswerCreated(String sdp) {
@@ -248,8 +236,7 @@ class WebRtcLoopbackDataTransferTest {
             }
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
             public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
@@ -258,10 +245,9 @@ class WebRtcLoopbackDataTransferTest {
         };
 
         CountDownLatch receiveLatch = new CountDownLatch(1);
-        byte[] testData = new byte[]{1, 2, 3, 4, 5};
+        byte[] testData = new byte[] {1, 2, 3, 4, 5};
 
-        callerSession.init(true, List.of(), (data, isBinary) -> {
-        }, callerHandler);
+        callerSession.init(true, List.of(), (data, isBinary) -> {}, callerHandler);
         calleeSession.init(
                 false,
                 List.of(),

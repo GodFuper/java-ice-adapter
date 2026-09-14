@@ -1,13 +1,12 @@
 package com.faforever.iceadapter.webrtc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class WebRtcTelemetryAndStatsTest {
 
@@ -17,19 +16,15 @@ class WebRtcTelemetryAndStatsTest {
         WebRtcSession sessionA = new WebRtcSession(factory);
         WebRtcSession sessionB = new WebRtcSession(factory);
 
-        sessionA.init(true, List.of(), (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
+        sessionA.init(true, List.of(), (d, b) -> {}, new WebRtcSession.SessionStateHandler() {
             @Override
-            public void onConnected() {
-            }
+            public void onConnected() {}
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
-            public void onError(String error) {
-            }
+            public void onError(String error) {}
 
             @Override
             public void onOfferCreated(String sdp) {
@@ -37,12 +32,10 @@ class WebRtcTelemetryAndStatsTest {
             }
 
             @Override
-            public void onAnswerCreated(String sdp) {
-            }
+            public void onAnswerCreated(String sdp) {}
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
             public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
@@ -50,23 +43,18 @@ class WebRtcTelemetryAndStatsTest {
             }
         });
 
-        sessionB.init(false, List.of(), (d, b) -> {
-        }, new WebRtcSession.SessionStateHandler() {
+        sessionB.init(false, List.of(), (d, b) -> {}, new WebRtcSession.SessionStateHandler() {
             @Override
-            public void onConnected() {
-            }
+            public void onConnected() {}
 
             @Override
-            public void onDisconnected() {
-            }
+            public void onDisconnected() {}
 
             @Override
-            public void onError(String error) {
-            }
+            public void onError(String error) {}
 
             @Override
-            public void onOfferCreated(String sdp) {
-            }
+            public void onOfferCreated(String sdp) {}
 
             @Override
             public void onAnswerCreated(String sdp) {
@@ -74,8 +62,7 @@ class WebRtcTelemetryAndStatsTest {
             }
 
             @Override
-            public void onRemoteDescriptionSet() {
-            }
+            public void onRemoteDescriptionSet() {}
 
             @Override
             public void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
@@ -89,7 +76,7 @@ class WebRtcTelemetryAndStatsTest {
         assertTrue(sessionB.waitForConnected(10000));
 
         // Send test data
-        byte[] payload = new byte[]{10, 20, 30, 40, 50};
+        byte[] payload = new byte[] {10, 20, 30, 40, 50};
         assertTrue(sessionA.sendData(payload, true));
 
         // Allow stats to collect

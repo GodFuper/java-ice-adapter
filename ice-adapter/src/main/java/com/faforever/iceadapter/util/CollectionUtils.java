@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.util;
 
 import java.util.Collection;
-
 import lombok.experimental.UtilityClass;
 
 @UtilityClass

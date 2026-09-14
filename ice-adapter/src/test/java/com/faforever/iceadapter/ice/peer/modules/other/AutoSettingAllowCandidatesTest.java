@@ -6,9 +6,7 @@ import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-
 import java.util.Set;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

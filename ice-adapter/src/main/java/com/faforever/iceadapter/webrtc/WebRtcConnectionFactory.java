@@ -16,8 +16,7 @@ public final class WebRtcConnectionFactory {
     private PeerConnectionFactory factory;
     private AudioDeviceModule audioDeviceModule;
 
-    private WebRtcConnectionFactory() {
-    }
+    private WebRtcConnectionFactory() {}
 
     public static WebRtcConnectionFactory getInstance() {
         WebRtcConnectionFactory result = instance;
@@ -43,8 +42,7 @@ public final class WebRtcConnectionFactory {
                         case INFO -> log.debug("[WebRTC] {}", message);
                         case WARNING -> log.warn("[WebRTC] {}", message);
                         case ERROR -> log.error("[WebRTC] {}", message);
-                        default -> {
-                        }
+                        default -> {}
                     }
                 });
             } catch (Exception e) {

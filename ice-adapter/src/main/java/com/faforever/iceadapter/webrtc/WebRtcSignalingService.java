@@ -2,10 +2,9 @@ package com.faforever.iceadapter.webrtc;
 
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages WebRTC signaling for a peer connection using standard {@link CandidatesMessage}.

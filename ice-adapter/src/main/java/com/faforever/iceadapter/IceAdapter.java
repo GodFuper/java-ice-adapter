@@ -1,5 +1,7 @@
 package com.faforever.iceadapter;
 
+import static com.faforever.iceadapter.debug.Debug.debug;
+
 import com.faforever.iceadapter.debug.Debug;
 import com.faforever.iceadapter.debug.TelemetryDebugger;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
@@ -11,14 +13,11 @@ import com.faforever.iceadapter.services.RpcConnection;
 import com.faforever.iceadapter.services.impl.rpc.RpcConnectionImpl;
 import com.faforever.iceadapter.util.TrayIcon;
 import com.faforever.iceadapter.webrtc.WebRtcConnectionFactory;
+import java.util.concurrent.Callable;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
-
-import java.util.concurrent.Callable;
-
-import static com.faforever.iceadapter.debug.Debug.debug;
 
 @CommandLine.Command(
         name = "faf-ice-adapter",
@@ -137,7 +136,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         if (gpgNetServer.isConnected()
                 && gpgNetServer.getGameState().isPresent()
                 && (gpgNetServer.getGameState().get() == GameState.LAUNCHING
-                || gpgNetServer.getGameState().get() == GameState.ENDED)) {
+                        || gpgNetServer.getGameState().get() == GameState.ENDED)) {
             log.warn("Game ended or in progress, ABORTING connectToPeer");
             return;
         }

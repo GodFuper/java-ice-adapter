@@ -2,8 +2,6 @@ package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.IceServerView;
 import com.faforever.iceadapter.services.UIAdapter;
-
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -99,16 +97,30 @@ public class IceServerController {
             return;
         }
 
-        Platform.runLater(() -> {
-            if (!Objects.equals(
-                    adapter.getIceServersList().size(), tableView.getItems().size())) {
-                tableView.getItems().setAll(adapter.getIceServersList());
-            }
-        });
+        var iceServerList = adapter.getIceServersList();
+        if (tableView.getItems() != iceServerList) {
+            tableView.setItems(iceServerList);
+        }
     }
 
     private void startPeriodicUpdates() {
         updateScheduler = Executors.newSingleThreadScheduledExecutor();
-        updateScheduler.scheduleAtFixedRate(() -> Platform.runLater(this::updateAllInfo), 2, 30, TimeUnit.SECONDS);
+        updateScheduler.scheduleAtFixedRate(
+                () -> {
+                    if (root.getScene() != null
+                            && root.getScene().getWindow() != null
+                            && root.getScene().getWindow().isShowing()) {
+                        Platform.runLater(this::updateAllInfo);
+                    }
+                },
+                2,
+                30,
+                TimeUnit.SECONDS);
+    }
+
+    public void dispose() {
+        if (updateScheduler != null && !updateScheduler.isShutdown()) {
+            updateScheduler.shutdownNow();
+        }
     }
 }

@@ -6,48 +6,33 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 
 public interface PeerEventListener {
-    default void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
-    }
+    default void onIceStateChange(Peer peer, IceState oldState, IceState newState) {}
 
-    default void onConnectingChange(Peer peer, boolean connecting) {
-    }
+    default void onConnectingChange(Peer peer, boolean connecting) {}
 
-    default void onCombinationChange(Peer peer, AllowCombination combination) {
-    }
+    default void onCombinationChange(Peer peer, AllowCombination combination) {}
 
-    default void onRelayPeerChange(Peer peer, Peer relay) {
-    }
+    default void onRelayPeerChange(Peer peer, Peer relay) {}
 
-    default void onAddServerPeer(Peer peer, ServerPeer serverPeer) {
-    }
+    default void onAddServerPeer(Peer peer, ServerPeer serverPeer) {}
 
-    default void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {
-    }
+    default void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {}
 
-    default void onChangeEcho(Peer peer, Long lastEcho, long echo) {
-    }
+    default void onChangeEcho(Peer peer, Long lastEcho, long echo) {}
 
-    default void onHandleData(Peer peer, byte[] data) {
-    }
+    default void onHandleData(Peer peer, byte[] data) {}
 
-    default void onHandleCommand(Peer peer, CommandBase command) {
-    }
+    default void onHandleCommand(Peer peer, CommandBase command) {}
 
-    default void onSendToPeer(Peer peer, byte[] data) {
-    }
+    default void onSendToPeer(Peer peer, byte[] data) {}
 
-    default void onSendCommand(Peer peer, CommandBase command, boolean force) {
-    }
+    default void onSendCommand(Peer peer, CommandBase command, boolean force) {}
 
-    default void onConnectionLost(Peer peer, boolean clearIceState) {
-    }
+    default void onConnectionLost(Peer peer, boolean clearIceState) {}
 
-    default void onClose(Peer peer, boolean hasClosed) {
-    }
+    default void onClose(Peer peer, boolean hasClosed) {}
 
-    default void onSendToRpc(Peer peer, CandidatesMessage message) {
-    }
+    default void onSendToRpc(Peer peer, CandidatesMessage message) {}
 
-    default void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
-    }
+    default void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {}
 }

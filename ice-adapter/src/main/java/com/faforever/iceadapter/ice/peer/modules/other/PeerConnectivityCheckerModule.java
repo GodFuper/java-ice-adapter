@@ -12,7 +12,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,15 +96,23 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     }
 
     @Override
-    public void stop() {
-        if (!peer.isLocalOffer()) {
+    public void onClose(Peer peer, boolean hasClosed) {
+        if (!hasClosed) {
             return;
         }
+        stop();
+        scheduledExecutorService.shutdownNow();
+    }
 
+    @Override
+    public void stop() {
         LockUtil.executeWithLock(peer.getLock(LOCK_CHECKER_MODULE), () -> {
             if (scheduledFuture != null) {
                 scheduledFuture.cancel(true);
                 scheduledFuture = null;
+            }
+            if (peer.isClosing()) {
+                scheduledExecutorService.shutdownNow();
             }
         });
     }

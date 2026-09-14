@@ -2,14 +2,11 @@ package com.faforever.iceadapter.ice;
 
 public interface ModuleBase {
 
-    default void start() {
-    }
+    default void start() {}
 
-    default void stop() {
-    }
+    default void stop() {}
 
-    default void init() {
-    }
+    default void init() {}
 
     default Boolean isRunning() {
         return null;
@@ -19,9 +16,7 @@ public interface ModuleBase {
         return null;
     }
 
-    default void enable() {
-    }
+    default void enable() {}
 
-    default void disable() {
-    }
+    default void disable() {}
 }
