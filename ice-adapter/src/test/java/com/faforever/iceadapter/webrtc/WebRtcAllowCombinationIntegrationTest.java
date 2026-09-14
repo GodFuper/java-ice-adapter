@@ -1,10 +1,13 @@
 package com.faforever.iceadapter.webrtc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidateType;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,10 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("WebRtcSession Offer/Answer Gathering with AllowCombination")
 class WebRtcAllowCombinationIntegrationTest {

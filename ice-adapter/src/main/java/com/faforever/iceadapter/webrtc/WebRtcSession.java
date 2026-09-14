@@ -7,6 +7,10 @@ import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CandidateUtil;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import dev.onvoid.webrtc.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -18,10 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import lombok.Data;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages the full WebRTC lifecycle for ONE peer connection.

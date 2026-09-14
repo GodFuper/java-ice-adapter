@@ -1,10 +1,12 @@
 package com.faforever.iceadapter.webrtc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.audio.AudioDeviceModule;
 import dev.onvoid.webrtc.media.audio.AudioLayer;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -12,9 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration test demonstrating WebRTC peer connection with multiple STUN servers.

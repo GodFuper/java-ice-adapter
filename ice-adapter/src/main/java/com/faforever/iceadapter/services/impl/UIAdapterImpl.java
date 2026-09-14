@@ -1,10 +1,11 @@
 package com.faforever.iceadapter.services.impl;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
-import com.faforever.iceadapter.dto.*;
+import com.faforever.iceadapter.dto.IceServerView;
+import com.faforever.iceadapter.dto.PeerView;
+import com.faforever.iceadapter.dto.ServerPeerView;
+import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceServer;
@@ -14,14 +15,16 @@ import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.util.Pair;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 @Slf4j
 @RequiredArgsConstructor

@@ -10,6 +10,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.util.concurrent.RateLimiter;
 import com.nbarraille.jjsonrpc.JJsonPeer;
+import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
+import org.java_websocket.handshake.ServerHandshake;
+
 import java.net.ConnectException;
 import java.net.URI;
 import java.time.Duration;
@@ -18,13 +25,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
-
-import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-import org.java_websocket.handshake.ServerHandshake;
 
 @Slf4j
 @EqualsAndHashCode

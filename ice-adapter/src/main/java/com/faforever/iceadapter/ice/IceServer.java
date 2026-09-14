@@ -5,14 +5,14 @@ import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.Pair;
 import com.faforever.iceadapter.util.PingUtil;
 import dev.onvoid.webrtc.RTCIceServer;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
-
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Data
 @Slf4j

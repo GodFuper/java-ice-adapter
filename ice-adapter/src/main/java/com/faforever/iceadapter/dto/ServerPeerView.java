@@ -4,13 +4,13 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
-
-import java.util.Objects;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.Data;
+
+import java.util.Objects;
 
 @Data
 public class ServerPeerView implements PeerEventListener {

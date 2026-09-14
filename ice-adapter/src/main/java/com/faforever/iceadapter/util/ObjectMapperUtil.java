@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import com.github.luben.zstd.Zstd;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 
 @UtilityClass
 @Slf4j

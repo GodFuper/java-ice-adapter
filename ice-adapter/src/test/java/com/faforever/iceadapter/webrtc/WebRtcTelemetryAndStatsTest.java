@@ -1,13 +1,13 @@
 package com.faforever.iceadapter.webrtc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class WebRtcTelemetryAndStatsTest {
 

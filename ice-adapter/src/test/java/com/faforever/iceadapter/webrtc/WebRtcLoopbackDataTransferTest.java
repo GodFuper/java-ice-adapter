@@ -1,8 +1,11 @@
 package com.faforever.iceadapter.webrtc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import dev.onvoid.webrtc.RTCDataChannelSendObserver;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,10 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("WebRTC Loopback Data Transfer Test")
 class WebRtcLoopbackDataTransferTest {

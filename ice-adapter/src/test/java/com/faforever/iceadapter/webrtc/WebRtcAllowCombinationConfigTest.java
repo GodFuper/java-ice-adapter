@@ -1,17 +1,17 @@
 package com.faforever.iceadapter.webrtc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import dev.onvoid.webrtc.PortAllocatorConfig;
 import dev.onvoid.webrtc.RTCConfiguration;
 import dev.onvoid.webrtc.RTCIceTransportPolicy;
-
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("WebRtcSession Configuration with AllowCombination")
 class WebRtcAllowCombinationConfigTest {

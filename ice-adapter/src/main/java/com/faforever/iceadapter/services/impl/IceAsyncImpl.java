@@ -3,14 +3,14 @@ package com.faforever.iceadapter.services.impl;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.util.Task;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class IceAsyncImpl implements IceAsync {

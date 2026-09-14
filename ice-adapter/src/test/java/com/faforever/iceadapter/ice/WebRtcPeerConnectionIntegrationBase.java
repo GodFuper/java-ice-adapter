@@ -1,22 +1,22 @@
 package com.faforever.iceadapter.ice;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.base.InMemoryRpcBus;
 import com.faforever.iceadapter.ice.base.TestGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Set;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base class for WebRTC peer connection integration tests.

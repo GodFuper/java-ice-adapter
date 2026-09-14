@@ -1,7 +1,5 @@
 package com.faforever.iceadapter.ice.peer;
 
-import static com.faforever.iceadapter.debug.Debug.debug;
-
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
@@ -14,6 +12,11 @@ import com.faforever.iceadapter.util.CollectionUtils;
 import com.faforever.iceadapter.util.Pair;
 import com.faforever.iceadapter.webrtc.WebRtcSession;
 import com.faforever.iceadapter.webrtc.WebRtcSignalingService;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
 import java.net.DatagramSocket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,10 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import static com.faforever.iceadapter.debug.Debug.debug;
 
 /**
  * Represents a peer in the current game session which we are connected to

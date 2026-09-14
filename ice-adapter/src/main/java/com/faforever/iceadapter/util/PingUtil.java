@@ -4,10 +4,10 @@ import com.faforever.iceadapter.IceAdapter;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import lombok.experimental.UtilityClass;
+
 import java.util.OptionalDouble;
 import java.util.concurrent.CompletableFuture;
-
-import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class PingUtil {

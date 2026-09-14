@@ -1,7 +1,5 @@
 package com.faforever.iceadapter.webrtc;
 
-import static com.faforever.iceadapter.ice.IceState.*;
-
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceGameSession;
@@ -12,10 +10,12 @@ import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerListener
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.util.LockUtil;
-
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
+import static com.faforever.iceadapter.ice.IceState.*;
 
 /**
  * Common logic for WebRTC-based ICE connection.

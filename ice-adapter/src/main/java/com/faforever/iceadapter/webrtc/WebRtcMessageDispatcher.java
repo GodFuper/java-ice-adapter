@@ -8,12 +8,12 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Receives JSON messages from WebRTC data channel and routes them to the same handlers

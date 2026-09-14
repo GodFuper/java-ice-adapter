@@ -6,14 +6,14 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.RelayPing;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CollectionUtils;
+import javafx.beans.property.*;
+import lombok.Data;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
-
-import javafx.beans.property.*;
-import lombok.Data;
 
 @Data
 public class PeerView implements PeerEventListener {

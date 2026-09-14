@@ -1,14 +1,14 @@
 package com.faforever.iceadapter.webrtc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.IceServer;
 import dev.onvoid.webrtc.RTCIceServer;
 import dev.onvoid.webrtc.RTCIceTransportPolicy;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class WebRtcConfigurationTest {
 

@@ -1,19 +1,19 @@
 package com.faforever.iceadapter.ice;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for WebRTC reconnection and resilience against late/duplicate CandidatesMessage.
@@ -33,8 +33,6 @@ class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase
     @Override
     protected Set<PeerModule> getDisabledModules() {
         return Set.of(
-                PeerModule.RELAY_CLIENT_MODULE,
-                PeerModule.RELAY_SERVER_MODULE,
                 PeerModule.AUTO_RELAY_CALCULATE_RTT,
                 PeerModule.CONNECTION_CHECKER_MODULE,
                 PeerModule.AUTO_SETTING_ALLOW_CANDIDATE);

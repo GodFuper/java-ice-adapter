@@ -1,8 +1,5 @@
 package com.faforever.iceadapter.rpc;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
@@ -10,12 +7,15 @@ import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
-
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class RPCHandlerTest {
 
@@ -60,14 +60,14 @@ class RPCHandlerTest {
     void testWebRtcOfferSignalingRoute() {
         String json =
                 """
-                {
-                    "srcId": 2,
-                    "destId": 1,
-                    "ufrag": "offer",
-                    "password": "v=0\\r\\no=- 123 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\n",
-                    "candidates": []
-                }
-                """;
+                        {
+                            "srcId": 2,
+                            "destId": 1,
+                            "ufrag": "offer",
+                            "password": "v=0\\r\\no=- 123 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\n",
+                            "candidates": []
+                        }
+                        """;
 
         rpcHandler.iceMsg(REMOTE_PLAYER_ID, json);
 
@@ -89,14 +89,14 @@ class RPCHandlerTest {
     void testWebRtcAnswerSignalingRoute() {
         String json =
                 """
-                {
-                    "srcId": 2,
-                    "destId": 1,
-                    "ufrag": "answer",
-                    "password": "v=0\\r\\no=- 456 2 IN IP4 127.0.0.1\\r\\n",
-                    "candidates": []
-                }
-                """;
+                        {
+                            "srcId": 2,
+                            "destId": 1,
+                            "ufrag": "answer",
+                            "password": "v=0\\r\\no=- 456 2 IN IP4 127.0.0.1\\r\\n",
+                            "candidates": []
+                        }
+                        """;
 
         rpcHandler.iceMsg(REMOTE_PLAYER_ID, json);
 
@@ -118,13 +118,13 @@ class RPCHandlerTest {
         String candidateStr = "candidate:1 1 UDP 2122260223 127.0.0.1 50000 typ host";
         String json =
                 """
-                {
-                    "srcId": 2,
-                    "destId": 1,
-                    "ufrag": "candidate",
-                    "password": "%s",
-                    "candidates": []
-                }
+                        {
+                            "srcId": 2,
+                            "destId": 1,
+                            "ufrag": "candidate",
+                            "password": "%s",
+                            "candidates": []
+                        }
                         """
                         .formatted(candidateStr);
 
@@ -147,14 +147,14 @@ class RPCHandlerTest {
     void testLegacyCandidatesMessageRoute() {
         String json =
                 """
-                {
-                    "srcId": 2,
-                    "destId": 1,
-                    "password": "secretPassword",
-                    "ufrag": "userFrag",
-                    "candidates": []
-                }
-                """;
+                        {
+                            "srcId": 2,
+                            "destId": 1,
+                            "password": "secretPassword",
+                            "ufrag": "userFrag",
+                            "candidates": []
+                        }
+                        """;
 
         rpcHandler.iceMsg(REMOTE_PLAYER_ID, json);
 
@@ -176,14 +176,14 @@ class RPCHandlerTest {
     void testMismatchedDestIdIgnored() {
         String json =
                 """
-                {
-                    "srcId": 2,
-                    "destId": 999,
-                    "ufrag": "offer",
-                    "password": "v=0\\r\\n",
-                    "candidates": []
-                }
-                """;
+                        {
+                            "srcId": 2,
+                            "destId": 999,
+                            "ufrag": "offer",
+                            "password": "v=0\\r\\n",
+                            "candidates": []
+                        }
+                        """;
 
         rpcHandler.iceMsg(REMOTE_PLAYER_ID, json);
 
@@ -194,14 +194,14 @@ class RPCHandlerTest {
     void testMismatchedSrcIdIgnored() {
         String json =
                 """
-                {
-                    "srcId": 3,
-                    "destId": 1,
-                    "ufrag": "offer",
-                    "password": "v=0\\r\\n",
-                    "candidates": []
-                }
-                """;
+                        {
+                            "srcId": 3,
+                            "destId": 1,
+                            "ufrag": "offer",
+                            "password": "v=0\\r\\n",
+                            "candidates": []
+                        }
+                        """;
 
         rpcHandler.iceMsg(REMOTE_PLAYER_ID, json);
 
