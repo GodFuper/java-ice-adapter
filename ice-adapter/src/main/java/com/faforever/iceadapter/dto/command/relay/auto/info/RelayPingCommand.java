@@ -4,11 +4,11 @@ import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.RelayPing;
-import java.util.Map;
-import java.util.Objects;
-
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Map;
+import java.util.Objects;
 
 @Data
 @Slf4j

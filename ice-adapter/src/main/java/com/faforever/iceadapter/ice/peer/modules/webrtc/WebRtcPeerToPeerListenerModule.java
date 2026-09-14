@@ -6,11 +6,11 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
-import com.faforever.iceadapter.ice.peer.modules.relay.manual.RelayServerModule;
+import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
-import java.util.Arrays;
-
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Arrays;
 
 /**
  * WebRTC-based peer-to-peer listener module.
@@ -60,10 +60,8 @@ public class WebRtcPeerToPeerListenerModule implements ModuleBase, PeerEventList
         // Log unknown packet types
         if (data[0] == FaToPeerModule.COMMAND_FA
                 || data[0] == PeerConnectivityCheckerModule.COMMAND_ECHO
-                || data[0] == RelayServerModule.COMMAND_CLIENT
-                || data[0] == RelayServerModule.COMMAND_SERVER
                 || data[0] == CommandModule.COMMAND_BASE
-                || data[0] == 'R') {
+                || data[0] == RelayWebRtcPeerToPeerSenderModule.COMMAND_AUTO_RELAY) {
             // Known protocol markers - silent
         } else if (DatagramSocketUtils.isStunPacket(data, length)) {
             int type = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
