@@ -73,7 +73,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
 
     private void checkerThread() {
         IceGameSession gameSession = peer.getGameSession();
-        if (gameSession == null || !peer.isSupportCommand()) {
+        if (gameSession == null) {
             return;
         }
 
@@ -87,7 +87,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
         Set<Integer> idsForSend = allPeers.entrySet().stream()
                 .filter(entry -> {
                     Peer p = entry.getValue();
-                    return !p.isClosing() && p.isConnected() && p.isSupportCommand() && !Objects.equals(peer, p);
+                    return !p.isClosing() && p.isConnected() && !Objects.equals(peer, p);
                 })
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
@@ -100,7 +100,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
 
         for (Integer id : idsForSend) {
             Peer peerForSend = allPeers.get(id);
-            if (peerForSend == null) {
+            if (peerForSend == null || !peerForSend.isAllowRelay()) {
                 continue;
             }
             peerForSend.sendCommand(RelayPingCommand.builder()
@@ -117,7 +117,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
 
     private void calculateBestRelay() {
         IceGameSession gameSession = peer.getGameSession();
-        if (gameSession == null || !peer.isSupportCommand()) {
+        if (gameSession == null) {
             return;
         }
         Thread.currentThread().setName(getThreadName());

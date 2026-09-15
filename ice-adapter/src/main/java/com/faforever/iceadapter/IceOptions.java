@@ -1,6 +1,5 @@
 package com.faforever.iceadapter;
 
-import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -77,35 +76,41 @@ public class IceOptions {
     private String telemetryServer;
 
     @Option(
-            names = "--manual-combination-connection",
-            defaultValue = "true",
-            description = "Manually editing the connection combination in the UI")
-    private boolean manualCombinationConnection;
-
-    @Option(
             names = "--manual-strategy-connection",
             defaultValue = "true",
             description = "Manually editing the connection strategy in the UI")
     private boolean manualStrategyConnection;
 
     @Option(
-            names = "--additional-info-peer",
+            names = {"--show-ip-addresses", "--show-peer-ips", "--show-ip"},
             defaultValue = "false",
-            description = "Additional information about Peer in the UI")
-    private boolean additionalInfoPeer;
+            description = "Show IP addresses in the UI")
+    private boolean showIpAddresses;
 
     @Option(
-            names = "--host-mode",
+            names = "--allow-peer-relay",
             defaultValue = "true",
             description =
-                    "Enable host-based P2P connection mode where one player acts as a host and others connect through them")
-    private boolean hostMode;
+                    "Allows this peer to act as a relay host, forwarding packets for other peers when their direct connection is unstable. Increases bandwidth usage (may affect mobile or metered connections)")
+    private boolean allowPeerRelay;
 
     @Option(
-            names = "--transport",
-            defaultValue = "WEBRTC",
-            description = "Transport mode: WEBRTC (WebRTC data channel)")
-    private TransportMode transport = TransportMode.WEBRTC;
+            names = {"--show-allow-combination", "--allow-combination"},
+            defaultValue = "true",
+            fallbackValue = "true",
+            description = "Show AllowCombination selection in the UI")
+    private boolean showAllowCombination;
+
+    @Option(
+            names = {"--additional-packet-forwarding", "--additional-forwarding"},
+            defaultValue = "true",
+            fallbackValue = "true",
+            description = "Enable additional packet forwarding via relay by default for peers")
+    private boolean additionalPacketForwarding = true;
+
+    public boolean isAllowCombination() {
+        return showAllowCombination;
+    }
 
     public IceOptions(
             int id,
@@ -121,11 +126,88 @@ public class IceOptions {
             int pingCount,
             double acceptableLatency,
             String telemetryServer,
-            boolean manualCombinationConnection,
             boolean manualStrategyConnection,
-            boolean additionalInfoPeer,
-            boolean hostMode,
-            TransportMode transport) {
+            boolean showIpAddresses,
+            boolean allowPeerRelay) {
+        this(
+                id,
+                gameId,
+                login,
+                rpcPort,
+                gpgnetPort,
+                lobbyPort,
+                forceRelay,
+                debugWindow,
+                infoWindow,
+                delayUi,
+                pingCount,
+                acceptableLatency,
+                telemetryServer,
+                manualStrategyConnection,
+                showIpAddresses,
+                allowPeerRelay,
+                false,
+                true);
+    }
+
+    public IceOptions(
+            int id,
+            int gameId,
+            String login,
+            int rpcPort,
+            int gpgnetPort,
+            int lobbyPort,
+            boolean forceRelay,
+            boolean debugWindow,
+            boolean infoWindow,
+            int delayUi,
+            int pingCount,
+            double acceptableLatency,
+            String telemetryServer,
+            boolean manualStrategyConnection,
+            boolean showIpAddresses,
+            boolean allowPeerRelay,
+            boolean showAllowCombination) {
+        this(
+                id,
+                gameId,
+                login,
+                rpcPort,
+                gpgnetPort,
+                lobbyPort,
+                forceRelay,
+                debugWindow,
+                infoWindow,
+                delayUi,
+                pingCount,
+                acceptableLatency,
+                telemetryServer,
+                manualStrategyConnection,
+                showIpAddresses,
+                allowPeerRelay,
+                showAllowCombination,
+                true);
+    }
+
+    public IceOptions(
+            int id,
+            int gameId,
+            String login,
+            int rpcPort,
+            int gpgnetPort,
+            int lobbyPort,
+            boolean forceRelay,
+            boolean debugWindow,
+            boolean infoWindow,
+            int delayUi,
+            int pingCount,
+            double acceptableLatency,
+            String telemetryServer,
+            boolean manualStrategyConnection,
+            boolean showIpAddresses,
+            boolean allowPeerRelay,
+            boolean showAllowCombination,
+            boolean additionalPacketForwarding) {
         this(
                 id,
                 gameId,
@@ -142,22 +224,10 @@ public class IceOptions {
                 pingCount,
                 acceptableLatency,
                 telemetryServer,
-                manualCombinationConnection,
                 manualStrategyConnection,
-                additionalInfoPeer,
-                hostMode,
-                transport);
-    }
-
-    public enum TransportMode {
-        ICE,
-        WEBRTC;
-
-        public static TransportMode fromString(String value) {
-            return Arrays.stream(values())
-                    .filter(t -> t.name().equalsIgnoreCase(value))
-                    .findFirst()
-                    .orElse(ICE);
-        }
+                showIpAddresses,
+                allowPeerRelay,
+                showAllowCombination,
+                additionalPacketForwarding);
     }
 }

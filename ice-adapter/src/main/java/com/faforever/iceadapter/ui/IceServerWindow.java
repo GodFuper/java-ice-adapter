@@ -43,7 +43,9 @@ public class IceServerWindow {
         setUserAgentStylesheet(STYLESHEET_MODENA);
 
         Scene scene = new Scene(root);
-        primaryStage.setTitle("ICE Server Manager");
+        primaryStage.setTitle("FAF ICE Adapter - STUN / TURN Servers");
+        primaryStage.setMinWidth(580);
+        primaryStage.setMinHeight(380);
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(event -> minimize());
         primaryStage.show();

@@ -2,7 +2,6 @@ package com.faforever.iceadapter.ice.peer.modules.other;
 
 import com.faforever.iceadapter.dto.command.relay.manual.info.InfoRelayStatusCommand;
 import com.faforever.iceadapter.ice.ModuleBase;
-import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +20,10 @@ public class InfoStatusModule implements ModuleBase, PeerEventListener {
 
     @Override
     public void start() {
-        if (peer instanceof MainPeer mainPeer) {
-            peer.sendCommand(createStatusCommand(mainPeer), true);
-        }
+        peer.sendCommand(createStatusCommand(peer), true);
     }
 
-    private InfoRelayStatusCommand createStatusCommand(MainPeer peer) {
-        return new InfoRelayStatusCommand(peer.isServerMode());
+    private InfoRelayStatusCommand createStatusCommand(Peer peer) {
+        return new InfoRelayStatusCommand(peer.isAllowPeerRelay());
     }
 }

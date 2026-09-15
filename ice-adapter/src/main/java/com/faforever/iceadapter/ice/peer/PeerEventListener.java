@@ -12,10 +12,6 @@ public interface PeerEventListener {
 
     default void onCombinationChange(Peer peer, AllowCombination combination) {}
 
-    default void onRelayPeerChange(Peer peer, Peer relay) {}
-
-    default void onAddServerPeer(Peer peer, ServerPeer serverPeer) {}
-
     default void onLastPacketReceived(Peer peer, Long lastTimestamp, Long timestamp) {}
 
     default void onChangeEcho(Peer peer, Long lastEcho, long echo) {}

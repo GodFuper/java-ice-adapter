@@ -3,12 +3,9 @@ package com.faforever.iceadapter.ice;
 import static com.faforever.iceadapter.debug.Debug.debug;
 
 import com.faforever.iceadapter.IceOptions;
-import com.faforever.iceadapter.IceOptions.TransportMode;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
-import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
-import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.IceTrigger;
@@ -59,7 +56,6 @@ public class GameSession implements IceGameSession {
     private volatile boolean gameEnded = false;
 
     // WebRTC fields
-    private TransportMode transportMode = TransportMode.WEBRTC;
     private WebRtcConnectionFactory webRtcConnectionFactory;
 
     /**
@@ -93,7 +89,6 @@ public class GameSession implements IceGameSession {
 
     private void init(IceOptions options) {
         this.options = options;
-        this.transportMode = TransportMode.WEBRTC;
         iceServerChecker = new IceServerChecker(options, this);
         iceServerChecker.start();
     }
@@ -117,14 +112,15 @@ public class GameSession implements IceGameSession {
         }
         Set<PeerModule> allDisabled = new HashSet<>(getDisabledModules());
         allDisabled.addAll(getAdditionalDisabledModules());
-        Peer peer = new MainPeer(
+        Peer peer = new Peer(
                 options.getId(),
                 remotePlayerId,
                 remotePlayerLogin,
                 offer,
                 preferredPort,
                 getLobbyPort(),
-                options.isHostMode(),
+                options.isAllowPeerRelay(),
+                options.isAdditionalPacketForwarding(),
                 allDisabled);
         peer.init();
         peer.setCombination(combination);
@@ -160,19 +156,6 @@ public class GameSession implements IceGameSession {
 
     public List<IceServer> getIceServers() {
         return iceServers;
-    }
-
-    @Override
-    public List<ServerPeer> getServerPeers() {
-        List<ServerPeer> serverPeers = new ArrayList<>();
-
-        peers.forEach((id, p) -> {
-            if (p instanceof MainPeer peer) {
-                serverPeers.addAll(peer.getRelays().values());
-            }
-        });
-
-        return serverPeers;
     }
 
     @Override
@@ -239,9 +222,11 @@ public class GameSession implements IceGameSession {
             boolean offer = reconnectPeer.isLocalOffer();
             int port = reconnectPeer.getLocalPort();
             AllowCombination combination = reconnectPeer.getCombination();
+            boolean additionalPacketForwarding = reconnectPeer.isAdditionalPacketForwarding();
 
             disconnectFromPeer(remotePlayerId);
             connectToPeer(remotePlayerLogin, remotePlayerId, offer, port, combination);
+            getPeer(remotePlayerId).ifPresent(p -> p.setAdditionalPacketForwarding(additionalPacketForwarding));
         }
     }
 }

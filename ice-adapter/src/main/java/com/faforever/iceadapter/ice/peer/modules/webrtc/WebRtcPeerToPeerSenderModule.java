@@ -44,9 +44,6 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
-        if (!peer.isSupportCommand() && !force) {
-            return;
-        }
         sendViaWebRtc(command.bytes());
     }
 

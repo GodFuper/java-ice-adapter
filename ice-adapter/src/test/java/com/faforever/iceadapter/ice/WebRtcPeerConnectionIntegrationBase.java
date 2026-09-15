@@ -47,44 +47,10 @@ public abstract class WebRtcPeerConnectionIntegrationBase {
         socketA = new InMemoryDatagramSocket();
         socketB = new InMemoryDatagramSocket();
 
-        IceOptions optionsA = new IceOptions(
-                1,
-                0,
-                "PlayerA",
-                0,
-                0,
-                0,
-                false,
-                false,
-                false,
-                0,
-                0,
-                250.0,
-                null,
-                true,
-                true,
-                false,
-                true,
-                IceOptions.TransportMode.WEBRTC);
-        IceOptions optionsB = new IceOptions(
-                2,
-                0,
-                "PlayerB",
-                0,
-                0,
-                0,
-                false,
-                false,
-                false,
-                0,
-                0,
-                250.0,
-                null,
-                true,
-                true,
-                false,
-                true,
-                IceOptions.TransportMode.WEBRTC);
+        IceOptions optionsA =
+                new IceOptions(1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, false, true);
+        IceOptions optionsB =
+                new IceOptions(2, 0, "PlayerB", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, false, true);
 
         gameA = new TestGameSession(bus, optionsA, getDisabledModules());
         gameA.setLobbyPort(socketA.getLocalPort());

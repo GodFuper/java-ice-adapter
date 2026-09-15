@@ -54,6 +54,14 @@ public class WebRtcPeerView {
      * Updates this view's properties from the peer's current WebRTC statistics.
      */
     public void update(Peer peer) {
+        update(peer, true);
+    }
+
+    /**
+     * Updates this view's properties from the peer's current WebRTC statistics,
+     * conditionally populating candidate IP addresses based on showIpAddresses.
+     */
+    public void update(Peer peer, boolean showIpAddresses) {
         WebRtcSession session = peer.getWebRtcSession();
         if (session != null) {
             WebRtcSession.SessionStats stats = session.getStats();
@@ -66,8 +74,13 @@ public class WebRtcPeerView {
 
             localCandidateType.set(stats.getLocalCandidateType());
             remoteCandidateType.set(stats.getRemoteCandidateType());
-            localAddress.set(stats.getLocalAddress().isEmpty() ? "-" : stats.getLocalAddress());
-            remoteAddress.set(stats.getRemoteAddress().isEmpty() ? "-" : stats.getRemoteAddress());
+            if (showIpAddresses) {
+                localAddress.set(stats.getLocalAddress().isEmpty() ? "-" : stats.getLocalAddress());
+                remoteAddress.set(stats.getRemoteAddress().isEmpty() ? "-" : stats.getRemoteAddress());
+            } else {
+                localAddress.set("-");
+                remoteAddress.set("-");
+            }
 
             rttMs.set(String.format("%.1f", stats.getRttMs()));
             echoRttMs.set(String.format("%.1f", peer.getEchoRtt()));

@@ -1,5 +1,6 @@
 package com.faforever.iceadapter.ice.peer.modules.other;
 
+import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
@@ -24,8 +25,15 @@ public class AutoSettingAllowCandidates implements ModuleBase, PeerEventListener
     }
 
     @Override
+    public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
+        if (newState == IceState.DISCONNECTED && isEnabled() && !peer.isClosing()) {
+            changeCombination();
+        }
+    }
+
+    @Override
     public void onConnectionLost(Peer peer, boolean clearIceState) {
-        if (isEnabled()) {
+        if (isEnabled() && !peer.isClosing()) {
             changeCombination();
         }
     }

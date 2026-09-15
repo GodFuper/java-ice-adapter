@@ -11,9 +11,7 @@ import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPee
 import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerListenerModule;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -45,14 +43,6 @@ public enum PeerModule implements Comparator<PeerModule> {
     @Getter
     private static final List<PeerModule> sortedModules =
             Stream.of(PeerModule.values()).sorted().toList();
-
-    private static final Set<PeerModule> MODULES_FOR_SERVER =
-            Set.of(EVENT_BUS, WEBRTC_PEER_TO_PEER_LISTENER, WEBRTC_PEER_TO_PEER_SENDER);
-
-    @Getter
-    private static final Set<PeerModule> modulesDisableForServer = Stream.of(PeerModule.values())
-            .filter(m -> !MODULES_FOR_SERVER.contains(m))
-            .collect(Collectors.toSet());
 
     private final int priority;
     private final Function<Peer, ModuleBase> createModule;

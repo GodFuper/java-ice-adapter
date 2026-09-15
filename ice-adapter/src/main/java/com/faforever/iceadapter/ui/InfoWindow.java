@@ -23,8 +23,8 @@ public class InfoWindow {
     private Scene scene;
     private InfoWindowController controller;
 
-    private static final int WIDTH = 533;
-    private static final int HEIGHT = 330;
+    private static final int WIDTH = 540;
+    private static final int HEIGHT = 370;
 
     public void start(Stage stage) {
         INSTANCE = this;
@@ -46,6 +46,7 @@ public class InfoWindow {
 
         stage.setScene(scene);
         stage.setTitle("FAF ICE adapter");
+        stage.setResizable(false);
         stage.setOnCloseRequest(event -> minimize());
         stage.show();
 

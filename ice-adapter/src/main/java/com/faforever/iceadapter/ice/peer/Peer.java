@@ -23,7 +23,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -32,8 +31,8 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Data
 @Slf4j
-@RequiredArgsConstructor
-public abstract class Peer {
+public class Peer {
+    private final int fromId;
     private final int remoteId;
     private final String remoteLogin;
     private final boolean localOffer; // Do we offer or are we waiting for a remote offer
@@ -49,7 +48,7 @@ public abstract class Peer {
     private List<Integer> bestRelays = List.of();
 
     private final Map<Integer, RelayPing> rtts = new ConcurrentHashMap<>();
-    private volatile boolean additionalPacketForwarding = false;
+    private volatile boolean additionalPacketForwarding;
 
     private volatile float rtt = 0.0f;
     private volatile Long lastEcho;
@@ -62,7 +61,8 @@ public abstract class Peer {
 
     private volatile DatagramSocket faSocket;
 
-    private volatile boolean autoRelay = false;
+    private volatile boolean allowPeerRelay;
+    private volatile boolean allowRelay = false;
     private volatile boolean connected = false;
 
     // WebRTC fields
@@ -79,16 +79,71 @@ public abstract class Peer {
     private final Map<String, Lock> locks = new ConcurrentHashMap<>();
     private final Map<PeerModule, ModuleBase> modules = new ConcurrentHashMap<>();
 
-    private int version = 1;
+    public Peer(
+            int fromId,
+            int remoteId,
+            String remoteLogin,
+            boolean localOffer,
+            int preferredPort,
+            int lobbyPort,
+            boolean allowPeerRelay,
+            boolean additionalPacketForwarding,
+            Set<PeerModule> disabledModules) {
+        this.fromId = fromId;
+        this.remoteId = remoteId;
+        this.remoteLogin = remoteLogin;
+        this.localOffer = localOffer;
+        this.preferredPort = preferredPort;
+        this.lobbyPort = lobbyPort;
+        this.allowPeerRelay = allowPeerRelay;
+        this.additionalPacketForwarding = additionalPacketForwarding;
+        this.disabledModules = disabledModules;
+    }
 
-    public abstract int getFromId();
+    public Peer(
+            int fromId,
+            int remoteId,
+            String remoteLogin,
+            boolean localOffer,
+            int preferredPort,
+            int lobbyPort,
+            boolean allowPeerRelay,
+            Set<PeerModule> disabledModules) {
+        this(
+                fromId,
+                remoteId,
+                remoteLogin,
+                localOffer,
+                preferredPort,
+                lobbyPort,
+                allowPeerRelay,
+                false,
+                disabledModules);
+    }
+
+    public Peer(
+            int fromId,
+            int remoteId,
+            String remoteLogin,
+            boolean localOffer,
+            int preferredPort,
+            int lobbyPort,
+            Set<PeerModule> disabledModules) {
+        this(fromId, remoteId, remoteLogin, localOffer, preferredPort, lobbyPort, false, disabledModules);
+    }
+
+    public Peer(
+            int remoteId,
+            String remoteLogin,
+            boolean localOffer,
+            int preferredPort,
+            int lobbyPort,
+            Set<PeerModule> disabledModules) {
+        this(0, remoteId, remoteLogin, localOffer, preferredPort, lobbyPort, false, disabledModules);
+    }
 
     public Optional<Integer> getRelayPeerId() {
         return Optional.empty();
-    }
-
-    public boolean isAllowRelay() {
-        return false;
     }
 
     public Integer getLocalPort() {
@@ -181,26 +236,6 @@ public abstract class Peer {
         getEventBus().ifPresent(bus -> bus.unregister(listener));
     }
 
-    public WebRtcSession getWebRtcSession() {
-        return webRtcSession;
-    }
-
-    public void setWebRtcSession(WebRtcSession webRtcSession) {
-        this.webRtcSession = webRtcSession;
-    }
-
-    public WebRtcSignalingService getWebRtcSignalingService() {
-        return webRtcSignalingService;
-    }
-
-    public void setWebRtcSignalingService(WebRtcSignalingService webRtcSignalingService) {
-        this.webRtcSignalingService = webRtcSignalingService;
-    }
-
-    public void setRelayPeer(Peer relay) {
-        event(bus -> bus.onRelayPeerChange(this, relay));
-    }
-
     public void setCombination(AllowCombination combination) {
         setCombination(combination, false);
     }
@@ -229,10 +264,6 @@ public abstract class Peer {
         }
     }
 
-    public void addServerPeer(ServerPeer serverPeer) {
-        event(bus -> bus.onAddServerPeer(this, serverPeer));
-    }
-
     public void sendToRpc(CandidatesMessage message) {
         event(bus -> bus.onSendToRpc(this, message));
     }
@@ -244,25 +275,6 @@ public abstract class Peer {
     public void setConnected(boolean connected) {
         this.connected = connected;
         event(bus -> bus.onConnectingChange(this, connected));
-    }
-
-    public String getFullInfoSelectedPair() {
-        if (webRtcSession != null) {
-            WebRtcSession.SessionStats s = webRtcSession.getStats();
-            return "WebRTC DataChannel: %s\nLocal: %s (%s)\nRemote: %s (%s)\nRTT: %.1f ms\nBytes: %d sent / %d recv\nMessages: %d sent / %d recv"
-                    .formatted(
-                            s.getDataChannelState(),
-                            s.getLocalAddress(),
-                            s.getLocalCandidateType(),
-                            s.getRemoteAddress(),
-                            s.getRemoteCandidateType(),
-                            s.getRttMs(),
-                            s.getBytesSent(),
-                            s.getBytesReceived(),
-                            s.getMessagesSent(),
-                            s.getMessagesReceived());
-        }
-        return "N/A";
     }
 
     public float getRtt() {
@@ -357,18 +369,6 @@ public abstract class Peer {
         Long lastEcho = this.lastEcho;
         this.lastEcho = echo;
         event(bus -> bus.onChangeEcho(this, lastEcho, echo));
-    }
-
-    public boolean isSupportCommand() {
-        return version >= 2;
-    }
-
-    public boolean isSupportRelay() {
-        return version >= 2 && isAllowRelay();
-    }
-
-    public boolean isCanSelectForRelayPeerById(int id) {
-        return id != remoteId && isSupportRelay() && getRelayPeerId().isEmpty();
     }
 
     public boolean existBestRelays() {

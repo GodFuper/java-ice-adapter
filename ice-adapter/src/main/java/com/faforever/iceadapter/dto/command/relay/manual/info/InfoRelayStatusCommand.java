@@ -1,7 +1,6 @@
 package com.faforever.iceadapter.dto.command.relay.manual.info;
 
 import com.faforever.iceadapter.dto.command.CommandBase;
-import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 @EqualsAndHashCode(callSuper = false)
 public class InfoRelayStatusCommand extends CommandBase {
 
-    private static final int MARKER_CUSTOM_ICE = 3;
-
     private boolean allowRelay;
 
     @Override
@@ -27,11 +24,6 @@ public class InfoRelayStatusCommand extends CommandBase {
             return;
         }
 
-        if (peer instanceof MainPeer mainPeer) {
-            mainPeer.setAllowRelay(allowRelay);
-            if (mainPeer.getVersion() <= 1) {
-                mainPeer.setVersion(MARKER_CUSTOM_ICE);
-            }
-        }
+        peer.setAllowRelay(allowRelay);
     }
 }

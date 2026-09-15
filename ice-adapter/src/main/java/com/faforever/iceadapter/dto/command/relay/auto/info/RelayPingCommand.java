@@ -30,7 +30,7 @@ public class RelayPingCommand extends CommandBase {
     @Override
     public void execute(Peer peer) {
         IceGameSession gameSession = peer.getGameSession();
-        if (gameSession == null) {
+        if (gameSession == null || !peer.isAllowPeerRelay()) {
             return;
         }
 

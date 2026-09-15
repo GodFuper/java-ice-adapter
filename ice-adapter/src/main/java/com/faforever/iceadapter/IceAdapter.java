@@ -61,7 +61,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
 
     public void start() {
         determineVersion();
-        log.info("Version: {}, Transport: {}", VERSION, iceOptions.getTransport());
+        log.info("Version: {}", VERSION);
 
         gpgNetServer = new GPGNetServer(iceOptions.getGpgnetPort(), iceOptions.getLobbyPort());
         rpcService = new RPCService(iceOptions.getRpcPort());
@@ -185,13 +185,8 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
             }
         }
 
-        GameSession newGameSession;
         RpcConnection rpcConnection = new RpcConnectionImpl(rpcService);
-        if (iceOptions.getTransport() == IceOptions.TransportMode.WEBRTC) {
-            newGameSession = new GameSession(iceOptions, webRtcConnectionFactory, rpcConnection);
-        } else {
-            newGameSession = new GameSession(rpcConnection, iceOptions);
-        }
+        GameSession newGameSession = new GameSession(iceOptions, webRtcConnectionFactory, rpcConnection);
 
         setGameSession(newGameSession);
         return newGameSession;

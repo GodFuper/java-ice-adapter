@@ -2,10 +2,8 @@ package com.faforever.iceadapter.services;
 
 import com.faforever.iceadapter.ice.CandidatesMessage;
 import com.faforever.iceadapter.ice.IceState;
-import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
-import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.webrtc.WebRtcConnectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +17,7 @@ public class IceTrigger implements PeerEventListener {
 
     @Override
     public void onIceStateChange(Peer peer, IceState oldState, IceState newState) {
-        if (isDontUseConnectService(peer) || peer.isDisableConnectService()) {
+        if (peer.isDisableConnectService()) {
             return;
         }
 
@@ -40,16 +38,8 @@ public class IceTrigger implements PeerEventListener {
     }
 
     @Override
-    public void onAddServerPeer(Peer peer, ServerPeer serverPeer) {
-        if (serverPeer == null) {
-            return;
-        }
-        serverPeer.addEventListener(this);
-    }
-
-    @Override
     public void onIceMessageFromRPC(Peer peer, CandidatesMessage message) {
-        if (isDontUseConnectService(peer)) {
+        if (peer.isDisableConnectService()) {
             return;
         }
 
@@ -62,19 +52,11 @@ public class IceTrigger implements PeerEventListener {
 
     @Override
     public void onConnectingChange(Peer peer, boolean connecting) {
-        if (peer instanceof MainPeer main) {
-            rpcConnection.onConnected(peer, connecting);
-        }
+        rpcConnection.onConnected(peer, connecting);
     }
 
     @Override
     public void onSendToRpc(Peer peer, CandidatesMessage message) {
-        if (peer instanceof MainPeer main) {
-            rpcConnection.sendToRpc(message);
-        }
-    }
-
-    private boolean isDontUseConnectService(Peer peer) {
-        return peer instanceof MainPeer mainPeer && mainPeer.getRelayPeer() != null;
+        rpcConnection.sendToRpc(message);
     }
 }

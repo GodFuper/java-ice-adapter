@@ -2,7 +2,7 @@ package com.faforever.iceadapter.ice.peer.modules.other;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.faforever.iceadapter.ice.peer.MainPeer;
+import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
@@ -17,7 +17,7 @@ class AutoSettingAllowCandidatesTest {
     private Peer peer;
 
     private Peer createTestPeer(Set<PeerModule> disabledModules) {
-        Peer p = new MainPeer(1, 2, "TestPlayer", true, 0, 0, false, disabledModules);
+        Peer p = new Peer(1, 2, "TestPlayer", true, 0, 0, false, disabledModules);
         p.init();
         p.initModules();
         return p;
@@ -106,5 +106,65 @@ class AutoSettingAllowCandidatesTest {
 
         moduleOpt.get().enable();
         assertTrue(moduleOpt.get().isEnabled());
+    }
+
+    @Test
+    @DisplayName("Should automatically cycle AllowCombination on failed connection attempt (DISCONNECTED state)")
+    void testCycleAllowCombinationOnFailedConnectionAttempt() throws InterruptedException {
+        peer = createTestPeer(Set.of());
+        assertEquals(AllowCombination.ALL, peer.getCombination());
+
+        // Connection attempt fails during CHECKING -> DISCONNECTED
+        peer.setIceState(IceState.CHECKING);
+        peer.setIceState(IceState.DISCONNECTED);
+        assertEquals(AllowCombination.REFLEXIVE_RELAY, peer.getCombination());
+
+        Thread.sleep(1050);
+
+        // Next attempt fails
+        peer.setIceState(IceState.CHECKING);
+        peer.setIceState(IceState.DISCONNECTED);
+        assertEquals(AllowCombination.HOST_RELAY, peer.getCombination());
+
+        Thread.sleep(1050);
+
+        // Next attempt fails
+        peer.setIceState(IceState.AWAITING_CANDIDATES);
+        peer.setIceState(IceState.DISCONNECTED);
+        assertEquals(AllowCombination.RELAY, peer.getCombination());
+
+        Thread.sleep(1050);
+
+        // Fails in RELAY -> wraps back to ALL
+        peer.setIceState(IceState.CHECKING);
+        peer.setIceState(IceState.DISCONNECTED);
+        assertEquals(AllowCombination.ALL, peer.getCombination());
+    }
+
+    @Test
+    @DisplayName("Should not double-change combination when both lostConnect and DISCONNECTED state fire rapidly")
+    void testDebounceStateChangeAfterLostConnect() {
+        peer = createTestPeer(Set.of());
+        assertEquals(AllowCombination.ALL, peer.getCombination());
+
+        // Normal disconnect sequence: lostConnect() followed by setIceState(DISCONNECTED)
+        peer.lostConnect();
+        peer.setIceState(IceState.DISCONNECTED);
+
+        assertEquals(
+                AllowCombination.REFLEXIVE_RELAY,
+                peer.getCombination(),
+                "Rapid lostConnect and DISCONNECTED state change should be debounced into single combination switch");
+    }
+
+    @Test
+    @DisplayName("Should not change combination on state change when disabled manually")
+    void testDisabledOnFailedAttempt() {
+        peer = createTestPeer(Set.of());
+        peer.setCombination(AllowCombination.HOST_RELAY, true);
+
+        peer.setIceState(IceState.CHECKING);
+        peer.setIceState(IceState.DISCONNECTED);
+        assertEquals(AllowCombination.HOST_RELAY, peer.getCombination(), "Combination must not change when disabled");
     }
 }

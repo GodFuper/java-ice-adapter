@@ -6,11 +6,10 @@ import com.faforever.iceadapter.ice.peer.PeerEventListener;
 import com.faforever.iceadapter.ice.peer.RelayPing;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.util.CollectionUtils;
+import com.faforever.iceadapter.util.Pair;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.StringJoiner;
-import java.util.function.Supplier;
 import javafx.beans.property.*;
 import lombok.Data;
 
@@ -24,7 +23,9 @@ public class PeerView implements PeerEventListener {
     private final StringProperty pairConnection = new SimpleStringProperty();
     private final StringProperty state = new SimpleStringProperty();
     private final StringProperty offer = new SimpleStringProperty();
-    private final StringProperty rtt = new SimpleStringProperty();
+    private final StringProperty directRtt = new SimpleStringProperty();
+    private final StringProperty relayRtt = new SimpleStringProperty();
+    private final StringProperty relayLogin = new SimpleStringProperty();
     private final StringProperty lastRecv = new SimpleStringProperty();
     private final StringProperty lastRelayRecv = new SimpleStringProperty();
     private final StringProperty echosReceived = new SimpleStringProperty();
@@ -36,8 +37,7 @@ public class PeerView implements PeerEventListener {
         private final BooleanProperty allowHost = new SimpleBooleanProperty();
         private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
         private final BooleanProperty allowRelay = new SimpleBooleanProperty();
-        private AllowCombination combination;
-        private Supplier<String> getFullCandidateInfo;
+        private AllowCombination combination = AllowCombination.ALL;
         private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
         private final BooleanProperty sendDirectAndRelay = new SimpleBooleanProperty(true);
     }
@@ -62,6 +62,11 @@ public class PeerView implements PeerEventListener {
         update(peer);
     }
 
+    @Override
+    public void onCombinationChange(Peer peer, AllowCombination combination) {
+        update(peer);
+    }
+
     public String prettyPrint() {
         return "%s (ID: %d)".formatted(login.get(), id.get());
     }
@@ -71,10 +76,44 @@ public class PeerView implements PeerEventListener {
 
         getPairConnection().set(peer.getStrCandidateTypes("\n"));
 
+        List<Pair<String, String>> pairs = peer.getCandidateTypes();
+        if (pairs != null && !pairs.isEmpty()) {
+            Pair<String, String> firstPair = pairs.get(0);
+            getLocalCand().set(firstPair.first() != null && !firstPair.first().isEmpty() ? firstPair.first() : "-");
+            getRemoteCand()
+                    .set(firstPair.second() != null && !firstPair.second().isEmpty() ? firstPair.second() : "-");
+        } else {
+            getLocalCand().set("-");
+            getRemoteCand().set("-");
+        }
+
         getState().set(String.valueOf(peer.getState()));
 
         getOffer().set(String.valueOf(peer.isLocalOffer()));
-        getRtt().set(rttStr(peer));
+
+        String direct = peer.getAverageRtt()
+                .filter(r -> r >= 0)
+                .map(Math::round)
+                .map(String::valueOf)
+                .orElse("–");
+        getDirectRtt().set(direct);
+
+        Map<Integer, RelayPing> rtts = peer.getRtts();
+        List<Integer> ids = peer.getBestRelays().stream().limit(1).toList();
+        String relay = "–";
+        String bestRelayLogin = "";
+        if (!CollectionUtils.isEmpty(ids)) {
+            for (Integer idPeer : ids) {
+                RelayPing ping = rtts.get(idPeer);
+                if (ping != null && ping.isActual()) {
+                    relay = String.valueOf(Math.round(ping.getRtt()));
+                    bestRelayLogin = ping.getRemoteLogin();
+                    break;
+                }
+            }
+        }
+        getRelayRtt().set(relay);
+        getRelayLogin().set(bestRelayLogin);
         getLastRecv()
                 .set(peer.getLastReceived().map(PeerView::formatElapsedTime).orElse("never"));
         getLastRelayRecv()
@@ -89,7 +128,7 @@ public class PeerView implements PeerEventListener {
                         .formatted(
                                 String.valueOf(peer.countEchosReceived()),
                                 String.valueOf(peer.countInvalidEchosReceived())));
-        getPeerRelaySupport().set(peer.isSupportRelay());
+        getPeerRelaySupport().set(peer.isAllowRelay());
 
         AllowCombination combination = peer.getCombination();
         getAdditionalInfo().getAllowHost().set(combination.isAllowHost());
@@ -98,29 +137,7 @@ public class PeerView implements PeerEventListener {
         getAdditionalInfo().getRelayPeerId().set(peer.getRelayPeerId().orElse(-1));
         getAdditionalInfo().setCombination(combination);
 
-        getAdditionalInfo().setGetFullCandidateInfo(peer::getFullInfoSelectedPair);
         getAdditionalInfo().getSendDirectAndRelay().set(peer.isAdditionalPacketForwarding());
-    }
-
-    private static String rttStr(Peer peer) {
-        StringJoiner joiner = new StringJoiner("\n");
-        joiner.add("direct: %s"
-                .formatted(peer.getAverageRtt()
-                        .map(Math::round)
-                        .map(String::valueOf)
-                        .orElse("–")));
-        Map<Integer, RelayPing> rtts = peer.getRtts();
-        List<Integer> ids = peer.getBestRelays().stream().limit(1).toList();
-        if (!CollectionUtils.isEmpty(ids)) {
-            for (Integer idPeer : ids) {
-                RelayPing ping = rtts.get(idPeer);
-                if (ping == null || !ping.isActual()) {
-                    continue;
-                }
-                joiner.add("[%s]: %d".formatted(ping.getRemoteLogin(), Math.round(ping.getRtt())));
-            }
-        }
-        return joiner.toString();
     }
 
     public static String formatElapsedTime(long timestamp) {

@@ -87,8 +87,6 @@ public interface UIAdapter {
      */
     String getGameState();
 
-    ObservableList<ServerPeerView> getServerPeerInfoList();
-
     /**
      * Returns an observable list of WebRTC statistics for peers using WebRTC transport.
      *
@@ -103,8 +101,6 @@ public interface UIAdapter {
      * @return observable list of peer info objects
      */
     ObservableList<PeerView> getPeerInfoList();
-
-    ObservableList<PeerView> getRelayPeersInfoList(int id);
 
     PeerView getPeerInfo(int id);
 
@@ -127,21 +123,17 @@ public interface UIAdapter {
      */
     void reconnect(PeerView peer);
 
-    /**
-     * Sets the allowed combination mode for the specified peer.
-     *
-     * @param peer        the target peer
-     * @param combination the combination mode to allow
-     */
-    void setAllowCombination(PeerView peer, AllowCombination combination);
-
-    void setRelayPeer(PeerView peer, PeerView relayPeer);
-
     void setAdditionalPacketForwarding(PeerView peer, boolean enabled);
 
-    boolean isEnabledManualCombinationConnection();
+    void setCombination(PeerView peer, AllowCombination combination);
 
-    boolean isEnabledAdditionalPeerInfo();
+    boolean isShowIpAddresses();
+
+    boolean isShowAllowCombination();
+
+    default boolean isAllowCombination() {
+        return isShowAllowCombination();
+    }
 
     /**
      * Initiates a graceful shutdown of the adapter and all associated components.

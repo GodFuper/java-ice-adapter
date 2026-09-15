@@ -2,7 +2,6 @@ package com.faforever.iceadapter.webrtc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.faforever.iceadapter.ice.peer.MainPeer;
 import com.faforever.iceadapter.ice.peer.Peer;
 import java.util.List;
 import java.util.Set;
@@ -93,7 +92,7 @@ class WebRtcTelemetryAndStatsTest {
         assertNotNull(stats.getRemoteCandidateType());
 
         // Create Peer and attach session
-        Peer peer = new MainPeer(1, 2, "PlayerB", true, 0, 0, false, Set.of());
+        Peer peer = new Peer(1, 2, "PlayerB", true, 0, 0, false, Set.of());
         peer.setWebRtcSession(sessionA);
 
         assertEquals(stats.getRttMs(), peer.getRtt());
@@ -102,11 +101,6 @@ class WebRtcTelemetryAndStatsTest {
                 stats.getLocalCandidateType(), peer.getCandidateTypes().get(0).first());
         assertEquals(
                 stats.getRemoteCandidateType(), peer.getCandidateTypes().get(0).second());
-
-        String fullInfo = peer.getFullInfoSelectedPair();
-        assertNotNull(fullInfo);
-        assertTrue(fullInfo.contains("WebRTC DataChannel: open"));
-        assertTrue(fullInfo.contains("RTT:"));
 
         peer.close();
         sessionB.close();

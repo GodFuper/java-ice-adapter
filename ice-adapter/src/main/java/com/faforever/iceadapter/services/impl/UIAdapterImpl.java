@@ -6,20 +6,16 @@ import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.dto.IceServerView;
 import com.faforever.iceadapter.dto.PeerView;
-import com.faforever.iceadapter.dto.ServerPeerView;
 import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
 import com.faforever.iceadapter.ice.IceServer;
 import com.faforever.iceadapter.ice.peer.Peer;
-import com.faforever.iceadapter.ice.peer.ServerPeer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.UIAdapter;
-import com.faforever.iceadapter.util.Pair;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +28,8 @@ public class UIAdapterImpl implements UIAdapter {
     private final IceAdapter iceAdapter;
 
     private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
-    private final Map<Pair<Integer, Integer>, ServerPeerView> uiServerPeers = new ConcurrentHashMap<>();
     private final Map<Integer, WebRtcPeerView> uiWebRtcPeers = new ConcurrentHashMap<>();
     private final ObservableList<PeerView> peerInfoList = FXCollections.observableArrayList();
-    private final ObservableList<ServerPeerView> serverPeerInfoList = FXCollections.observableArrayList();
     private final ObservableList<WebRtcPeerView> webRtcPeerInfoList = FXCollections.observableArrayList();
     private final ObservableList<IceServerView> iceServersList = FXCollections.observableArrayList();
 
@@ -108,48 +102,6 @@ public class UIAdapterImpl implements UIAdapter {
         return server != null && server.getGameState().isPresent()
                 ? server.getGameState().get().name()
                 : "UNKNOWN";
-    }
-
-    @Override
-    public ObservableList<ServerPeerView> getServerPeerInfoList() {
-        List<ServerPeer> peers =
-                getGameSession().map(IceGameSession::getServerPeers).orElse(Collections.emptyList());
-
-        Set<Pair<Integer, Integer>> keys = peers.stream()
-                .map(serverPeer -> new Pair<>(serverPeer.getFromId(), serverPeer.getRemoteId()))
-                .collect(Collectors.toSet());
-
-        Set<Pair<Integer, Integer>> ids = uiServerPeers.keySet();
-
-        if (!Objects.equals(ids, keys)) {
-            uiServerPeers.keySet().removeIf(pair -> !keys.contains(pair));
-        }
-
-        for (ServerPeer peer : peers) {
-            toServerPeerInfo(peer);
-        }
-
-        boolean structureChanged = serverPeerInfoList.size() != peers.size();
-        if (!structureChanged) {
-            for (int i = 0; i < serverPeerInfoList.size(); i++) {
-                ServerPeerView view = serverPeerInfoList.get(i);
-                Pair<Integer, Integer> key = new Pair<>(view.getFromId(), view.getRemoteId());
-                if (!keys.contains(key)) {
-                    structureChanged = true;
-                    break;
-                }
-            }
-        }
-
-        if (structureChanged) {
-            List<ServerPeerView> sorted = peers.stream()
-                    .sorted(Comparator.comparingInt(Peer::getRemoteId))
-                    .map(this::toServerPeerInfo)
-                    .toList();
-            serverPeerInfoList.setAll(sorted);
-        }
-
-        return serverPeerInfoList;
     }
 
     @Override
@@ -227,18 +179,6 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public ObservableList<PeerView> getRelayPeersInfoList(int id) {
-        Map<Integer, Peer> peers =
-                getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
-
-        return FXCollections.observableArrayList(peers.values().stream()
-                .filter(peer -> peer.isCanSelectForRelayPeerById(id))
-                .sorted((p1, p2) -> Comparator.comparingInt(Peer::getRemoteId).compare(p1, p2))
-                .map(this::toPeerInfo)
-                .collect(Collectors.toList()));
-    }
-
-    @Override
     public PeerView getPeerInfo(int id) {
         return uiPeers.get(id);
     }
@@ -277,23 +217,10 @@ public class UIAdapterImpl implements UIAdapter {
         return info;
     }
 
-    private ServerPeerView toServerPeerInfo(ServerPeer peer) {
-        ServerPeerView info = uiServerPeers.computeIfAbsent(new Pair<>(peer.getFromId(), peer.getRemoteId()), id -> {
-            ServerPeerView uiInfo = new ServerPeerView(
-                    peer.getFromId(), peer.getFrom().getRemoteLogin(), peer.getRemoteId(), peer.getRemoteLogin());
-            peer.addEventListener(uiInfo);
-            return uiInfo;
-        });
-
-        info.update(peer);
-
-        return info;
-    }
-
     private WebRtcPeerView toWebRtcPeerInfo(Peer peer) {
         WebRtcPeerView info = uiWebRtcPeers.computeIfAbsent(
                 peer.getRemoteId(), id -> new WebRtcPeerView(peer.getRemoteId(), peer.getRemoteLogin()));
-        info.update(peer);
+        info.update(peer, isShowIpAddresses());
 
         return info;
     }
@@ -308,36 +235,6 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public void setAllowCombination(PeerView peer, AllowCombination combination) {
-        if (peer == null || combination == null) {
-            return;
-        }
-        int id = peer.getId().get();
-        getGameSession().flatMap(session -> session.getPeer(id)).ifPresent(p -> p.setCombination(combination, true));
-    }
-
-    @Override
-    public void setRelayPeer(PeerView peer, PeerView relayPeerView) {
-        if (peer == null) {
-            return;
-        }
-
-        int idRelayPeer = relayPeerView != null ? relayPeerView.getId().get() : -1;
-
-        if (peer.getAdditionalInfo().getRelayPeerId().get() == idRelayPeer) {
-            return;
-        }
-
-        int id = peer.getId().get();
-        Optional<Peer> optPeer = getGameSession().flatMap(session -> session.getPeer(id));
-
-        Peer relayPeer = getGameSession()
-                .flatMap(session -> session.getPeer(idRelayPeer))
-                .orElse(null);
-        optPeer.ifPresent(p -> p.setRelayPeer(relayPeer));
-    }
-
-    @Override
     public void setAdditionalPacketForwarding(PeerView peer, boolean enabled) {
         if (peer == null) {
             return;
@@ -349,16 +246,25 @@ public class UIAdapterImpl implements UIAdapter {
     }
 
     @Override
-    public boolean isEnabledManualCombinationConnection() {
+    public void setCombination(PeerView peer, AllowCombination combination) {
+        if (peer == null || combination == null) {
+            return;
+        }
+        int id = peer.getId().get();
+        getGameSession().flatMap(session -> session.getPeer(id)).ifPresent(p -> p.setCombination(combination, true));
+    }
+
+    @Override
+    public boolean isShowIpAddresses() {
         return Optional.ofNullable(iceAdapter.getIceOptions())
-                .map(option -> option.isManualCombinationConnection() && !option.isForceRelay())
+                .map(IceOptions::isShowIpAddresses)
                 .orElse(false);
     }
 
     @Override
-    public boolean isEnabledAdditionalPeerInfo() {
+    public boolean isShowAllowCombination() {
         return Optional.ofNullable(iceAdapter.getIceOptions())
-                .map(IceOptions::isAdditionalInfoPeer)
+                .map(IceOptions::isShowAllowCombination)
                 .orElse(false);
     }
 

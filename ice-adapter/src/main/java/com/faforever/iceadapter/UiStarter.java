@@ -1,7 +1,5 @@
 package com.faforever.iceadapter;
 
-import com.faforever.iceadapter.ice.peer.MainPeer;
-
 public class UiStarter {
 
     public static void main(String[] args) {
@@ -26,10 +24,7 @@ public class UiStarter {
         adapter.onConnectToPeer("Player3", 124, true);
         adapter.onConnectToPeer("Player4", 125, false);
         adapter.getGameSession().getPeers().forEach((integer, peer) -> {
-            if (peer instanceof MainPeer mainPeer) {
-                mainPeer.setVersion(2);
-                mainPeer.setAllowRelay(true);
-            }
+            peer.setAllowRelay(true);
         });
     }
 }

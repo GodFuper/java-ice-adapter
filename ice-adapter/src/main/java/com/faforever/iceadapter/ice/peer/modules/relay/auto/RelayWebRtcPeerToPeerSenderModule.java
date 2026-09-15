@@ -47,9 +47,6 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
-        if (!peer.isSupportCommand() && !force) {
-            return;
-        }
         byte[] data = command.bytes();
         if (command.isOnlyDirect()) {
             sendViaWebRtc(data);
@@ -102,11 +99,6 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
             return;
         }
 
-        if (!peer.isSupportCommand()) {
-            sendViaWebRtc(data);
-            return;
-        }
-
         Peer relay = getPeerForRelay();
 
         if (relay == null) {
@@ -132,7 +124,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
         for (Integer id : peer.getBestRelays()) {
             Peer relay = gameSession.getPeer(id).orElse(null);
 
-            if (relay == null || !relay.isConnected()) {
+            if (relay == null || !relay.isConnected() || !relay.isAllowRelay()) {
                 continue;
             }
             return relay;

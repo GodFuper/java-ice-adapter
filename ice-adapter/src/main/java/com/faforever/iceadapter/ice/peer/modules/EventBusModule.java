@@ -6,7 +6,6 @@ import com.faforever.iceadapter.ice.IceState;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
-import com.faforever.iceadapter.ice.peer.ServerPeer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,18 +43,6 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     public void onCombinationChange(Peer peer, AllowCombination combination) {
         log.info("Peer {} change combination -> {}", peer.getPeerIdentifier(), combination);
         listeners.forEach(l -> callMethod(peer, "onCombinationChange", () -> l.onCombinationChange(peer, combination)));
-    }
-
-    @Override
-    public void onRelayPeerChange(Peer peer, Peer relay) {
-        log.info("Peer {} relayPeer changed. now = {}", peer.getPeerIdentifier(), relay);
-        listeners.forEach(l -> callMethod(peer, "onRelayPeerChange", () -> l.onRelayPeerChange(peer, relay)));
-    }
-
-    @Override
-    public void onAddServerPeer(Peer peer, ServerPeer serverPeer) {
-        log.info("Peer {} add server peer {}", peer.getPeerIdentifier(), serverPeer.getPeerIdentifier());
-        listeners.forEach(l -> callMethod(peer, "onAddServerPeer", () -> l.onAddServerPeer(peer, serverPeer)));
     }
 
     @Override
