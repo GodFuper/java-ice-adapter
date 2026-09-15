@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * Handles SDP offer/answer exchange, ICE candidate exchange, and data channel lifecycle.
  */
 @Slf4j
+@RequiredArgsConstructor
 public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObserver {
 
     private static final long GATHER_TIMEOUT_MS = 2500;
@@ -64,7 +66,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     private volatile boolean initialized = false;
 
     // Pending ICE candidates received before remote description is set
-    private final List<RTCIceCandidate> pendingCandidates;
+    private final List<RTCIceCandidate> pendingCandidates = new ArrayList<>();
 
     // Latches for async operations
     private final CountDownLatch connectedLatch = new CountDownLatch(1);
@@ -270,11 +272,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         void onRemoteDescriptionSet();
 
         default void onIceCandidate(String sdpMid, int sdpMLineIndex, String candidate) {}
-    }
-
-    public WebRtcSession(WebRtcConnectionFactory factory) {
-        this.factory = factory;
-        this.pendingCandidates = new ArrayList<>();
     }
 
     /**

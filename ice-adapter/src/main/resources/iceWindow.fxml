@@ -131,7 +131,12 @@
                                         <TableColumn fx:id="relayRttColumn" text="Relay" prefWidth="55" minWidth="45"/>
                                     </columns>
                                 </TableColumn>
-                                <TableColumn fx:id="lastColumn" text="Last Recv" prefWidth="75" minWidth="65"/>
+                                <TableColumn text="Last Recv">
+                                    <columns>
+                                        <TableColumn fx:id="lastColumn" text="Direct" prefWidth="65" minWidth="55"/>
+                                        <TableColumn fx:id="lastRelayColumn" text="Relay" prefWidth="65" minWidth="55"/>
+                                    </columns>
+                                </TableColumn>
                                 <TableColumn text="Allowed Candidates">
                                     <columns>
                                         <TableColumn fx:id="hostColumn" text="Host" prefWidth="42" minWidth="38"/>
@@ -140,7 +145,6 @@
                                     </columns>
                                 </TableColumn>
                                 <TableColumn fx:id="relaySupport" text="Peer Relay" prefWidth="65" minWidth="50"/>
-                                <TableColumn fx:id="lastRelayColumn" text="Last Recv Relay" prefWidth="85" minWidth="65"/>
                                 <TableColumn fx:id="echosRcvColumn" text="Echos S/F" prefWidth="70" minWidth="60"/>
                             </columns>
                         </TableView>

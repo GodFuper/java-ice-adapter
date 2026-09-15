@@ -77,7 +77,7 @@ public abstract class WebRtcConnectServiceCommon {
         closeWebRtcSession(peer);
 
         // Create WebRTC session
-        WebRtcSession webRtcSession = new WebRtcSession(WebRtcConnectionFactory.getInstance());
+        WebRtcSession webRtcSession = new WebRtcSession(iceGameSession.getWebRtcConnectionFactory());
 
         // Set up signaling service
         WebRtcSignalingService signalingService =

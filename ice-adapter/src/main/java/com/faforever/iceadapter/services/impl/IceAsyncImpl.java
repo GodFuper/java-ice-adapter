@@ -10,7 +10,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public class IceAsyncImpl implements IceAsync {
     private final ExecutorService executorService;
@@ -37,6 +39,9 @@ public class IceAsyncImpl implements IceAsync {
             try {
                 Thread.currentThread().setName(createNameForThread(methodName, getPeerName(peer)));
                 runnable.run();
+            } catch (Throwable t) {
+                log.error("Unhandled exception in async task '{}' for peer {}:", methodName, getPeerName(peer), t);
+                throw t;
             } finally {
                 Thread.currentThread().setName(name);
             }

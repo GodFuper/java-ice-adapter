@@ -56,19 +56,14 @@ public class GameSession implements IceGameSession {
     private volatile boolean gameEnded = false;
 
     // WebRTC fields
+    @Getter
     private WebRtcConnectionFactory webRtcConnectionFactory;
 
     /**
      * Primary constructor for WebRTC mode (with TCP RPC).
      */
     public GameSession(RpcConnection rpcConnection, IceOptions options) {
-        init(options);
-        this.webRtcConnectionFactory = WebRtcConnectionFactory.getInstance();
-        WebRtcConnectService controlledService = new WebRtcConnectServiceControlledImpl(messageService, this, iceAsync);
-        WebRtcConnectService notControlledService =
-                new WebRtcConnectServiceNotControlledImpl(messageService, this, iceAsync);
-        this.webRtcConnectService = new WebRtcConnectServiceHandler(controlledService, notControlledService);
-        this.iceTrigger = new IceTrigger(iceAsync, webRtcConnectService, rpcConnection);
+        this(options, WebRtcConnectionFactory.getInstance(), rpcConnection);
     }
 
     /**
