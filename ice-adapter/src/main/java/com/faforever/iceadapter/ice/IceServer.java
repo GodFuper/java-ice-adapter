@@ -8,7 +8,6 @@ import dev.onvoid.webrtc.RTCIceServer;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Pattern;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,15 +30,7 @@ public class IceServer {
     }
 
     public record ServerAddress(String host, int port, TransportProtocol transport) {
-        public ServerAddress(String host, int port) {
-            this(host, port, TransportProtocol.UDP);
-        }
-
         public String getHostName() {
-            return host;
-        }
-
-        public String getHostString() {
             return host;
         }
 
@@ -74,9 +65,6 @@ public class IceServer {
     private boolean auto = true;
     private CompletableFuture<OptionalDouble> roundTripTime = CompletableFuture.completedFuture(OptionalDouble.empty());
 
-    public static final Pattern urlPattern = Pattern.compile(
-            "(?<protocol>stun|turn|turns):(?<host>(\\w|\\.)+)(:(?<port>\\d+))?(\\?transport=(?<transport>(tcp|udp)))?");
-
     public boolean hasAcceptableLatency(double latency) {
         OptionalDouble rtt = roundTripTime.join();
         return rtt.isEmpty() || rtt.getAsDouble() < latency;
@@ -93,10 +81,6 @@ public class IceServer {
         } catch (Exception e) {
             return "Error";
         }
-    }
-
-    public boolean isStun() {
-        return type == TypeServer.STUN;
     }
 
     public boolean isTurn() {

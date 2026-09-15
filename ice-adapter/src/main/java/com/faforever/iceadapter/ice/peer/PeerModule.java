@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public enum PeerModule implements Comparator<PeerModule> {
+public enum PeerModule {
     EVENT_BUS(0, EventBusModule::new),
     FA_SOCKET_MODULE(1, peer -> {
         var module = new FASocketModule(peer);
@@ -41,8 +41,9 @@ public enum PeerModule implements Comparator<PeerModule> {
     WEBRTC_PEER_TO_PEER_LISTENER(WebRtcPeerToPeerListenerModule::new);
 
     @Getter
-    private static final List<PeerModule> sortedModules =
-            Stream.of(PeerModule.values()).sorted().toList();
+    private static final List<PeerModule> sortedModules = Stream.of(PeerModule.values())
+            .sorted(Comparator.comparingInt(PeerModule::getPriority))
+            .toList();
 
     private final int priority;
     private final Function<Peer, ModuleBase> createModule;
@@ -55,12 +56,5 @@ public enum PeerModule implements Comparator<PeerModule> {
         ModuleBase module = createModule.apply(peer);
         module.init();
         return module;
-    }
-
-    @Override
-    public int compare(PeerModule o1, PeerModule o2) {
-        return Comparator.comparingInt(PeerModule::getPriority)
-                .thenComparing(PeerModule::getPriority)
-                .compare(o1, o2);
     }
 }

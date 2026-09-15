@@ -89,6 +89,6 @@ public class IceWindow extends Application {
 
     public static void launch() {
         log.info("Launching ice window.");
-        launch(IceWindow.class, null);
+        launch(IceWindow.class);
     }
 }

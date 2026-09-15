@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents a peer in the current game session which we are connected to
@@ -140,10 +139,6 @@ public class Peer {
             int lobbyPort,
             Set<PeerModule> disabledModules) {
         this(0, remoteId, remoteLogin, localOffer, preferredPort, lobbyPort, false, disabledModules);
-    }
-
-    public Optional<Integer> getRelayPeerId() {
-        return Optional.empty();
     }
 
     public Integer getLocalPort() {
@@ -295,7 +290,9 @@ public class Peer {
 
         List<Pair<String, String>> pairs = new ArrayList<>();
         WebRtcSession.SessionStats s = webRtcSession.getStats();
-        if (StringUtils.isNotEmpty(s.getLocalCandidateType()) || StringUtils.isNotEmpty(s.getRemoteCandidateType())) {
+        boolean hasLocal = s.getLocalCandidateType() != null && !s.getLocalCandidateType().isEmpty();
+        boolean hasRemote = s.getRemoteCandidateType() != null && !s.getRemoteCandidateType().isEmpty();
+        if (hasLocal || hasRemote) {
             pairs.add(new Pair<>(s.getLocalCandidateType(), s.getRemoteCandidateType()));
         }
         return pairs;

@@ -38,7 +38,6 @@ public class PeerView implements PeerEventListener {
         private final BooleanProperty allowReflexive = new SimpleBooleanProperty();
         private final BooleanProperty allowRelay = new SimpleBooleanProperty();
         private AllowCombination combination = AllowCombination.ALL;
-        private final IntegerProperty relayPeerId = new SimpleIntegerProperty(-1);
         private final BooleanProperty sendDirectAndRelay = new SimpleBooleanProperty(true);
     }
 
@@ -65,10 +64,6 @@ public class PeerView implements PeerEventListener {
     @Override
     public void onCombinationChange(Peer peer, AllowCombination combination) {
         update(peer);
-    }
-
-    public String prettyPrint() {
-        return "%s (ID: %d)".formatted(login.get(), id.get());
     }
 
     public void update(Peer peer) {
@@ -134,7 +129,6 @@ public class PeerView implements PeerEventListener {
         getAdditionalInfo().getAllowHost().set(combination.isAllowHost());
         getAdditionalInfo().getAllowReflexive().set(combination.isAllowReflexive());
         getAdditionalInfo().getAllowRelay().set(combination.isAllowRelay());
-        getAdditionalInfo().getRelayPeerId().set(peer.getRelayPeerId().orElse(-1));
         getAdditionalInfo().setCombination(combination);
 
         getAdditionalInfo().getSendDirectAndRelay().set(peer.isAdditionalPacketForwarding());

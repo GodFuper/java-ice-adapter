@@ -10,7 +10,7 @@ public class UiStarter {
             "--gpgnet-port=5000",
             "--rpc-port=5001",
             "--lobby-port=5002",
-            "--manual-combination-connection=false",
+            "--show-allow-combination=false",
             "--manual-strategy-connection=false",
             "--debug-window=true",
             "--info-window=true"

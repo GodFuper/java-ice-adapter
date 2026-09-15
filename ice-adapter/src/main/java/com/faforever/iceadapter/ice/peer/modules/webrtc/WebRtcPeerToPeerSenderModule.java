@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListener {
 
     protected final Peer peer;
-    private volatile WebRtcSession webRtcSession;
     private boolean enabled = true;
 
     public WebRtcPeerToPeerSenderModule(Peer peer) {
@@ -26,15 +25,6 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
     @Override
     public void init() {
         peer.addEventListener(this);
-    }
-
-    /**
-     * Set the WebRTC session for this module.
-     * Called by GameSession when WebRTC session is created.
-     */
-    public void setWebRtcSession(WebRtcSession session) {
-        this.webRtcSession = session;
-        log.info("WebRtcPeerToPeerSenderModule: WebRTC session set for peer {}", peer.getPeerIdentifier());
     }
 
     @Override
@@ -52,7 +42,7 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
             return;
         }
 
-        WebRtcSession session = webRtcSession != null ? webRtcSession : peer.getWebRtcSession();
+        WebRtcSession session = peer.getWebRtcSession();
         if (session == null || !session.isConnected()) {
             return;
         }

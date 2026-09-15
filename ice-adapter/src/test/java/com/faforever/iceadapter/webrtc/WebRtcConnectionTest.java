@@ -2,7 +2,6 @@ package com.faforever.iceadapter.webrtc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.faforever.iceadapter.FafRpcCallbacks;
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidateType;
 import com.faforever.iceadapter.ice.CandidatesMessage;
@@ -205,54 +204,7 @@ class WebRtcConnectionTest {
         }
     }
 
-    /**
-     * Test that WebRtcMessageDispatcher correctly parses JSON-RPC iceMsg calls.
-     */
-    @Test
-    @DisplayName("WebRtcMessageDispatcher should parse iceMsg JSON-RPC calls")
-    void shouldParseIceMsgJsonRpc() throws Exception {
-        // Track dispatched messages
-        AtomicReference<CandidatesMessage> dispatchedMessage = new AtomicReference<>();
-        AtomicReference<Exception> errorRef = new AtomicReference<>();
 
-        // Create a mock FafRpcCallbacks that captures iceMsg calls
-        FafRpcCallbacks mockCallbacks = new FafRpcCallbacks() {
-            @Override
-            public void onHostGame(String mapName) {}
-
-            @Override
-            public void onJoinGame(String remotePlayerLogin, int remotePlayerId) {}
-
-            @Override
-            public void onConnectToPeer(String remotePlayerLogin, int remotePlayerId, boolean offer) {}
-
-            @Override
-            public void onDisconnectFromPeer(int remotePlayerId) {}
-
-            @Override
-            public void close() {}
-
-            @Override
-            public void sendToGpgNet(String header, Object... args) {}
-        };
-
-        WebRtcMessageDispatcher dispatcher = new WebRtcMessageDispatcher(mockCallbacks);
-
-        // Simulate receiving an iceMsg JSON-RPC call
-        String iceMsgJson =
-                "{\"method\":\"iceMsg\",\"params\":[1,\"{\\\"srcId\\\":1,\\\"destId\\\":2,\\\"password\\\":\\\"pwd\\\",\\\"ufrag\\\":\\\"uf\\\",\\\"candidates\\\":[]}\"]}";
-
-        // This will fail because there's no game session, but we can verify parsing happens
-        try {
-            dispatcher.handleMessage(iceMsgJson.getBytes(StandardCharsets.UTF_8), false);
-        } catch (Exception e) {
-            // Expected - no game session configured
-            errorRef.set(e);
-        }
-
-        // The dispatcher should have attempted to parse and route the message
-        // (it will fail at the game session lookup, which is expected)
-    }
 
     // ==================== Helper Methods ====================
 
