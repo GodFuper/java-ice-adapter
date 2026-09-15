@@ -631,24 +631,24 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         if (dc != null) {
             try {
                 dc.unregisterObserver();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("Error unregistering data channel observer", e);
             }
             try {
                 dc.close();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("Error closing data channel", e);
             }
             try {
                 dc.dispose();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("Error disposing data channel", e);
             }
         }
         if (pc != null) {
             try {
                 pc.close();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("Error closing peer connection", e);
             }
         }

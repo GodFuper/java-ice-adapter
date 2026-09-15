@@ -73,7 +73,7 @@ public final class WebRtcConnectionFactory {
             if (factory != null) {
                 try {
                     factory.dispose();
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.warn("Error disposing PeerConnectionFactory", e);
                 }
                 factory = null;
@@ -81,7 +81,7 @@ public final class WebRtcConnectionFactory {
             if (audioDeviceModule != null) {
                 try {
                     audioDeviceModule.dispose();
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.warn("Error disposing AudioDeviceModule", e);
                 }
                 audioDeviceModule = null;
