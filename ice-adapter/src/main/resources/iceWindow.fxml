@@ -374,6 +374,9 @@
                         <!-- Matrix: Connection -->
                         <Tab text="Connection Overview">
                             <TableView fx:id="matrixConnectionTable" editable="false" tableMenuButtonVisible="true">
+                                <placeholder>
+                                    <Label text="No active peers connected in this game session."/>
+                                </placeholder>
                                 <columns>
                                     <TableColumn fx:id="mConnPeerIdCol" text="ID" prefWidth="65"/>
                                     <TableColumn fx:id="mConnLoginCol" text="Login" prefWidth="130"/>
@@ -391,6 +394,9 @@
                         <!-- Matrix: Candidates -->
                         <Tab text="Candidate Endpoints">
                             <TableView fx:id="matrixCandidatesTable" editable="false" tableMenuButtonVisible="true">
+                                <placeholder>
+                                    <Label text="No active peers connected in this game session."/>
+                                </placeholder>
                                 <columns>
                                     <TableColumn fx:id="mCandPeerIdCol" text="ID" prefWidth="65"/>
                                     <TableColumn fx:id="mCandLoginCol" text="Login" prefWidth="130"/>
@@ -405,6 +411,9 @@
                         <!-- Matrix: DataChannel -->
                         <Tab text="DataChannels">
                             <TableView fx:id="matrixDataChannelTable" editable="false" tableMenuButtonVisible="true">
+                                <placeholder>
+                                    <Label text="No active peers connected in this game session."/>
+                                </placeholder>
                                 <columns>
                                     <TableColumn fx:id="mChanPeerIdCol" text="ID" prefWidth="65"/>
                                     <TableColumn fx:id="mChanLoginCol" text="Login" prefWidth="130"/>
@@ -421,6 +430,9 @@
                         <!-- Matrix: Transport -->
                         <Tab text="Transport &amp; Bandwidth">
                             <TableView fx:id="matrixTransportTable" editable="false" tableMenuButtonVisible="true">
+                                <placeholder>
+                                    <Label text="No active peers connected in this game session."/>
+                                </placeholder>
                                 <columns>
                                     <TableColumn fx:id="mTransPeerIdCol" text="ID" prefWidth="65"/>
                                     <TableColumn fx:id="mTransLoginCol" text="Login" prefWidth="130"/>

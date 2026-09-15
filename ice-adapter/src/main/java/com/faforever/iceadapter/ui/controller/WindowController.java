@@ -447,10 +447,14 @@ public class WindowController {
 
         ObservableList<WebRtcPeerView> webRtcList = adapter.getWebRtcPeerInfoList();
         if (matrixConnectionTable != null) {
-            matrixConnectionTable.setItems(webRtcList);
+            SortedList<WebRtcPeerView> sortedConn = new SortedList<>(webRtcList);
+            sortedConn.comparatorProperty().bind(matrixConnectionTable.comparatorProperty());
+            matrixConnectionTable.setItems(sortedConn);
         }
         if (matrixCandidatesTable != null) {
-            matrixCandidatesTable.setItems(webRtcList);
+            SortedList<WebRtcPeerView> sortedCand = new SortedList<>(webRtcList);
+            sortedCand.comparatorProperty().bind(matrixCandidatesTable.comparatorProperty());
+            matrixCandidatesTable.setItems(sortedCand);
             boolean showIp = adapter.isShowIpAddresses();
             if (mCandLocalAddrCol != null) {
                 mCandLocalAddrCol.setVisible(showIp);
@@ -460,10 +464,14 @@ public class WindowController {
             }
         }
         if (matrixDataChannelTable != null) {
-            matrixDataChannelTable.setItems(webRtcList);
+            SortedList<WebRtcPeerView> sortedChan = new SortedList<>(webRtcList);
+            sortedChan.comparatorProperty().bind(matrixDataChannelTable.comparatorProperty());
+            matrixDataChannelTable.setItems(sortedChan);
         }
         if (matrixTransportTable != null) {
-            matrixTransportTable.setItems(webRtcList);
+            SortedList<WebRtcPeerView> sortedTrans = new SortedList<>(webRtcList);
+            sortedTrans.comparatorProperty().bind(matrixTransportTable.comparatorProperty());
+            matrixTransportTable.setItems(sortedTrans);
         }
     }
 
@@ -936,6 +944,18 @@ public class WindowController {
                 adapter.getPeerInfoList() != null ? adapter.getPeerInfoList().size() : 0;
         if (peerCountLabel != null) {
             peerCountLabel.setText(count + (count == 1 ? " peer active" : " peers active"));
+        }
+
+        adapter.getWebRtcPeerInfoList();
+
+        if (mCandLocalAddrCol != null) {
+            boolean showIp = adapter.isShowIpAddresses();
+            if (mCandLocalAddrCol.isVisible() != showIp) {
+                mCandLocalAddrCol.setVisible(showIp);
+            }
+            if (mCandRemoteAddrCol != null && mCandRemoteAddrCol.isVisible() != showIp) {
+                mCandRemoteAddrCol.setVisible(showIp);
+            }
         }
 
         PeerView currentlySelected = peerTable.getSelectionModel().getSelectedItem();

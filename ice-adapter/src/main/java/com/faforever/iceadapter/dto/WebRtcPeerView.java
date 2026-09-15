@@ -2,6 +2,7 @@ package com.faforever.iceadapter.dto;
 
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.webrtc.WebRtcSession;
+import java.util.Locale;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -82,16 +83,18 @@ public class WebRtcPeerView {
                 remoteAddress.set("-");
             }
 
-            rttMs.set(String.format("%.1f", stats.getRttMs()));
-            echoRttMs.set(String.format("%.1f", peer.getEchoRtt()));
+            rttMs.set(String.format(Locale.US, "%.1f", stats.getRttMs()));
+            echoRttMs.set(String.format(Locale.US, "%.1f", peer.getEchoRtt()));
 
             if (stats.getAvailableOutgoingBitrate() > 0) {
-                availableOutgoingBitrate.set(String.format("%.1f kbps", stats.getAvailableOutgoingBitrate() / 1000.0));
+                availableOutgoingBitrate.set(
+                        String.format(Locale.US, "%.1f kbps", stats.getAvailableOutgoingBitrate() / 1000.0));
             } else {
                 availableOutgoingBitrate.set("-");
             }
             if (stats.getAvailableIncomingBitrate() > 0) {
-                availableIncomingBitrate.set(String.format("%.1f kbps", stats.getAvailableIncomingBitrate() / 1000.0));
+                availableIncomingBitrate.set(
+                        String.format(Locale.US, "%.1f kbps", stats.getAvailableIncomingBitrate() / 1000.0));
             } else {
                 availableIncomingBitrate.set("-");
             }
@@ -117,7 +120,7 @@ public class WebRtcPeerView {
             localAddress.set("-");
             remoteAddress.set("-");
             rttMs.set("-");
-            echoRttMs.set(String.format("%.1f", peer.getEchoRtt()));
+            echoRttMs.set(String.format(Locale.US, "%.1f", peer.getEchoRtt()));
             availableOutgoingBitrate.set("-");
             availableIncomingBitrate.set("-");
             dataChannelLabel.set("-");
@@ -135,11 +138,11 @@ public class WebRtcPeerView {
         if (bytes < 1024) {
             return bytes + " B";
         } else if (bytes < 1024 * 1024) {
-            return String.format("%.2f KB", bytes / 1024.0);
+            return String.format(Locale.US, "%.2f KB", bytes / 1024.0);
         } else if (bytes < 1024L * 1024 * 1024) {
-            return String.format("%.2f MB", bytes / (1024.0 * 1024));
+            return String.format(Locale.US, "%.2f MB", bytes / (1024.0 * 1024));
         } else {
-            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+            return String.format(Locale.US, "%.2f GB", bytes / (1024.0 * 1024 * 1024));
         }
     }
 }
