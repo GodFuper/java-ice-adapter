@@ -40,13 +40,13 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-blackbird:2.21.3")
     implementation("com.github.luben:zstd-jni:1.5.7-9")
     implementation "dev.onvoid.webrtc:webrtc-java:${webRtcVersion}"
-    def isArm = System.getProperty("os.arch").toLowerCase().matches(".*(aarch64|arm64).*")
     if (javafxPlatform == "win") {
-        def classifier = isArm ? "windows-aarch64" : "windows-x86_64"
-        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: classifier
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-aarch64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
     } else {
-        def classifier = isArm ? "linux-aarch64" : "linux-x86_64"
-        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: classifier
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch32"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
     }
 
 
