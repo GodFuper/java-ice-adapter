@@ -204,8 +204,6 @@ class WebRtcConnectionTest {
         }
     }
 
-
-
     // ==================== Helper Methods ====================
 
     private RTCConfiguration createLocalConfig() {

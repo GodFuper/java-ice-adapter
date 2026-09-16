@@ -290,8 +290,10 @@ public class Peer {
 
         List<Pair<String, String>> pairs = new ArrayList<>();
         WebRtcSession.SessionStats s = webRtcSession.getStats();
-        boolean hasLocal = s.getLocalCandidateType() != null && !s.getLocalCandidateType().isEmpty();
-        boolean hasRemote = s.getRemoteCandidateType() != null && !s.getRemoteCandidateType().isEmpty();
+        boolean hasLocal =
+                s.getLocalCandidateType() != null && !s.getLocalCandidateType().isEmpty();
+        boolean hasRemote = s.getRemoteCandidateType() != null
+                && !s.getRemoteCandidateType().isEmpty();
         if (hasLocal || hasRemote) {
             pairs.add(new Pair<>(s.getLocalCandidateType(), s.getRemoteCandidateType()));
         }
