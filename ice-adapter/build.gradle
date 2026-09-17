@@ -41,13 +41,25 @@ dependencies {
     implementation("com.github.luben:zstd-jni:1.5.7-9")
     implementation "dev.onvoid.webrtc:webrtc-java:${webRtcVersion}"
 
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-aarch64"
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-x86_64"
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-aarch64"
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch64"
-    implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch32"
+    if (javafxPlatform == "win") {
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-aarch64"
+    } else if (javafxPlatform == "linux") {
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch32"
+    } else if (javafxPlatform == "mac") {
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-aarch64"
+    } else {
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-aarch64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-aarch64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch64"
+        implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch32"
+    }
 
     if (javafxClasspath == "compileOnly") {
         compileOnly("org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}")
@@ -69,6 +81,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("org.mockito:mockito-core:$mockitoVersion")
     testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
+
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-aarch64"
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch64"
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch32"
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-x86_64"
+    testRuntimeOnly group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-aarch64"
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")

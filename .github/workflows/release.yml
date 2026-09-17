@@ -52,6 +52,14 @@ jobs:
             --stacktrace \
             :ice-adapter:shadowJar
 
+      - name: Build Mac Files
+        run: |
+          ./gradlew \
+            -Pversion="${{ inputs.version }}" \
+            -PjavafxPlatform=mac \
+            --stacktrace \
+            :ice-adapter:shadowJar
+
       - name: Build No-JavaFX Files
         run: |
           ./gradlew \
