@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Timeout;
  * 4. Late duplicate Offer/Answer/Candidate messages do not break established connections.
  */
 @Slf4j
+@Tag("integration")
 @DisplayName("WebRTC Reconnect Integration")
 class WebRtcReconnectIntegrationTest extends WebRtcPeerConnectionIntegrationBase {
 
