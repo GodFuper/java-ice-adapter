@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.SAME_THREAD)
+@Tag("integration")
 @DisplayName("WebRTC STUN Connection")
 class WebRtcStunConnectionTest {
 

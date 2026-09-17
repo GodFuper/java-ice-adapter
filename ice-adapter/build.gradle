@@ -101,6 +101,10 @@ spotless {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (project.hasProperty('no-integration')) {
+            excludeTags 'integration'
+        }
+    }
     jvmArgs('--enable-native-access=ALL-UNNAMED')
 }

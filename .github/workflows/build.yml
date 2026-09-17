@@ -19,7 +19,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
       - name: Run Checks
-        run: ./gradlew --stacktrace -PjavafxPlatform=linux build
+        run: ./gradlew --stacktrace -PjavafxPlatform=linux -Pno-integration build
   run-infer:
     runs-on: ubuntu-latest
     steps:
