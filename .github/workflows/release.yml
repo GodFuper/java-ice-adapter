@@ -12,8 +12,9 @@ on:
 
 jobs:
   release:
-
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -29,7 +30,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Run Checks
-        run: ./gradlew --stacktrace -PjavafxPlatform=linux -Pno-integration build
+        run: ./gradlew --stacktrace -PjavafxPlatform=linux -Pno-integration test
 
       - name: Build Windows Files
         run: |
@@ -43,6 +44,9 @@ jobs:
         run: |
           ./gradlew -Pversion="${{ github.event.inputs.version }}" -PjavafxPlatform=linux -PjavafxClasspath=compileOnly --stacktrace :ice-adapter:shadowJar
 
+      - name: List Artifacts
+        run: |
+          ls -la ice-adapter/build/libs/
 
       - name: Create Draft Release
         id: create_release
@@ -54,5 +58,6 @@ jobs:
           prerelease: true
           generateReleaseNotes: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: ice-adapter/build/libs/faf-ice-adapter-*.jar
+          artifacts: "ice-adapter/build/libs/faf-ice-adapter-*.jar"
+          allowUpdates: true
           
