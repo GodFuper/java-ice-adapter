@@ -52,7 +52,7 @@ public class CommandModule implements ModuleBase, PeerEventListener {
     private void executeCommand(CommandBase command) {
         try {
             command.execute(peer);
-            log.info("Executing command {} from {}", command, peer.getPeerIdentifier());
+            log.trace("Executing command {} from {}", command, peer.getPeerIdentifier());
         } catch (Exception e) {
             log.error("Error while executing command {} from {}", command, peer.getPeerIdentifier(), e);
         }
