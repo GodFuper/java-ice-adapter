@@ -41,14 +41,14 @@ dependencies {
     implementation("com.github.luben:zstd-jni:1.5.7-9")
     implementation "dev.onvoid.webrtc:webrtc-java:${webRtcVersion}"
 
-    if (javafxPlatform == "win") {
+    if (webrtcPlatform == "win") {
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-x86_64"
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "windows-aarch64"
-    } else if (javafxPlatform == "linux") {
+    } else if (webrtcPlatform == "linux") {
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-x86_64"
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch64"
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "linux-aarch32"
-    } else if (javafxPlatform == "mac") {
+    } else if (webrtcPlatform == "mac") {
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-x86_64"
         implementation group: "dev.onvoid.webrtc", name: "webrtc-java", version: { webRtcVersion }, classifier: "macos-aarch64"
     } else {
@@ -94,6 +94,17 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
 }
 
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.faforever.iceadapter.IceAdapter',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Enable-Native-Access': 'ALL-UNNAMED'
+        )
+    }
+}
+
 shadowJar {
     def plattformSuffix = javafxPlatform
     if(javafxClasspath == "compileOnly") {
@@ -104,6 +115,8 @@ shadowJar {
     manifest {
         attributes(
                 'Main-Class': 'com.faforever.iceadapter.IceAdapter',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
                 'Enable-Native-Access': 'ALL-UNNAMED'
         )
     }

@@ -12,7 +12,7 @@ echo "============================================"
 # --- Build ---
 echo ""
 echo "[1/3] Building JARs..."
-./gradlew -PjavafxPlatform="$PLATFORM" -PjavafxClasspath="$CLASSPATH" \
+./gradlew -PjavafxPlatform="$PLATFORM" -PwebrtcPlatform="$PLATFORM" -PjavafxClasspath="$CLASSPATH" \
     :client:shadowJar :server:shadowJar :ice-adapter:shadowJar
 
 # --- Copy JARs to root ---

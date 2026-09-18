@@ -12,7 +12,7 @@ echo ============================================
 REM --- Build ---
 echo.
 echo [1/3] Building JARs...
-call gradlew.bat -PjavafxPlatform=%PLATFORM% -PjavafxClasspath=%CLASSPATH% :client:shadowJar :server:shadowJar :ice-adapter:shadowJar
+call gradlew.bat -PjavafxPlatform=%PLATFORM% -PwebrtcPlatform=%PLATFORM% -PjavafxClasspath=%CLASSPATH% :client:shadowJar :server:shadowJar :ice-adapter:shadowJar
 if errorlevel 1 (
     echo ERROR: Build failed!
     exit /b 1

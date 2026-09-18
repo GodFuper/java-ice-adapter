@@ -33,6 +33,7 @@ jobs:
           ./gradlew \
             --stacktrace \
             -PjavafxPlatform=linux \
+            -PwebrtcPlatform=linux \
             -Pno-integration \
             test
 
@@ -41,6 +42,7 @@ jobs:
           ./gradlew \
             -Pversion="${{ inputs.version }}" \
             -PjavafxPlatform=win \
+            -PwebrtcPlatform=win \
             --stacktrace \
             :ice-adapter:shadowJar
 
@@ -49,6 +51,7 @@ jobs:
           ./gradlew \
             -Pversion="${{ inputs.version }}" \
             -PjavafxPlatform=linux \
+            -PwebrtcPlatform=linux \
             --stacktrace \
             :ice-adapter:shadowJar
 
@@ -57,6 +60,7 @@ jobs:
           ./gradlew \
             -Pversion="${{ inputs.version }}" \
             -PjavafxPlatform=mac \
+            -PwebrtcPlatform=mac \
             --stacktrace \
             :ice-adapter:shadowJar
 
@@ -65,6 +69,7 @@ jobs:
           ./gradlew \
             -Pversion="${{ inputs.version }}" \
             -PjavafxPlatform=linux \
+            -PwebrtcPlatform=all \
             -PjavafxClasspath=compileOnly \
             --stacktrace \
             :ice-adapter:shadowJar

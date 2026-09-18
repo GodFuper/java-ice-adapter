@@ -19,7 +19,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
       - name: Run Checks
-        run: ./gradlew --stacktrace -PjavafxPlatform=linux -Pno-integration build
+        run: ./gradlew --stacktrace -PjavafxPlatform=linux -PwebrtcPlatform=linux -Pno-integration build
   run-infer:
     runs-on: ubuntu-latest
     steps:
@@ -30,5 +30,5 @@ jobs:
       - name : run infer action
         uses: docker://ghcr.io/martinwitt/infer-train:master
         with:
-            build-command: "./gradlew --stacktrace -PjavafxPlatform=linux build"
+            build-command: "./gradlew --stacktrace -PjavafxPlatform=linux -PwebrtcPlatform=linux build"
             use-annotations: "true"
