@@ -307,6 +307,20 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             AllowCombination combination,
             DataChannelMessageHandler messageHandler,
             SessionStateHandler stateHandler) {
+        init(offerer, "gameData", iceServers, options, combination, messageHandler, stateHandler);
+    }
+
+    /**
+     * Initialize the session with configuration, options, combination, data channel label, and callbacks.
+     */
+    public synchronized void init(
+            boolean offerer,
+            String channelLabel,
+            List<IceServer> iceServers,
+            IceOptions options,
+            AllowCombination combination,
+            DataChannelMessageHandler messageHandler,
+            SessionStateHandler stateHandler) {
         this.isOfferer = offerer;
         this.messageHandler = messageHandler;
         this.stateHandler = stateHandler;
@@ -355,11 +369,13 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         peerConnection = factory.getFactory().createPeerConnection(config, this);
         if (isOfferer) {
+            String label = channelLabel != null && !channelLabel.isBlank() ? channelLabel : "gameData";
             RTCDataChannelInit init = new RTCDataChannelInit();
             init.ordered = true;
-            this.dataChannel = peerConnection.createDataChannel("fa-data", init);
+            this.dataChannel = peerConnection.createDataChannel(label, init);
             this.dataChannel.registerObserver(this);
-            log.info("Created local data channel 'fa-data' for offerer");
+            stats.setDataChannelLabel(label);
+            log.info("Created local data channel '{}' for offerer", label);
         }
         initialized = true;
 
@@ -699,6 +715,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     public void onDataChannel(RTCDataChannel dataChannel) {
         log.info("Remote data channel received: label={}", dataChannel.getLabel());
         this.dataChannel = dataChannel;
+        stats.setDataChannelLabel(dataChannel.getLabel());
         dataChannel.registerObserver(this);
         if (dataChannel.getState() == RTCDataChannelState.OPEN) {
             connected = true;

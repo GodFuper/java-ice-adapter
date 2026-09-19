@@ -1,8 +1,14 @@
 package com.faforever.iceadapter.ice;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
- * Represents a candidate to be sent/received via IceMessage
+ * Represents a candidate to be sent/received via IceMessage.
+ * Serializes both standard WebRTC candidate string and legacy fields.
  */
+@JsonSerialize(using = CandidatePacketSerializer.class)
+@JsonDeserialize(using = CandidatePacketDeserializer.class)
 public record CandidatePacket(
         String foundation,
         String protocol,
