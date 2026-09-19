@@ -15,16 +15,7 @@ public class CandidatePacketSerializationTest {
     @DisplayName("Should serialize CandidatePacket with both WebRTC standard candidate string and legacy fields")
     void shouldSerializeToWebRtcAndLegacyFields() throws Exception {
         CandidatePacket packet = new CandidatePacket(
-                "423499824",
-                "udp",
-                2113937151L,
-                "192.168.1.100",
-                50002,
-                CandidateType.HOST_CANDIDATE,
-                0,
-                "1",
-                null,
-                0);
+                "423499824", "udp", 2113937151L, "192.168.1.100", 50002, CandidateType.HOST_CANDIDATE, 0, "1", null, 0);
 
         String json = objectMapper.writeValueAsString(packet);
         JsonNode node = objectMapper.readTree(json);
@@ -45,7 +36,8 @@ public class CandidatePacketSerializationTest {
     @Test
     @DisplayName("Should deserialize from Go Pion / WebRTC candidate format")
     void shouldDeserializeFromGoPionFormat() throws Exception {
-        String goPionJson = """
+        String goPionJson =
+                """
                 {
                     "candidate": "candidate:423499824 1 udp 2113937151 192.168.1.100 50002 typ host",
                     "sdpMid": "0",
@@ -66,7 +58,8 @@ public class CandidatePacketSerializationTest {
     @Test
     @DisplayName("Should deserialize from legacy Java FAF candidate format")
     void shouldDeserializeFromLegacyFormat() throws Exception {
-        String legacyJson = """
+        String legacyJson =
+                """
                 {
                     "foundation": "423499824",
                     "protocol": "udp",

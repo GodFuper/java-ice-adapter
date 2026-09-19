@@ -47,7 +47,6 @@ public class CandidatePacketDeserializer extends JsonDeserializer<CandidatePacke
                 : null;
         int relPort = node.has("relPort") ? node.get("relPort").asInt() : 0;
 
-        return new CandidatePacket(
-                foundation, protocol, priority, ip, port, type, generation, id, relAddr, relPort);
+        return new CandidatePacket(foundation, protocol, priority, ip, port, type, generation, id, relAddr, relPort);
     }
 }
