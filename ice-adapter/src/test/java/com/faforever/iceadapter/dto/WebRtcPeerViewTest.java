@@ -111,4 +111,27 @@ class WebRtcPeerViewTest {
         assertEquals("-", view.getRttMs().get());
         assertEquals("35.0", view.getEchoRttMs().get());
     }
+
+    @Test
+    void testUpdateWithMultipleDataChannels() {
+        Peer peer = mock(Peer.class);
+        when(peer.getEchoRtt()).thenReturn(20.0f);
+
+        WebRtcSession session = mock(WebRtcSession.class);
+        WebRtcSession.SessionStats stats = new WebRtcSession.SessionStats();
+        stats.setDataChannel("gameData", "open", 10, 20, 1024, 2048);
+        stats.setDataChannel("controlData", "open", 5, 5, 256, 256);
+
+        when(session.getStats()).thenReturn(stats);
+        when(peer.getWebRtcSession()).thenReturn(session);
+
+        WebRtcPeerView view = new WebRtcPeerView(10, "MultiChannelPlayer");
+        view.update(peer, true);
+
+        assertEquals("open", view.getDataChannelState().get());
+        assertEquals("15", view.getMessagesSent().get());
+        assertEquals("25", view.getMessagesReceived().get());
+        assertEquals("1.25 KB", view.getBytesSent().get());
+        assertEquals("2.25 KB", view.getBytesReceived().get());
+    }
 }

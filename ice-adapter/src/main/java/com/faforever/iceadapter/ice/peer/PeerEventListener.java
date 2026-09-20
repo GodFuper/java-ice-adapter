@@ -18,9 +18,13 @@ public interface PeerEventListener {
 
     default void onHandleData(Peer peer, byte[] data) {}
 
+    default void onHandleGameData(Peer peer, byte[] data) {}
+
     default void onHandleCommand(Peer peer, CommandBase command) {}
 
     default void onSendToPeer(Peer peer, byte[] data) {}
+
+    default void onSendGameData(Peer peer, byte[] data) {}
 
     default void onSendCommand(Peer peer, CommandBase command, boolean force) {}
 

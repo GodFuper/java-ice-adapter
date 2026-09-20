@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.ui.controller;
 
 import com.faforever.iceadapter.dto.PeerView;
+import com.faforever.iceadapter.dto.WebRtcDataChannelView;
 import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.UIAdapter;
@@ -104,16 +105,16 @@ public class WindowController {
     private TableColumn<PeerView, String> loginColumn;
 
     @FXML
-    private TableColumn<PeerView, String> localCandColumn;
-
-    @FXML
-    private TableColumn<PeerView, String> remoteCandColumn;
-
-    @FXML
     private TableColumn<PeerView, String> stateColumn;
 
     @FXML
     private TableColumn<PeerView, String> offerColumn;
+
+    @FXML
+    private TableColumn<PeerView, String> localCandColumn;
+
+    @FXML
+    private TableColumn<PeerView, String> remoteCandColumn;
 
     @FXML
     private TableColumn<PeerView, String> directRttColumn;
@@ -128,9 +129,6 @@ public class WindowController {
     private TableColumn<PeerView, String> lastRelayColumn;
 
     @FXML
-    private TableColumn<PeerView, String> echosRcvColumn;
-
-    @FXML
     private TableColumn<PeerView, Boolean> hostColumn;
 
     @FXML
@@ -142,7 +140,10 @@ public class WindowController {
     @FXML
     private TableColumn<PeerView, Boolean> relaySupport;
 
-    // Inspector Pane Elements
+    @FXML
+    private TableColumn<PeerView, String> echosRcvColumn;
+
+    // Inspector Pane Components
     @FXML
     private VBox inspectorContainer;
 
@@ -163,15 +164,6 @@ public class WindowController {
 
     @FXML
     private Button reconnectPeerButton;
-
-    @FXML
-    private CheckBox additionalPacketForwardingCheckbox;
-
-    @FXML
-    private VBox allowCombinationPane;
-
-    @FXML
-    private ComboBox<AllowCombination> allowCombinationComboBox;
 
     // WebRTC Inspector Fields
     @FXML
@@ -234,7 +226,16 @@ public class WindowController {
     @FXML
     private Label webrtcBitrateInLabel;
 
-    // Matrix Tables
+    @FXML
+    private CheckBox additionalPacketForwardingCheckbox;
+
+    @FXML
+    private VBox allowCombinationPane;
+
+    @FXML
+    private ComboBox<AllowCombination> allowCombinationComboBox;
+
+    // Global WebRTC Matrix Tabs
     @FXML
     private TableView<WebRtcPeerView> matrixConnectionTable;
 
@@ -287,31 +288,31 @@ public class WindowController {
     private TableColumn<WebRtcPeerView, String> mCandRemoteAddrCol;
 
     @FXML
-    private TableView<WebRtcPeerView> matrixDataChannelTable;
+    private TableView<WebRtcDataChannelView> matrixDataChannelTable;
 
     @FXML
-    private TableColumn<WebRtcPeerView, Integer> mChanPeerIdCol;
+    private TableColumn<WebRtcDataChannelView, Integer> mChanPeerIdCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanLoginCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanLoginCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanLabelCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanLabelCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanStateCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanStateCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanMsgSentCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanMsgSentCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanMsgRecvCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanMsgRecvCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanBytesSentCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanBytesSentCol;
 
     @FXML
-    private TableColumn<WebRtcPeerView, String> mChanBytesRecvCol;
+    private TableColumn<WebRtcDataChannelView, String> mChanBytesRecvCol;
 
     @FXML
     private TableView<WebRtcPeerView> matrixTransportTable;
@@ -464,7 +465,8 @@ public class WindowController {
             }
         }
         if (matrixDataChannelTable != null) {
-            SortedList<WebRtcPeerView> sortedChan = new SortedList<>(webRtcList);
+            ObservableList<WebRtcDataChannelView> chanList = adapter.getWebRtcDataChannelsList();
+            SortedList<WebRtcDataChannelView> sortedChan = new SortedList<>(chanList);
             sortedChan.comparatorProperty().bind(matrixDataChannelTable.comparatorProperty());
             matrixDataChannelTable.setItems(sortedChan);
         }
@@ -662,9 +664,82 @@ public class WindowController {
         // DataChannels Tab
         mChanPeerIdCol.setCellValueFactory(
                 cellData -> cellData.getValue().getPeerId().asObject());
+        mChanPeerIdCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Integer peerId, boolean empty) {
+                super.updateItem(peerId, empty);
+                if (empty || peerId == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    int index = getIndex();
+                    var items = getTableView() != null ? getTableView().getItems() : null;
+                    if (index > 0 && items != null && index < items.size()) {
+                        WebRtcDataChannelView prev = items.get(index - 1);
+                        if (prev != null && prev.getPeerId().get() == peerId) {
+                            setText("");
+                            return;
+                        }
+                    }
+                    setText(String.valueOf(peerId));
+                }
+            }
+        });
+
         mChanLoginCol.setCellValueFactory(cellData -> cellData.getValue().getLogin());
-        mChanLabelCol.setCellValueFactory(cellData -> cellData.getValue().getDataChannelLabel());
-        mChanStateCol.setCellValueFactory(cellData -> cellData.getValue().getDataChannelState());
+        mChanLoginCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String login, boolean empty) {
+                super.updateItem(login, empty);
+                if (empty || login == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    int index = getIndex();
+                    var items = getTableView() != null ? getTableView().getItems() : null;
+                    if (index > 0 && items != null && index < items.size()) {
+                        WebRtcDataChannelView prev = items.get(index - 1);
+                        WebRtcDataChannelView current = index < items.size() ? items.get(index) : null;
+                        if (prev != null
+                                && current != null
+                                && prev.getPeerId().get() == current.getPeerId().get()
+                                && Objects.equals(prev.getLogin().get(), login)) {
+                            setText("");
+                            return;
+                        }
+                    }
+                    setText(login);
+                }
+            }
+        });
+
+        matrixDataChannelTable.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(WebRtcDataChannelView item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setStyle("");
+                } else {
+                    int index = getIndex();
+                    var items = getTableView() != null ? getTableView().getItems() : null;
+                    if (index > 0 && items != null && index < items.size()) {
+                        WebRtcDataChannelView prev = items.get(index - 1);
+                        if (prev != null
+                                && prev.getPeerId().get() != item.getPeerId().get()) {
+                            setStyle(
+                                    "-fx-border-color: rgba(255, 255, 255, 0.08) transparent transparent transparent; -fx-border-width: 1 0 0 0;");
+                        } else {
+                            setStyle("");
+                        }
+                    } else {
+                        setStyle("");
+                    }
+                }
+            }
+        });
+
+        mChanLabelCol.setCellValueFactory(cellData -> cellData.getValue().getLabel());
+        mChanStateCol.setCellValueFactory(cellData -> cellData.getValue().getState());
         mChanMsgSentCol.setCellValueFactory(cellData -> cellData.getValue().getMessagesSent());
         mChanMsgRecvCol.setCellValueFactory(cellData -> cellData.getValue().getMessagesReceived());
         mChanBytesSentCol.setCellValueFactory(cellData -> cellData.getValue().getBytesSent());
@@ -947,6 +1022,7 @@ public class WindowController {
         }
 
         adapter.getWebRtcPeerInfoList();
+        adapter.getWebRtcDataChannelsList();
 
         if (mCandLocalAddrCol != null) {
             boolean showIp = adapter.isShowIpAddresses();

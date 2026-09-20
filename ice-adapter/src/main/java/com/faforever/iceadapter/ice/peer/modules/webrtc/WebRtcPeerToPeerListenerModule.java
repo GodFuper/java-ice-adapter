@@ -8,6 +8,7 @@ import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
+import com.faforever.iceadapter.webrtc.WebRtcSession;
 import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,25 +34,40 @@ public class WebRtcPeerToPeerListenerModule implements ModuleBase, PeerEventList
     }
 
     /**
-     * Called by WebRtcSession when a message is received from the data channel.
+     * Called by WebRtcSession when a message is received from a data channel.
      */
-    public void onMessageReceived(byte[] data, boolean isBinary) {
+    public void onMessageReceived(String channelLabel, byte[] data, boolean isBinary) {
         if (!enabled || peer.isClosing()) {
             return;
         }
 
-        if (isBinary) {
-            // Binary data from data channel - treat as raw peer data
-            handlerData(peer, data, data.length);
+        if (!isBinary) {
+            // Text data - could be signaling or control messages
+            // For now, ignore text data (signaling goes through RPC)
+            log.trace("Received text data from WebRTC data channel (ignored): {} bytes", data.length);
             return;
         }
 
-        // Text data - could be signaling or control messages
-        // For now, ignore text data (signaling goes through RPC)
-        log.trace("Received text data from WebRTC data channel (ignored): {} bytes", data.length);
+        if (WebRtcSession.CHANNEL_CONTROL_DATA.equals(channelLabel)) {
+            handleControlData(peer, data, data.length);
+        } else {
+            handleGameData(peer, data, data.length);
+        }
     }
 
-    protected void handlerData(Peer peer, byte[] data, int length) {
+    /**
+     * Called by WebRtcSession when a message is received from the default game data channel.
+     */
+    public void onMessageReceived(byte[] data, boolean isBinary) {
+        onMessageReceived(WebRtcSession.CHANNEL_GAME_DATA, data, isBinary);
+    }
+
+    protected void handleGameData(Peer peer, byte[] data, int length) {
+        peer.setLastPacketReceived(System.currentTimeMillis());
+        peer.handleGameData(data);
+    }
+
+    protected void handleControlData(Peer peer, byte[] data, int length) {
         peer.setLastPacketReceived(System.currentTimeMillis());
 
         peer.handleData(data);
@@ -76,6 +92,10 @@ public class WebRtcPeerToPeerListenerModule implements ModuleBase, PeerEventList
                     length,
                     DatagramSocketUtils.bytesToHex(Arrays.copyOf(data, Math.min(length, 16))));
         }
+    }
+
+    protected void handlerData(Peer peer, byte[] data, int length) {
+        handleControlData(peer, data, length);
     }
 
     @Override
