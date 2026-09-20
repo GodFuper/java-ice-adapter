@@ -174,6 +174,12 @@ public class UIAdapterImpl implements UIAdapter {
 
         uiDataChannels.keySet().removeIf(k -> !activeKeys.contains(k));
 
+        // Sort BEFORE comparison to get a stable, deterministic order.
+        // Without this, ConcurrentHashMap.entrySet() iteration order is non-deterministic,
+        // causing spurious structureChanged=true on every tick → setAll() → table flicker.
+        currentChannels.sort(Comparator.comparingInt((WebRtcDataChannelView v) -> v.getPeerId().get())
+                .thenComparing(v -> v.getLabel().get()));
+
         boolean structureChanged = webRtcDataChannelsList.size() != currentChannels.size();
         if (!structureChanged) {
             for (int i = 0; i < currentChannels.size(); i++) {
@@ -185,9 +191,6 @@ public class UIAdapterImpl implements UIAdapter {
         }
 
         if (structureChanged) {
-            currentChannels.sort(Comparator.comparingInt(
-                            (WebRtcDataChannelView v) -> v.getPeerId().get())
-                    .thenComparing(v -> v.getLabel().get()));
             webRtcDataChannelsList.setAll(currentChannels);
         }
 

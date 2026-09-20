@@ -714,25 +714,30 @@ public class WindowController {
         });
 
         matrixDataChannelTable.setRowFactory(tv -> new TableRow<>() {
+            private boolean lastHadTopBorder = false;
+
             @Override
             protected void updateItem(WebRtcDataChannelView item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setStyle("");
-                } else {
+                boolean needsTopBorder = false;
+                if (!empty && item != null) {
                     int index = getIndex();
                     var items = getTableView() != null ? getTableView().getItems() : null;
                     if (index > 0 && items != null && index < items.size()) {
                         WebRtcDataChannelView prev = items.get(index - 1);
-                        if (prev != null
-                                && prev.getPeerId().get() != item.getPeerId().get()) {
-                            setStyle(
-                                    "-fx-border-color: rgba(255, 255, 255, 0.08) transparent transparent transparent; -fx-border-width: 1 0 0 0;");
-                        } else {
-                            setStyle("");
+                        if (prev != null && prev.getPeerId().get() != item.getPeerId().get()) {
+                            needsTopBorder = true;
+                        }
+                    }
+                }
+                if (needsTopBorder != lastHadTopBorder) {
+                    lastHadTopBorder = needsTopBorder;
+                    if (needsTopBorder) {
+                        if (!getStyleClass().contains("chan-group-separator")) {
+                            getStyleClass().add("chan-group-separator");
                         }
                     } else {
-                        setStyle("");
+                        getStyleClass().remove("chan-group-separator");
                     }
                 }
             }
