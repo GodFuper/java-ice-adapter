@@ -39,9 +39,13 @@ public abstract class WebRtcPeerConnectionIntegrationBase {
         return Set.of(PeerModule.CONNECTION_CHECKER_MODULE);
     }
 
+    protected InMemoryRpcBus createRpcBus() {
+        return new InMemoryRpcBus();
+    }
+
     @BeforeEach
     void setUp() throws SocketException, InterruptedException {
-        bus = new InMemoryRpcBus();
+        bus = createRpcBus();
         bus.start();
 
         socketA = new InMemoryDatagramSocket();

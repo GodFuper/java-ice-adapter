@@ -91,7 +91,7 @@ public class Peer {
         this.fromId = fromId;
         this.remoteId = remoteId;
         this.remoteLogin = remoteLogin;
-        this.localOffer = localOffer;
+        this.localOffer = fromId != 0 ? fromId < remoteId : localOffer;
         this.preferredPort = preferredPort;
         this.lobbyPort = lobbyPort;
         this.allowPeerRelay = allowPeerRelay;
@@ -171,6 +171,13 @@ public class Peer {
 
     public boolean isConnected() {
         return (iceState == IceState.CONNECTED && webRtcSession != null && webRtcSession.isConnected()) || connected;
+    }
+
+    public boolean isRemoteJavaAdapter() {
+        if (webRtcSession != null) {
+            return webRtcSession.isRemoteIsJavaAdapter();
+        }
+        return true;
     }
 
     public void startInitPeer() {
@@ -336,12 +343,20 @@ public class Peer {
         event(bus -> bus.onHandleData(this, data));
     }
 
+    public void handleGameData(byte[] data) {
+        event(bus -> bus.onHandleGameData(this, data));
+    }
+
     public void handleCommand(CommandBase command) {
         event(bus -> bus.onHandleCommand(this, command));
     }
 
     public void sendToPeer(byte[] data) {
         event(bus -> bus.onSendToPeer(this, data));
+    }
+
+    public void sendGameData(byte[] data) {
+        event(bus -> bus.onSendGameData(this, data));
     }
 
     public void sendCommand(CommandBase command) {

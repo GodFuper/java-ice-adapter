@@ -100,9 +100,11 @@ public class GameSession implements IceGameSession {
             int preferredPort,
             AllowCombination combination) {
 
+        boolean localOffer = options.getId() < remotePlayerId;
+
         if (peers.containsKey(remotePlayerId)) {
             reCreatePeer(remotePlayerId);
-            debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
+            debug().connectToPeer(remotePlayerId, remotePlayerLogin, localOffer);
             return peers.get(remotePlayerId).getLocalPort();
         }
         Set<PeerModule> allDisabled = new HashSet<>(getDisabledModules());
@@ -111,7 +113,7 @@ public class GameSession implements IceGameSession {
                 options.getId(),
                 remotePlayerId,
                 remotePlayerLogin,
-                offer,
+                localOffer,
                 preferredPort,
                 getLobbyPort(),
                 options.isAllowPeerRelay(),
@@ -124,7 +126,7 @@ public class GameSession implements IceGameSession {
         peer.addEventListener(iceTrigger);
         peer.startInitPeer();
         peers.put(remotePlayerId, peer);
-        debug().connectToPeer(remotePlayerId, remotePlayerLogin, offer);
+        debug().connectToPeer(remotePlayerId, remotePlayerLogin, localOffer);
         return peer.getLocalPort();
     }
 

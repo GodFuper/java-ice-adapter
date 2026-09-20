@@ -78,8 +78,12 @@ public class RPCHandler {
         int myId = IceAdapter.getId();
 
         try {
-            String msgStr = msg.toString();
-            JsonNode jsonNode = objectMapper.readTree(msgStr);
+            JsonNode jsonNode;
+            if (msg instanceof String msgStr) {
+                jsonNode = objectMapper.readTree(msgStr);
+            } else {
+                jsonNode = objectMapper.valueToTree(msg);
+            }
 
             CandidatesMessage message = objectMapper.treeToValue(jsonNode, CandidatesMessage.class);
             int idFrom = message.srcId();

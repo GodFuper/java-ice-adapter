@@ -33,12 +33,16 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
+    public void onHandleGameData(Peer peer, byte[] data) {
+        getSocketAndTrySend(data, 0, data.length);
+    }
+
+    @Override
     public void onHandleData(Peer peer, byte[] data) {
-        if (data[0] != FaToPeerModule.COMMAND_FA) {
-            return;
+        if (data.length > 0 && data[0] == FaToPeerModule.COMMAND_FA) {
+            int length = data.length;
+            getSocketAndTrySend(data, 1, length - 1);
         }
-        int length = data.length;
-        getSocketAndTrySend(data, 1, length - 1);
     }
 
     private void getSocketAndTrySend(byte[] data, int offset, int length) {

@@ -4,14 +4,6 @@ import client.GUI;
 import client.TestClient;
 import common.ICEAdapterTest;
 import data.ForgedAlliancePeer;
-import javafx.geometry.Insets;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.paint.Color;
-import logging.Logger;
-import lombok.Getter;
-
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -21,8 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static util.Util.assertThat;
+import javafx.geometry.Insets;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.paint.Color;
+import logging.Logger;
+import lombok.Getter;
 
 @Getter
 public class ForgedAlliance {
@@ -35,12 +32,14 @@ public class ForgedAlliance {
 	private static final String ECHO_REQ = "echoReq";
 	private static final String ECHO_RES = "echoRes";
 
-	private Random random = new Random();
+	private final Random random = new Random();
 
 	private boolean running = true;
 
-	private int gpgnetPort;//gpgnet to connect to
-	private int lobbyPort;//incoming messages
+	private final int gpgnetPort; // gpgnet to connect to
+	private final int lobbyPort; // incoming messages
+	private final String localUsername;
+	private final int localPlayerId;
 
 	private DatagramSocket lobbySocket;
 
@@ -51,8 +50,14 @@ public class ForgedAlliance {
 	public List<ForgedAlliancePeer> peers = new ArrayList<>();
 
 	public ForgedAlliance(int gpgnetPort, int lobbyPort) {
+		this(gpgnetPort, lobbyPort, TestClient.username, TestClient.playerID);
+	}
+
+	public ForgedAlliance(int gpgnetPort, int lobbyPort, String localUsername, int localPlayerId) {
 		this.gpgnetPort = gpgnetPort;
 		this.lobbyPort = lobbyPort;
+		this.localUsername = localUsername != null ? localUsername : "Player";
+		this.localPlayerId = localPlayerId;
 
 		try {
 			gpgnetSocket = new Socket("localhost", gpgnetPort);
@@ -71,7 +76,7 @@ public class ForgedAlliance {
 			}
 
 		} catch(IOException e) {
-            Logger.error("Could not start lobby server. (GPGNET or lobbySocket failed)", e);
+			Logger.error("Could not start lobby server. (GPGNET or lobbySocket failed)", e);
 		}
 	}
 
@@ -91,7 +96,7 @@ public class ForgedAlliance {
 								DataOutputStream packetOut = new DataOutputStream(data);
 
 								packetOut.writeUTF(ECHO_REQ);
-								packetOut.writeInt(TestClient.playerID);//src
+								packetOut.writeInt(this.localPlayerId);//src
 								packetOut.writeInt(peer.remoteId);//target
 								packetOut.writeInt(peer.echoRequestsSent++);
 								packetOut.writeLong(System.currentTimeMillis());
@@ -116,24 +121,19 @@ public class ForgedAlliance {
 						.filter(p -> !p.isConnected())
 						.forEach(peer -> {
 							try {
-								if (peer.offerer == ForgedAlliancePeer.Offerer.LOCAL) {
-									if ((System.currentTimeMillis() - peer.lastConnectionRequestSent) >= CONNECTION_REQ_INTERVAL) {
-										peer.lastConnectionRequestSent = System.currentTimeMillis();
+								if ((System.currentTimeMillis() - peer.lastConnectionRequestSent) >= CONNECTION_REQ_INTERVAL) {
+									peer.lastConnectionRequestSent = System.currentTimeMillis();
 
-										ByteArrayOutputStream data = new ByteArrayOutputStream();
-										DataOutputStream packetOut = new DataOutputStream(data);
+									ByteArrayOutputStream data = new ByteArrayOutputStream();
+									DataOutputStream packetOut = new DataOutputStream(data);
 
-										packetOut.writeUTF(CONNECTION_REQ);
-										packetOut.writeInt(TestClient.playerID);
-										packetOut.writeUTF(TestClient.username);
+									packetOut.writeUTF(CONNECTION_REQ);
+									packetOut.writeInt(this.localPlayerId);
+									packetOut.writeUTF(this.localUsername);
 
-										sendLobby(peer.remoteAddress, peer.remotePort, data);
+									sendLobby(peer.remoteAddress, peer.remotePort, data);
 
-										Logger.debug("<FA> Sent CONNECTION_REQ to %s(%d) at %s:%d", peer.remoteUsername, peer.remoteId, peer.remoteAddress, peer.remotePort);
-									}
-								} else {
-//									Logger.error("<FA> Awaiting CONNECTION_REQ");
-										//TODO: log this case?
+									Logger.debug("<FA> Sent CONNECTION_REQ to %s(%d) at %s:%d", peer.remoteUsername, peer.remoteId, peer.remoteAddress, peer.remotePort);
 								}
 							} catch(IOException e) {
 								Logger.warning("Error while sending to peer: %d", peer.remoteId);
@@ -171,11 +171,8 @@ public class ForgedAlliance {
 
 				bytesReceived.addAndGet(packet.getLength());
 
-//				Logger.debug("<FA> Received: %s", new String(packet.getData()));
-
 				DataInputStream packetIn = new DataInputStream(new ByteArrayInputStream(packet.getData()));
 				String command = packetIn.readUTF();
-
 
 				if(command.equals(CONNECTION_REQ)) {
 					int remoteId = packetIn.readInt();
@@ -190,14 +187,15 @@ public class ForgedAlliance {
 							peer = peers.stream().filter(p -> p.remoteId == remoteId).findAny().get();
 						}
 						peer.setConnected(true);
+						peer.lastPacketReceived = System.currentTimeMillis();
 					}
 
 					ByteArrayOutputStream data = new ByteArrayOutputStream();
 					DataOutputStream packetOut = new DataOutputStream(data);
 
 					packetOut.writeUTF(CONNECTION_ACK);
-					packetOut.writeInt(TestClient.playerID);
-					packetOut.writeUTF(TestClient.username);
+					packetOut.writeInt(this.localPlayerId);
+					packetOut.writeUTF(this.localUsername);
 
 					sendLobby(peer.remoteAddress, peer.remotePort, data);
 
@@ -209,7 +207,10 @@ public class ForgedAlliance {
 					String remoteUsername = packetIn.readUTF();
 
 					synchronized (peers) {
-						peers.stream().filter(p -> p.remoteId == remoteId).findAny().ifPresent(p -> p.setConnected(true));
+						peers.stream().filter(p -> p.remoteId == remoteId).findAny().ifPresent(p -> {
+							p.setConnected(true);
+							p.lastPacketReceived = System.currentTimeMillis();
+						});
 					}
 
 					Logger.debug("<FA> Got CONNECTION_ACK from %s(%d) at %s:%d", remoteUsername, remoteId, packet.getAddress().getHostAddress(), packet.getPort());
@@ -224,27 +225,26 @@ public class ForgedAlliance {
 					byte[] randomData = new byte[randomBytes];
 					packetIn.read(randomData, 0, randomBytes);
 
-					assertThat(localId == TestClient.playerID);
-
-
+					synchronized (peers) {
+						peers.stream().filter(p -> p.remoteId == remoteId).findAny().ifPresent(p -> p.lastPacketReceived = System.currentTimeMillis());
+					}
 
 					//Construct response
 					ByteArrayOutputStream data = new ByteArrayOutputStream();
 					DataOutputStream packetOut = new DataOutputStream(data);
 
 					packetOut.writeUTF(ECHO_RES);
-					packetOut.writeInt(TestClient.playerID);//src
+					packetOut.writeInt(this.localPlayerId);//src
 					packetOut.writeInt(remoteId);//target
 					packetOut.writeInt(echoReqId);
 					packetOut.writeLong(echoReqTime);
 					packetOut.writeInt(randomBytes);
 					packetOut.write(randomData, 0, randomData.length);
 
-					sendLobby(packet.getAddress().getHostAddress(), packet.getPort(), data);//TODO return to peer address instead of src address?
+					sendLobby(packet.getAddress().getHostAddress(), packet.getPort(), data);
 				}
 
 				if(command.equals(ECHO_RES)) {
-
 					int remoteId = packetIn.readInt();
 					int localId = packetIn.readInt();
 					int echoReqId = packetIn.readInt();
@@ -253,21 +253,17 @@ public class ForgedAlliance {
 					byte[] randomData = new byte[randomBytes];
 					packetIn.read(randomData, 0, randomBytes);
 
-					assertThat(localId == TestClient.playerID);
 					int latency = (int) (System.currentTimeMillis() - echoReqTime);
 
-
-					if(echoReqId > 5 && latency < 2000 /*TODO HOW?*/) {//block first connecting pings
+					if(echoReqId > 5 && latency < 2000) {
 						synchronized (peers) {
 							peers.stream().filter(p -> p.remoteId == remoteId).findAny().ifPresent(p -> p.addLatency(latency));
 						}
 					}
-
-//					Logger.debug("<FA> Recevied ECHO_RES %d after %d ms from %d", echoReqId, latency, remoteId);
 				}
 			}
 		} catch(IOException e) {
-			if(this.running) {
+			if(this.running && lobbySocket != null && !lobbySocket.isClosed()) {
 				Logger.error("Error while listening for lobby messages.", e);
 			}
 		}
@@ -281,31 +277,53 @@ public class ForgedAlliance {
 				List<Object> args = gpgnetIn.readChunks();
 
 				if(command.equals("CreateLobby")) {
-//					assertThat(! args.get(0).toString().isEmpty());
-					assertThat(args.get(1).equals(lobbyPort));
-					assertThat(args.get(2).equals(TestClient.username));
-					assertThat(args.get(3).equals(TestClient.playerID));
-
+					try {
+						int newPort = (Integer) args.get(1);
+						if (lobbySocket == null || lobbySocket.getLocalPort() != newPort) {
+							if (lobbySocket != null) {
+								lobbySocket.close();
+							}
+							lobbySocket = new DatagramSocket(newPort);
+							new Thread(this::lobbyListener).start();
+						}
+						Logger.info("<GPG> Creating lobby on port %d", newPort);
+					} catch (Exception e) {
+						Logger.error("<GPG> Failed to bind lobby socket on CreateLobby port", e);
+					}
 					synchronized (gpgnetOut) {
 						gpgnetOut.writeMessage("GameState", "Lobby");
 					}
-
-					Logger.info("<GPG> Creating lobby");
 				}
 
 				if(command.equals("HostGame")) {
-					assertThat(! args.get(0).toString().isEmpty());
 					Logger.info("<GPG> Hosting game on %s", args.get(0));
 				}
 
-				if(command.equals("ConnectToPeer")) {
-					ForgedAlliancePeer peer = new ForgedAlliancePeer(((String)args.get(0)).split(":")[0], Integer.parseInt(((String)args.get(0)).split(":")[1]), (Integer) args.get(2), (String)args.get(1), ForgedAlliancePeer.Offerer.LOCAL);
+				if(command.equals("JoinGame")) {
+					String hostAddr = (String) args.get(0);
+					String hostName = (String) args.get(1);
+					int hostId = (Integer) args.get(2);
+					String[] parts = hostAddr.split(":");
+					ForgedAlliancePeer peer = new ForgedAlliancePeer(parts[0], Integer.parseInt(parts[1]), hostId, hostName, ForgedAlliancePeer.Offerer.REMOTE);
 
 					synchronized (peers) {
 						if(peers.stream().noneMatch(p -> p.remoteId == peer.remoteId)) {
 							peers.add(peer);
 						}
 					}
+					Logger.info("<GPG> Joined game hosted by %s(%d) at %s", hostName, hostId, hostAddr);
+				}
+
+				if(command.equals("ConnectToPeer")) {
+					String[] parts = ((String)args.get(0)).split(":");
+					ForgedAlliancePeer peer = new ForgedAlliancePeer(parts[0], Integer.parseInt(parts[1]), (Integer) args.get(2), (String)args.get(1), ForgedAlliancePeer.Offerer.LOCAL);
+
+					synchronized (peers) {
+						if(peers.stream().noneMatch(p -> p.remoteId == peer.remoteId)) {
+							peers.add(peer);
+						}
+					}
+					Logger.info("<GPG> Connected to peer %s(%d) at %s", args.get(1), args.get(2), args.get(0));
 				}
 
 				if(command.equals("DisconnectFromPeer")) {
@@ -323,11 +341,12 @@ public class ForgedAlliance {
 		} catch(IOException e) {
 			if(this.running) {
 				Logger.error("Error while listening for gpg messages.", e);
-                GUI.runAndWait(() -> GUI.instance.getRoot().setBackground(new Background(new BackgroundFill(new Color(189.0 / 255.0, 61.0 / 255.0, 58.0 / 255.0, 1.0), CornerRadii.EMPTY, Insets.EMPTY))));
+				if (GUI.instance != null && GUI.instance.getRoot() != null) {
+					GUI.runAndWait(() -> GUI.instance.getRoot().setBackground(new Background(new BackgroundFill(new Color(189.0 / 255.0, 61.0 / 255.0, 58.0 / 255.0, 1.0), CornerRadii.EMPTY, Insets.EMPTY))));
+				}
 			}
 		}
 	}
-
 
 	private volatile AtomicLong bytesSent = new AtomicLong(0);
 	private void sendLobby(String remoteAddress, int remotePort, byte[] data) {
@@ -349,9 +368,13 @@ public class ForgedAlliance {
 
 	public void stop() {
 		running = false;
-		lobbySocket.close();
+		if (lobbySocket != null) {
+			lobbySocket.close();
+		}
 		try {
-			gpgnetSocket.close();
-		} catch (IOException e) {}
+			if (gpgnetSocket != null) {
+				gpgnetSocket.close();
+			}
+		} catch (IOException ignored) {}
 	}
 }

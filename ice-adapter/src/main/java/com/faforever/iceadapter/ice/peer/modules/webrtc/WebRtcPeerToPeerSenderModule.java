@@ -28,16 +28,21 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
     }
 
     @Override
+    public void onSendGameData(Peer peer, byte[] data) {
+        sendGameDataViaWebRtc(data);
+    }
+
+    @Override
     public void onSendToPeer(Peer peer, byte[] data) {
-        sendViaWebRtc(data);
+        sendControlDataViaWebRtc(data);
     }
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
-        sendViaWebRtc(command.bytes());
+        sendControlDataViaWebRtc(command.bytes());
     }
 
-    protected void sendViaWebRtc(byte[] data) {
+    protected void sendGameDataViaWebRtc(byte[] data) {
         if (!enabled || peer.isClosing()) {
             return;
         }
@@ -47,16 +52,41 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
             return;
         }
 
-        boolean sent = session.sendDataAsync(data, true);
+        boolean sent = session.sendGameDataAsync(data);
         if (!sent) {
             log.warn(
-                    "Failed to send {} bytes via WebRTC data channel to peer {}",
+                    "Failed to send {} bytes via WebRTC gameData channel to peer {}",
                     data.length,
                     peer.getPeerIdentifier());
             peer.lostConnect();
         } else {
-            log.trace("Sent {} bytes via WebRTC to peer {}", data.length, peer.getPeerIdentifier());
+            log.trace("Sent {} bytes via WebRTC gameData to peer {}", data.length, peer.getPeerIdentifier());
         }
+    }
+
+    protected void sendControlDataViaWebRtc(byte[] data) {
+        if (!enabled || peer.isClosing()) {
+            return;
+        }
+
+        WebRtcSession session = peer.getWebRtcSession();
+        if (session == null || !session.isConnected()) {
+            return;
+        }
+
+        boolean sent = session.sendControlDataAsync(data);
+        if (!sent) {
+            log.trace(
+                    "Could not send {} bytes via WebRTC controlData channel to peer {}",
+                    data.length,
+                    peer.getPeerIdentifier());
+        } else {
+            log.trace("Sent {} bytes via WebRTC controlData to peer {}", data.length, peer.getPeerIdentifier());
+        }
+    }
+
+    protected void sendViaWebRtc(byte[] data) {
+        sendControlDataViaWebRtc(data);
     }
 
     @Override

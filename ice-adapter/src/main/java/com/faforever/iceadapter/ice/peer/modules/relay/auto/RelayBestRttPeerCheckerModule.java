@@ -77,6 +77,11 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
             return;
         }
 
+        // Only Java peers support RelayPingCommand / controlData relay protocol
+        if (!peer.isRemoteJavaAdapter()) {
+            return;
+        }
+
         Thread.currentThread().setName(getThreadName());
 
         Map<Integer, Peer> allPeers = gameSession.getPeers();
@@ -87,7 +92,10 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
         Set<Integer> idsForSend = allPeers.entrySet().stream()
                 .filter(entry -> {
                     Peer p = entry.getValue();
-                    return !p.isClosing() && p.isConnected() && !Objects.equals(peer, p);
+                    return !p.isClosing()
+                            && p.isConnected()
+                            && p.isRemoteJavaAdapter()
+                            && !Objects.equals(peer, p);
                 })
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
@@ -100,7 +108,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
 
         for (Integer id : idsForSend) {
             Peer peerForSend = allPeers.get(id);
-            if (peerForSend == null || !peerForSend.isAllowRelay()) {
+            if (peerForSend == null || !peerForSend.isAllowRelay() || !peerForSend.isRemoteJavaAdapter()) {
                 continue;
             }
             peerForSend.sendCommand(RelayPingCommand.builder()
@@ -120,6 +128,14 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
         if (gameSession == null) {
             return;
         }
+
+        if (!peer.isRemoteJavaAdapter()) {
+            if (!peer.getBestRelays().isEmpty()) {
+                peer.setBestRelays(List.of());
+            }
+            return;
+        }
+
         Thread.currentThread().setName(getThreadName());
 
         Map<Integer, RelayPing> rtts = peer.getRtts();
@@ -134,7 +150,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
         for (Integer id : ids) {
             Peer relay = gameSession.getPeer(id).orElse(null);
 
-            if (relay == null || !relay.isConnected()) {
+            if (relay == null || !relay.isConnected() || !relay.isRemoteJavaAdapter()) {
                 continue;
             }
             newBestRelays.add(id);

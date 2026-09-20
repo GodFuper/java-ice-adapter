@@ -91,11 +91,15 @@ public abstract class WebRtcConnectServiceCommon {
                 iceGameSession.getOptions(),
                 peer.getCombination(),
                 // Message handler - data received from data channel
-                (data, isBinary) -> {
+                (channelLabel, data, isBinary) -> {
                     peer.getModule(PeerModule.WEBRTC_PEER_TO_PEER_LISTENER, WebRtcPeerToPeerListenerModule.class)
-                            .ifPresentOrElse(m -> m.onMessageReceived(data, isBinary), () -> {
+                            .ifPresentOrElse(m -> m.onMessageReceived(channelLabel, data, isBinary), () -> {
                                 if (isBinary) {
-                                    peer.handleData(data);
+                                    if (WebRtcSession.CHANNEL_CONTROL_DATA.equals(channelLabel)) {
+                                        peer.handleData(data);
+                                    } else {
+                                        peer.handleGameData(data);
+                                    }
                                 }
                             });
                 },

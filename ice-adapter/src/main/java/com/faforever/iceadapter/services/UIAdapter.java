@@ -95,6 +95,13 @@ public interface UIAdapter {
     ObservableList<WebRtcPeerView> getWebRtcPeerInfoList();
 
     /**
+     * Returns an observable list of all WebRTC data channels across connected peers.
+     *
+     * @return observable list of WebRTC data channel view objects
+     */
+    ObservableList<WebRtcDataChannelView> getWebRtcDataChannelsList();
+
+    /**
      * Returns an observable list of peer connection details.
      * This list can be bound to UI components for real-time updates.
      *

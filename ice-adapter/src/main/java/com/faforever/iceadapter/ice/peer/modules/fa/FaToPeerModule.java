@@ -120,14 +120,13 @@ public class FaToPeerModule implements ModuleBase {
     }
 
     void onFaDataReceived(byte[] buffer, int offset, int length) {
-        byte[] data = new byte[length + 1];
-        data[0] = COMMAND_FA;
-        System.arraycopy(buffer, offset, data, 1, length);
-        peer.sendToPeer(data);
+        byte[] data = new byte[length];
+        System.arraycopy(buffer, offset, data, 0, length);
+        peer.sendGameData(data);
     }
 
     /**
-     * Data received from FA, prepends prefix and sends it via ICE to the other peer
+     * Data received from FA, sends it via ICE to the other peer
      *
      * @param faData
      */

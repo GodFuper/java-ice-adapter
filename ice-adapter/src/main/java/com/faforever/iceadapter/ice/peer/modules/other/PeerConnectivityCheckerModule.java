@@ -70,7 +70,7 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
 
     @Override
     public void onHandleData(Peer peer, byte[] data) {
-        if (data[0] != COMMAND_ECHO) {
+        if (data == null || data.length == 0 || data[0] != COMMAND_ECHO) {
             return;
         }
         int length = data.length;
@@ -123,6 +123,13 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         }
         Thread.currentThread().setName(getThreadName());
         log.trace("Running connectivity checker");
+
+        if (peer.getWebRtcSession() != null && !peer.isRemoteJavaAdapter()) {
+            // Non-Java WebRTC peer (e.g. faf-pioneer): WebRTC SCTP / ICE / DTLS manages liveness.
+            // Custom echo commands and timeout-based disconnection are skipped because non-Java peers
+            // only have a single gameData channel and do not implement Java's echo protocol.
+            return;
+        }
 
         byte[] data = new byte[9];
         data[0] = COMMAND_ECHO;

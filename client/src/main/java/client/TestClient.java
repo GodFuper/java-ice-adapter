@@ -24,6 +24,7 @@ public class TestClient {
 
 	public static String username;
 	public static int playerID;
+	public static int gameId = 12345;
 
 	public static ForgedAlliance forgedAlliance;
 	public static BooleanProperty isGameRunning = new SimpleBooleanProperty(false);
@@ -91,6 +92,7 @@ public class TestClient {
 					System.out.println("Possible Arguments:\n" +
 							"--skip             Skips the GDRP check\n" +
 							"--name=yourname    Sets a custom name without asking\n" +
+							"--game-id=id       Sets the game ID\n" +
 							"--port=newport     Changes external adapter port\n" +
 							"--debug            Turns on debug mode");
                 	System.exit(0);
@@ -102,6 +104,10 @@ public class TestClient {
 
                 if(arg.startsWith("--name=")){
                 	username = arg.replaceFirst("--name=","");
+				}
+
+                if(arg.startsWith("--game-id=")){
+                	gameId = Integer.parseInt(arg.replaceFirst("--game-id=",""));
 				}
 
                 if(arg.startsWith("--port=")) {

@@ -13,13 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +38,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObserver {
 
-    private static final long GATHER_TIMEOUT_MS = 2500;
+    private static final long GATHER_TIMEOUT_MS = 1500;
+
+    public static final String CHANNEL_GAME_DATA = "gameData";
+    public static final String CHANNEL_CONTROL_DATA = "controlData";
 
     private final WebRtcConnectionFactory factory;
 
@@ -39,6 +49,12 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     private volatile RTCPeerConnection peerConnection;
 
     private volatile RTCDataChannel dataChannel;
+    private volatile RTCDataChannel gameDataChannel;
+    private volatile RTCDataChannel controlDataChannel;
+    private final Queue<byte[]> pendingControlMessages = new ConcurrentLinkedQueue<>();
+
+    @Getter
+    private volatile boolean remoteIsJavaAdapter = false;
 
     @Getter
     private RTCConfiguration config;
@@ -76,18 +92,24 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     private volatile CountDownLatch gatheringLatch;
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class DataChannelStats {
+        private String label = "";
+        private String state = "closed";
+        private long messagesSent = 0;
+        private long messagesReceived = 0;
+        private long bytesSent = 0;
+        private long bytesReceived = 0;
+    }
+
+    @Data
     public static class SessionStats {
         private volatile float rttMs = 0.0f;
         private volatile String localCandidateType = "";
         private volatile String remoteCandidateType = "";
         private volatile String localAddress = "";
         private volatile String remoteAddress = "";
-        private volatile long bytesSent = 0;
-        private volatile long bytesReceived = 0;
-        private volatile long messagesSent = 0;
-        private volatile long messagesReceived = 0;
-        private volatile String dataChannelState = "closed";
-        private volatile String dataChannelLabel = "fa-data";
         private volatile String peerConnectionState = "-";
         private volatile String iceConnectionState = "-";
         private volatile String dtlsState = "-";
@@ -98,6 +120,114 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         private volatile long packetsDiscardedOnSend = 0;
         private volatile double availableOutgoingBitrate = 0.0;
         private volatile double availableIncomingBitrate = 0.0;
+
+        private final Map<String, DataChannelStats> dataChannels = new ConcurrentHashMap<>();
+
+        // Fallback fields for backwards compatibility / mock convenience
+        private volatile String dataChannelState = null;
+        private volatile String dataChannelLabel = null;
+        private volatile Long bytesSent = null;
+        private volatile Long bytesReceived = null;
+        private volatile Long messagesSent = null;
+        private volatile Long messagesReceived = null;
+
+        public String getDataChannelState() {
+            if (dataChannelState != null && dataChannels.isEmpty()) {
+                return dataChannelState;
+            }
+            if (dataChannels.isEmpty()) {
+                return "closed";
+            }
+            Set<String> uniqueStates = dataChannels.values().stream()
+                    .map(DataChannelStats::getState)
+                    .collect(Collectors.toSet());
+            if (uniqueStates.size() == 1) {
+                return uniqueStates.iterator().next();
+            }
+            return dataChannels.values().stream()
+                    .map(dc -> dc.getLabel() + ": " + dc.getState())
+                    .collect(Collectors.joining(", "));
+        }
+
+        public String getDataChannelLabel() {
+            if (dataChannelLabel != null && dataChannels.isEmpty()) {
+                return dataChannelLabel;
+            }
+            if (dataChannels.isEmpty()) {
+                return "-";
+            }
+            return String.join(", ", dataChannels.keySet());
+        }
+
+        public long getBytesSent() {
+            if (bytesSent != null && dataChannels.isEmpty()) {
+                return bytesSent;
+            }
+            return dataChannels.values().stream()
+                    .mapToLong(DataChannelStats::getBytesSent)
+                    .sum();
+        }
+
+        public long getBytesReceived() {
+            if (bytesReceived != null && dataChannels.isEmpty()) {
+                return bytesReceived;
+            }
+            return dataChannels.values().stream()
+                    .mapToLong(DataChannelStats::getBytesReceived)
+                    .sum();
+        }
+
+        public long getMessagesSent() {
+            if (messagesSent != null && dataChannels.isEmpty()) {
+                return messagesSent;
+            }
+            return dataChannels.values().stream()
+                    .mapToLong(DataChannelStats::getMessagesSent)
+                    .sum();
+        }
+
+        public long getMessagesReceived() {
+            if (messagesReceived != null && dataChannels.isEmpty()) {
+                return messagesReceived;
+            }
+            return dataChannels.values().stream()
+                    .mapToLong(DataChannelStats::getMessagesReceived)
+                    .sum();
+        }
+
+        public void setDataChannel(
+                String label, String state, long msgSent, long msgRecv, long bytesSent, long bytesRecv) {
+            dataChannels.put(label, new DataChannelStats(label, state, msgSent, msgRecv, bytesSent, bytesRecv));
+        }
+
+        public void setDataChannelState(String state) {
+            this.dataChannelState = state;
+            if (!dataChannels.isEmpty()) {
+                for (DataChannelStats dc : dataChannels.values()) {
+                    dc.setState(state);
+                }
+            }
+        }
+
+        public void setDataChannelLabel(String label) {
+            this.dataChannelLabel = label;
+        }
+
+        public void setBytesSent(long bytesSent) {
+            this.bytesSent = bytesSent;
+        }
+
+        public void setBytesReceived(long bytesReceived) {
+            this.bytesReceived = bytesReceived;
+        }
+
+        public void setMessagesSent(long messagesSent) {
+            this.messagesSent = messagesSent;
+        }
+
+        public void setMessagesReceived(long messagesReceived) {
+            this.messagesReceived = messagesReceived;
+        }
     }
 
     @Getter
@@ -109,23 +239,45 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Query WebRTC statistics from libwebrtc peer connection.
      */
     public void updateStats() {
-        if (peerConnection == null || closed) {
+        RTCPeerConnection pc = peerConnection;
+        if (pc == null || closed) {
             return;
         }
         try {
             try {
-                if (peerConnection.getConnectionState() != null) {
+                if (pc.getConnectionState() != null) {
                     stats.setPeerConnectionState(
-                            peerConnection.getConnectionState().toString());
+                            pc.getConnectionState().toString());
                 }
-                if (peerConnection.getIceConnectionState() != null) {
+                if (pc.getIceConnectionState() != null) {
                     stats.setIceConnectionState(
-                            peerConnection.getIceConnectionState().toString());
+                            pc.getIceConnectionState().toString());
                 }
             } catch (Exception ignored) {
             }
 
-            peerConnection.getStats(report -> {
+            if (gameDataChannel != null && gameDataChannel.getState() != null) {
+                String state = gameDataChannel.getState().toString().toLowerCase();
+                stats.getDataChannels().compute(CHANNEL_GAME_DATA, (k, v) -> {
+                    if (v == null) {
+                        return new DataChannelStats(CHANNEL_GAME_DATA, state, 0, 0, 0, 0);
+                    }
+                    v.setState(state);
+                    return v;
+                });
+            }
+            if (controlDataChannel != null && controlDataChannel.getState() != null) {
+                String state = controlDataChannel.getState().toString().toLowerCase();
+                stats.getDataChannels().compute(CHANNEL_CONTROL_DATA, (k, v) -> {
+                    if (v == null) {
+                        return new DataChannelStats(CHANNEL_CONTROL_DATA, state, 0, 0, 0, 0);
+                    }
+                    v.setState(state);
+                    return v;
+                });
+            }
+
+            pc.getStats(report -> {
                 Map<String, RTCStats> statsMap = report.getStats();
                 String selectedPairId = null;
 
@@ -215,22 +367,20 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
                 for (RTCStats s : statsMap.values()) {
                     if (s.getType() == RTCStatsType.DATA_CHANNEL) {
                         Map<String, Object> attrs = s.getAttributes();
-                        stats.setDataChannelState(String.valueOf(attrs.get("state")));
-                        Object label = attrs.get("label");
-                        if (label != null) {
-                            stats.setDataChannelLabel(label.toString());
-                        }
-                        if (attrs.get("bytesSent") instanceof Number n) {
-                            stats.setBytesSent(n.longValue());
-                        }
-                        if (attrs.get("bytesReceived") instanceof Number n) {
-                            stats.setBytesReceived(n.longValue());
-                        }
-                        if (attrs.get("messagesSent") instanceof Number n) {
-                            stats.setMessagesSent(n.longValue());
-                        }
-                        if (attrs.get("messagesReceived") instanceof Number n) {
-                            stats.setMessagesReceived(n.longValue());
+                        String state = String.valueOf(attrs.get("state"));
+                        Object labelObj = attrs.get("label");
+                        String label = labelObj != null ? labelObj.toString() : "";
+                        long sentBytes = attrs.get("bytesSent") instanceof Number n ? n.longValue() : 0;
+                        long recvBytes = attrs.get("bytesReceived") instanceof Number n ? n.longValue() : 0;
+                        long sentMsgs = attrs.get("messagesSent") instanceof Number n ? n.longValue() : 0;
+                        long recvMsgs = attrs.get("messagesReceived") instanceof Number n ? n.longValue() : 0;
+
+                        if (!label.isEmpty()) {
+                            stats.getDataChannels()
+                                    .put(
+                                            label,
+                                            new DataChannelStats(
+                                                    label, state, sentMsgs, recvMsgs, sentBytes, recvBytes));
                         }
                     }
                 }
@@ -241,9 +391,18 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     }
 
     /**
-     * Callback for incoming data on the data channel.
+     * Callback for incoming data on a data channel.
      */
+    @FunctionalInterface
     public interface DataChannelMessageHandler {
+        void onMessage(String channelLabel, byte[] data, boolean isBinary);
+    }
+
+    /**
+     * Legacy 2-argument callback for tests and backwards compatibility.
+     */
+    @FunctionalInterface
+    public interface LegacyDataChannelMessageHandler {
         void onMessage(byte[] data, boolean isBinary);
     }
 
@@ -280,6 +439,19 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     public synchronized void init(
             boolean offerer,
             List<IceServer> iceServers,
+            LegacyDataChannelMessageHandler legacyHandler,
+            SessionStateHandler stateHandler) {
+        init(
+                offerer,
+                iceServers,
+                null,
+                (label, data, isBinary) -> legacyHandler.onMessage(data, isBinary),
+                stateHandler);
+    }
+
+    public synchronized void init(
+            boolean offerer,
+            List<IceServer> iceServers,
             DataChannelMessageHandler messageHandler,
             SessionStateHandler stateHandler) {
         init(offerer, iceServers, null, messageHandler, stateHandler);
@@ -288,6 +460,21 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     /**
      * Initialize the session with configuration, options, and callbacks.
      */
+    public synchronized void init(
+            boolean offerer,
+            List<IceServer> iceServers,
+            IceOptions options,
+            LegacyDataChannelMessageHandler legacyHandler,
+            SessionStateHandler stateHandler) {
+        init(
+                offerer,
+                iceServers,
+                options,
+                AllowCombination.ALL,
+                (label, data, isBinary) -> legacyHandler.onMessage(data, isBinary),
+                stateHandler);
+    }
+
     public synchronized void init(
             boolean offerer,
             List<IceServer> iceServers,
@@ -305,9 +492,44 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             List<IceServer> iceServers,
             IceOptions options,
             AllowCombination combination,
+            LegacyDataChannelMessageHandler legacyHandler,
+            SessionStateHandler stateHandler) {
+        init(
+                offerer,
+                CHANNEL_GAME_DATA,
+                iceServers,
+                options,
+                combination,
+                (label, data, isBinary) -> legacyHandler.onMessage(data, isBinary),
+                stateHandler);
+    }
+
+    public synchronized void init(
+            boolean offerer,
+            List<IceServer> iceServers,
+            IceOptions options,
+            AllowCombination combination,
             DataChannelMessageHandler messageHandler,
             SessionStateHandler stateHandler) {
-        init(offerer, "gameData", iceServers, options, combination, messageHandler, stateHandler);
+        init(offerer, CHANNEL_GAME_DATA, iceServers, options, combination, messageHandler, stateHandler);
+    }
+
+    public synchronized void init(
+            boolean offerer,
+            String channelLabel,
+            List<IceServer> iceServers,
+            IceOptions options,
+            AllowCombination combination,
+            LegacyDataChannelMessageHandler legacyHandler,
+            SessionStateHandler stateHandler) {
+        init(
+                offerer,
+                channelLabel,
+                iceServers,
+                options,
+                combination,
+                (label, data, isBinary) -> legacyHandler.onMessage(data, isBinary),
+                stateHandler);
     }
 
     /**
@@ -369,11 +591,12 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
         peerConnection = factory.getFactory().createPeerConnection(config, this);
         if (isOfferer) {
-            String label = channelLabel != null && !channelLabel.isBlank() ? channelLabel : "gameData";
+            String label = channelLabel != null && !channelLabel.isBlank() ? channelLabel : CHANNEL_GAME_DATA;
             RTCDataChannelInit init = new RTCDataChannelInit();
             init.ordered = true;
-            this.dataChannel = peerConnection.createDataChannel(label, init);
-            this.dataChannel.registerObserver(this);
+            this.gameDataChannel = peerConnection.createDataChannel(label, init);
+            this.dataChannel = this.gameDataChannel;
+            this.gameDataChannel.registerObserver(this);
             stats.setDataChannelLabel(label);
             log.info("Created local data channel '{}' for offerer", label);
         }
@@ -401,29 +624,40 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Returns the offer via the stateHandler.onOfferCreated() callback.
      */
     public void createOffer() {
-        if (!initialized) {
-            throw new IllegalStateException("Session not initialized");
+        if (!initialized || closed || peerConnection == null) {
+            log.warn("Cannot create offer: session not initialized or closed");
+            return;
+        }
+
+        RTCPeerConnection pc = peerConnection;
+        if (pc == null || closed) {
+            return;
         }
 
         AtomicReference<RTCSessionDescription> offerRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        peerConnection.createOffer(new RTCOfferOptions(), new CreateSessionDescriptionObserver() {
-            @Override
-            public void onSuccess(RTCSessionDescription description) {
-                offerRef.set(description);
-                latch.countDown();
-            }
-
-            @Override
-            public void onFailure(String error) {
-                log.error("Failed to create offer: {}", error);
-                if (stateHandler != null) {
-                    stateHandler.onError("Failed to create offer: " + error);
+        try {
+            pc.createOffer(new RTCOfferOptions(), new CreateSessionDescriptionObserver() {
+                @Override
+                public void onSuccess(RTCSessionDescription description) {
+                    offerRef.set(description);
+                    latch.countDown();
                 }
-                latch.countDown();
-            }
-        });
+
+                @Override
+                public void onFailure(String error) {
+                    log.error("Failed to create offer: {}", error);
+                    if (stateHandler != null) {
+                        stateHandler.onError("Failed to create offer: " + error);
+                    }
+                    latch.countDown();
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to call createOffer on peer connection", e);
+            return;
+        }
 
         try {
             if (!latch.await(10, TimeUnit.SECONDS)) {
@@ -432,6 +666,11 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Offer creation interrupted", e);
+        }
+
+        if (closed) {
+            log.warn("Session closed during offer creation");
+            return;
         }
 
         RTCSessionDescription offer = offerRef.get();
@@ -461,12 +700,19 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             log.warn("Interrupted while waiting for ICE candidate gathering");
         }
 
-        RTCSessionDescription localDesc = peerConnection.getLocalDescription();
+        if (closed) {
+            log.warn("Session closed during candidate gathering for offer");
+            return;
+        }
+
+        RTCPeerConnection currentPc = peerConnection;
+        RTCSessionDescription localDesc = currentPc != null ? currentPc.getLocalDescription() : null;
         String finalSdp = (localDesc != null && localDesc.sdp != null) ? localDesc.sdp : offer.sdp;
         List<CandidatePacket> candidatesCopy = List.copyOf(gatheredCandidatePackets);
 
-        if (stateHandler != null) {
-            stateHandler.onOfferCreated(finalSdp, candidatesCopy);
+        SessionStateHandler handler = stateHandler;
+        if (handler != null && !closed) {
+            handler.onOfferCreated(finalSdp, candidatesCopy);
         }
     }
 
@@ -483,6 +729,9 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             log.info("Remote offer set, adding {} remote candidates", candidates != null ? candidates.size() : 0);
             if (candidates != null) {
                 for (CandidatePacket cp : candidates) {
+                    if (CandidatePacket.ADAPTER_FAF_ICE_ADAPTER.equals(cp.adapter())) {
+                        remoteIsJavaAdapter = true;
+                    }
                     String candStr = CandidateUtil.candidatePacketToWebRtcString(cp);
                     if (candStr != null) {
                         addRemoteCandidate("0", 0, candStr);
@@ -514,12 +763,16 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             log.info("Remote answer set, adding {} remote candidates", candidates != null ? candidates.size() : 0);
             if (candidates != null) {
                 for (CandidatePacket cp : candidates) {
+                    if (CandidatePacket.ADAPTER_FAF_ICE_ADAPTER.equals(cp.adapter())) {
+                        remoteIsJavaAdapter = true;
+                    }
                     String candStr = CandidateUtil.candidatePacketToWebRtcString(cp);
                     if (candStr != null) {
                         addRemoteCandidate("0", 0, candStr);
                     }
                 }
             }
+            checkAndCreateControlChannel();
             if (stateHandler != null) {
                 stateHandler.onRemoteDescriptionSet();
             }
@@ -534,23 +787,63 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     }
 
     /**
+     * Dynamically create controlData channel if remote peer is Java adapter and we are the offerer.
+     */
+    public void checkAndCreateControlChannel() {
+        if (closed || peerConnection == null || !initialized) {
+            return;
+        }
+        if (isOfferer && remoteIsJavaAdapter && controlDataChannel == null) {
+            ExecutorHolder.getExecutor().submit(() -> {
+                synchronized (WebRtcSession.this) {
+                    RTCPeerConnection pc = peerConnection;
+                    if (closed || pc == null || !initialized || controlDataChannel != null) {
+                        return;
+                    }
+                    try {
+                        RTCDataChannelInit init = new RTCDataChannelInit();
+                        init.ordered = true;
+                        this.controlDataChannel = pc.createDataChannel(CHANNEL_CONTROL_DATA, init);
+                        this.controlDataChannel.registerObserver(new ControlChannelObserver());
+                        log.info("Dynamically created controlData channel for Java peer");
+                    } catch (Exception e) {
+                        log.warn("Failed to create controlData channel", e);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
      * Add a remote ICE candidate.
      * If remote description is not set yet, buffer candidate until remote description is set.
      */
     public synchronized void addRemoteCandidate(String sdpMid, int sdpMLineIndex, String candidate) {
         RTCIceCandidate iceCandidate = new RTCIceCandidate(sdpMid, sdpMLineIndex, candidate);
-        if (peerConnection != null && peerConnection.getRemoteDescription() != null) {
-            peerConnection.addIceCandidate(iceCandidate);
+        RTCPeerConnection pc = peerConnection;
+        if (pc != null && !closed && pc.getRemoteDescription() != null) {
+            try {
+                pc.addIceCandidate(iceCandidate);
+            } catch (Throwable t) {
+                log.warn("Failed to add remote ICE candidate: {}", candidate, t);
+            }
         } else {
             pendingCandidates.add(iceCandidate);
         }
     }
 
     /**
-     * Get the data channel (null if not yet created/received).
+     * Get the game data channel (null if not yet created/received).
      */
     public Optional<RTCDataChannel> getDataChannel() {
-        return Optional.ofNullable(dataChannel);
+        return Optional.ofNullable(gameDataChannel != null ? gameDataChannel : dataChannel);
+    }
+
+    /**
+     * Get the control data channel (null if not yet created/received).
+     */
+    public Optional<RTCDataChannel> getControlDataChannel() {
+        return Optional.ofNullable(controlDataChannel);
     }
 
     /**
@@ -561,15 +854,59 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     }
 
     /**
-     * Send data over the data channel.
+     * Send game data asynchronously over the gameData channel.
      */
-    public boolean sendData(byte[] data, boolean isBinary) {
+    public boolean sendGameDataAsync(byte[] data) {
+        RTCDataChannel dc = gameDataChannel != null ? gameDataChannel : dataChannel;
+        return sendDataAsync(dc, data, true, null);
+    }
+
+    /**
+     * Send control data asynchronously over the controlData channel.
+     * If controlData channel is still activating (CONNECTING) and remote is Java adapter,
+     * buffer the packet to be sent as soon as the channel becomes OPEN.
+     */
+    public boolean sendControlDataAsync(byte[] data) {
         if (closed) {
             return false;
         }
-        RTCDataChannel dc = this.dataChannel;
+        RTCDataChannel dc = controlDataChannel;
+        if (dc != null && dc.getState() == RTCDataChannelState.OPEN) {
+            return sendDataAsync(dc, data, true, null);
+        }
+        if (remoteIsJavaAdapter) {
+            pendingControlMessages.offer(data);
+            log.trace("Queued {} bytes of control data while controlData channel is activating", data.length);
+            return true;
+        }
+        return false;
+    }
+
+    private void flushPendingControlMessages() {
+        RTCDataChannel dc = controlDataChannel;
         if (dc == null || dc.getState() != RTCDataChannelState.OPEN) {
-            log.warn("Data channel not open, cannot send data");
+            return;
+        }
+        byte[] msg;
+        int count = 0;
+        while ((msg = pendingControlMessages.poll()) != null) {
+            sendDataAsync(dc, msg, true, null);
+            count++;
+        }
+        if (count > 0) {
+            log.debug("Flushed {} queued control messages over controlData channel", count);
+        }
+    }
+
+    /**
+     * Send data over the data channel.
+     */
+    public boolean sendData(byte[] data, boolean isBinary) {
+        return sendData(gameDataChannel != null ? gameDataChannel : dataChannel, data, isBinary);
+    }
+
+    private boolean sendData(RTCDataChannel dc, byte[] data, boolean isBinary) {
+        if (closed || dc == null || dc.getState() != RTCDataChannelState.OPEN) {
             return false;
         }
         try {
@@ -587,17 +924,21 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Send data asynchronously without blocking calling thread on native WebRTC network thread.
      */
     public boolean sendDataAsync(byte[] data, boolean isBinary) {
-        return sendDataAsync(data, isBinary, null);
+        return sendDataAsync(gameDataChannel != null ? gameDataChannel : dataChannel, data, isBinary, null);
     }
 
     /**
      * Send data asynchronously and report the result via observer.
      */
     public boolean sendDataAsync(byte[] data, boolean isBinary, RTCDataChannelSendObserver observer) {
+        return sendDataAsync(gameDataChannel != null ? gameDataChannel : dataChannel, data, isBinary, observer);
+    }
+
+    private boolean sendDataAsync(
+            RTCDataChannel dc, byte[] data, boolean isBinary, RTCDataChannelSendObserver observer) {
         if (closed) {
             return false;
         }
-        RTCDataChannel dc = this.dataChannel;
         if (dc == null || dc.getState() != RTCDataChannelState.OPEN) {
             log.warn("Data channel not open, cannot send data async");
             return false;
@@ -630,6 +971,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      */
     public void close() {
         RTCDataChannel dc;
+        RTCDataChannel ctrlDc;
         RTCPeerConnection pc;
         synchronized (this) {
             if (closed) {
@@ -638,8 +980,11 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             closed = true;
             stateHandler = null;
             messageHandler = null;
-            dc = this.dataChannel;
+            dc = this.gameDataChannel != null ? this.gameDataChannel : this.dataChannel;
+            this.gameDataChannel = null;
             this.dataChannel = null;
+            ctrlDc = this.controlDataChannel;
+            this.controlDataChannel = null;
             pc = this.peerConnection;
             this.peerConnection = null;
         }
@@ -661,6 +1006,23 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
                 log.warn("Error disposing data channel", e);
             }
         }
+        if (ctrlDc != null) {
+            try {
+                ctrlDc.unregisterObserver();
+            } catch (Throwable e) {
+                log.warn("Error unregistering control data channel observer", e);
+            }
+            try {
+                ctrlDc.close();
+            } catch (Throwable e) {
+                log.warn("Error closing control data channel", e);
+            }
+            try {
+                ctrlDc.dispose();
+            } catch (Throwable e) {
+                log.warn("Error disposing control data channel", e);
+            }
+        }
         if (pc != null) {
             try {
                 pc.close();
@@ -672,7 +1034,13 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             statsFuture.cancel(false);
             statsFuture = null;
         }
+        CountDownLatch gLatch = this.gatheringLatch;
+        if (gLatch != null) {
+            gLatch.countDown();
+        }
+        connectedLatch.countDown();
         pendingCandidates.clear();
+        pendingControlMessages.clear();
         connected = false;
         initialized = false;
         log.info("WebRtcSession closed");
@@ -682,14 +1050,18 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
     @Override
     public void onIceCandidate(RTCIceCandidate candidate) {
+        if (closed) {
+            return;
+        }
         if (candidate != null && candidate.sdp != null) {
             log.debug("ICE candidate gathered: {}:{}:{}", candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
             CandidatePacket packet = CandidateUtil.webRtcCandidateToPacket(candidate.sdp);
             if (packet != null) {
                 gatheredCandidatePackets.add(packet);
             }
-            if (stateHandler != null) {
-                stateHandler.onIceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
+            SessionStateHandler handler = stateHandler;
+            if (handler != null && !closed) {
+                handler.onIceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp);
             }
         } else {
             log.info("ICE candidate gathering completed (null candidate received)");
@@ -702,6 +1074,9 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
 
     @Override
     public void onIceGatheringChange(RTCIceGatheringState state) {
+        if (closed) {
+            return;
+        }
         log.info("ICE gathering state changed: {}", state);
         if (state == RTCIceGatheringState.COMPLETE) {
             CountDownLatch latch = gatheringLatch;
@@ -714,12 +1089,23 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     @Override
     public void onDataChannel(RTCDataChannel dataChannel) {
         log.info("Remote data channel received: label={}", dataChannel.getLabel());
+        if (CHANNEL_CONTROL_DATA.equals(dataChannel.getLabel())) {
+            this.controlDataChannel = dataChannel;
+            dataChannel.registerObserver(new ControlChannelObserver());
+            if (dataChannel.getState() == RTCDataChannelState.OPEN) {
+                flushPendingControlMessages();
+            }
+            return;
+        }
+
+        this.gameDataChannel = dataChannel;
         this.dataChannel = dataChannel;
         stats.setDataChannelLabel(dataChannel.getLabel());
         dataChannel.registerObserver(this);
         if (dataChannel.getState() == RTCDataChannelState.OPEN) {
             connected = true;
             connectedLatch.countDown();
+            checkAndCreateControlChannel();
             SessionStateHandler handler = stateHandler;
             if (handler != null) {
                 handler.onConnected();
@@ -744,7 +1130,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         }
     }
 
-    // ==================== RTCDataChannelObserver ====================
+    // ==================== RTCDataChannelObserver (gameDataChannel) ====================
 
     @Override
     public void onBufferedAmountChange(long sentDataSize) {
@@ -756,7 +1142,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         if (closed) {
             return;
         }
-        RTCDataChannel dc = dataChannel;
+        RTCDataChannel dc = gameDataChannel != null ? gameDataChannel : dataChannel;
         if (dc == null) {
             return;
         }
@@ -765,6 +1151,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         if (state == RTCDataChannelState.OPEN) {
             connected = true;
             connectedLatch.countDown();
+            checkAndCreateControlChannel();
             SessionStateHandler handler = stateHandler;
             if (handler != null && !closed) {
                 handler.onConnected();
@@ -783,34 +1170,82 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         ByteBuffer data = buffer.data;
         byte[] payload = new byte[data.remaining()];
         data.get(payload);
-        log.trace("Data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
+        log.trace("Game data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
         if (messageHandler != null) {
-            messageHandler.onMessage(payload, buffer.binary);
+            String label = gameDataChannel != null
+                    ? gameDataChannel.getLabel()
+                    : (dataChannel != null ? dataChannel.getLabel() : CHANNEL_GAME_DATA);
+            messageHandler.onMessage(label, payload, buffer.binary);
+        }
+    }
+
+    private class ControlChannelObserver implements RTCDataChannelObserver {
+        @Override
+        public void onBufferedAmountChange(long sentDataSize) {
+            log.trace("Control channel buffered amount decreased by {} bytes", sentDataSize);
+        }
+
+        @Override
+        public void onStateChange() {
+            if (closed || controlDataChannel == null) {
+                return;
+            }
+            RTCDataChannelState state = controlDataChannel.getState();
+            log.info("Control data channel state: {}", state);
+            if (state == RTCDataChannelState.OPEN) {
+                flushPendingControlMessages();
+            }
+        }
+
+        @Override
+        public void onMessage(RTCDataChannelBuffer buffer) {
+            ByteBuffer data = buffer.data;
+            byte[] payload = new byte[data.remaining()];
+            data.get(payload);
+            log.trace("Control data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
+            if (messageHandler != null) {
+                messageHandler.onMessage(CHANNEL_CONTROL_DATA, payload, buffer.binary);
+            }
         }
     }
 
     // ==================== Internal Helpers ====================
 
     private void createAnswer() {
+        if (!initialized || closed || peerConnection == null) {
+            log.warn("Cannot create answer: session not initialized or closed");
+            return;
+        }
+
+        RTCPeerConnection pc = peerConnection;
+        if (pc == null || closed) {
+            return;
+        }
+
         AtomicReference<RTCSessionDescription> answerRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        peerConnection.createAnswer(new RTCAnswerOptions(), new CreateSessionDescriptionObserver() {
-            @Override
-            public void onSuccess(RTCSessionDescription description) {
-                answerRef.set(description);
-                latch.countDown();
-            }
-
-            @Override
-            public void onFailure(String error) {
-                log.error("Failed to create answer: {}", error);
-                if (stateHandler != null) {
-                    stateHandler.onError("Failed to create answer: " + error);
+        try {
+            pc.createAnswer(new RTCAnswerOptions(), new CreateSessionDescriptionObserver() {
+                @Override
+                public void onSuccess(RTCSessionDescription description) {
+                    answerRef.set(description);
+                    latch.countDown();
                 }
-                latch.countDown();
-            }
-        });
+
+                @Override
+                public void onFailure(String error) {
+                    log.error("Failed to create answer: {}", error);
+                    if (stateHandler != null) {
+                        stateHandler.onError("Failed to create answer: " + error);
+                    }
+                    latch.countDown();
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to call createAnswer on peer connection", e);
+            return;
+        }
 
         try {
             if (!latch.await(10, TimeUnit.SECONDS)) {
@@ -819,6 +1254,11 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Answer creation interrupted", e);
+        }
+
+        if (closed) {
+            log.warn("Session closed during answer creation");
+            return;
         }
 
         RTCSessionDescription answer = answerRef.get();
@@ -847,31 +1287,53 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             log.warn("Interrupted while waiting for ICE candidate gathering");
         }
 
-        RTCSessionDescription localDesc = peerConnection.getLocalDescription();
+        if (closed) {
+            log.warn("Session closed during candidate gathering for answer");
+            return;
+        }
+
+        RTCPeerConnection currentPc = peerConnection;
+        RTCSessionDescription localDesc = currentPc != null ? currentPc.getLocalDescription() : null;
         String finalSdp = (localDesc != null && localDesc.sdp != null) ? localDesc.sdp : answer.sdp;
         List<CandidatePacket> candidatesCopy = List.copyOf(gatheredCandidatePackets);
 
-        if (stateHandler != null) {
-            stateHandler.onAnswerCreated(finalSdp, candidatesCopy);
+        SessionStateHandler handler = stateHandler;
+        if (handler != null && !closed) {
+            handler.onAnswerCreated(finalSdp, candidatesCopy);
         }
     }
 
     private void setLocalDescription(RTCSessionDescription description, Runnable onSuccess) {
+        if (closed || peerConnection == null) {
+            log.warn("Cannot setLocalDescription: session closed or peerConnection null");
+            return;
+        }
+
+        RTCPeerConnection pc = peerConnection;
+        if (pc == null || closed) {
+            return;
+        }
+
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<String> errorRef = new AtomicReference<>();
 
-        peerConnection.setLocalDescription(description, new SetSessionDescriptionObserver() {
-            @Override
-            public void onSuccess() {
-                latch.countDown();
-            }
+        try {
+            pc.setLocalDescription(description, new SetSessionDescriptionObserver() {
+                @Override
+                public void onSuccess() {
+                    latch.countDown();
+                }
 
-            @Override
-            public void onFailure(String error) {
-                errorRef.set(error);
-                latch.countDown();
-            }
-        });
+                @Override
+                public void onFailure(String error) {
+                    errorRef.set(error);
+                    latch.countDown();
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to call setLocalDescription on peer connection", e);
+            return;
+        }
 
         try {
             if (!latch.await(10, TimeUnit.SECONDS)) {
@@ -880,6 +1342,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("SetLocalDescription interrupted", e);
+        }
+
+        if (closed) {
+            return;
         }
 
         if (errorRef.get() != null) {
@@ -892,21 +1358,36 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     }
 
     private void setRemoteDescription(RTCSessionDescription description, Runnable onSuccess) {
+        if (closed || peerConnection == null) {
+            log.warn("Cannot setRemoteDescription: session closed or peerConnection null");
+            return;
+        }
+
+        RTCPeerConnection pc = peerConnection;
+        if (pc == null || closed) {
+            return;
+        }
+
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<String> errorRef = new AtomicReference<>();
 
-        peerConnection.setRemoteDescription(description, new SetSessionDescriptionObserver() {
-            @Override
-            public void onSuccess() {
-                latch.countDown();
-            }
+        try {
+            pc.setRemoteDescription(description, new SetSessionDescriptionObserver() {
+                @Override
+                public void onSuccess() {
+                    latch.countDown();
+                }
 
-            @Override
-            public void onFailure(String error) {
-                errorRef.set(error);
-                latch.countDown();
-            }
-        });
+                @Override
+                public void onFailure(String error) {
+                    errorRef.set(error);
+                    latch.countDown();
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to call setRemoteDescription on peer connection", e);
+            return;
+        }
 
         try {
             if (!latch.await(10, TimeUnit.SECONDS)) {
@@ -915,6 +1396,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("SetRemoteDescription interrupted", e);
+        }
+
+        if (closed) {
+            return;
         }
 
         if (errorRef.get() != null) {
@@ -929,10 +1414,15 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     }
 
     private synchronized void drainPendingCandidates() {
-        if (peerConnection != null && peerConnection.getRemoteDescription() != null) {
+        RTCPeerConnection pc = peerConnection;
+        if (pc != null && !closed && pc.getRemoteDescription() != null) {
             for (RTCIceCandidate candidate : pendingCandidates) {
                 log.debug("Adding queued ICE candidate: {}:{}", candidate.sdpMid, candidate.sdpMLineIndex);
-                peerConnection.addIceCandidate(candidate);
+                try {
+                    pc.addIceCandidate(candidate);
+                } catch (Throwable t) {
+                    log.warn("Failed to add queued remote ICE candidate: {}", candidate.sdp, t);
+                }
             }
             pendingCandidates.clear();
         }

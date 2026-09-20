@@ -86,6 +86,8 @@ class WebRtcTelemetryAndStatsTest {
         WebRtcSession.SessionStats stats = sessionA.getStats();
         assertNotNull(stats);
         assertEquals("open", stats.getDataChannelState());
+        assertFalse(stats.getDataChannels().isEmpty());
+        assertTrue(stats.getDataChannels().containsKey(WebRtcSession.CHANNEL_GAME_DATA));
         assertTrue(stats.getBytesSent() >= payload.length);
         assertTrue(stats.getMessagesSent() >= 1);
         assertNotNull(stats.getLocalCandidateType());

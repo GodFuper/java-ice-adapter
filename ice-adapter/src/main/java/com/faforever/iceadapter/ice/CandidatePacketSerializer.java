@@ -45,7 +45,9 @@ public class CandidatePacketSerializer extends JsonSerializer<CandidatePacket> {
         if (value.relAddr() != null) {
             gen.writeStringField("relAddr", value.relAddr());
         }
-        gen.writeNumberField("relPort", value.relPort());
+        if (value.adapter() != null) {
+            gen.writeStringField("adapter", value.adapter());
+        }
 
         gen.writeEndObject();
     }

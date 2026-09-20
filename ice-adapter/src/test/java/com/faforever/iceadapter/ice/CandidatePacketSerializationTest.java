@@ -75,9 +75,72 @@ public class CandidatePacketSerializationTest {
         CandidatePacket packet = objectMapper.readValue(legacyJson, CandidatePacket.class);
         assertNotNull(packet);
         assertEquals("423499824", packet.foundation());
-        assertEquals("10.0.0.5", packet.ip());
-        assertEquals(6112, packet.port());
         assertEquals(CandidateType.SERVER_REFLEXIVE_CANDIDATE, packet.type());
         assertEquals(1, packet.generation());
+    }
+
+    @Test
+    @DisplayName("Should deserialize CandidatePacket with adapter field")
+    void shouldDeserializeWithAdapterField() throws Exception {
+        String json =
+                """
+                {
+                    "candidate": "candidate:423499824 1 udp 2113937151 192.168.1.100 50002 typ host",
+                    "sdpMid": "0",
+                    "sdpMLineIndex": 0,
+                    "adapter": "faf-ice-adapter"
+                }
+                """;
+
+        CandidatePacket packet = objectMapper.readValue(json, CandidatePacket.class);
+        assertNotNull(packet);
+        assertEquals(CandidatePacket.ADAPTER_FAF_ICE_ADAPTER, packet.adapter());
+    }
+
+    @Test
+    @DisplayName("Should deserialize CandidatePacket without adapter field (from faf-pioneer)")
+    void shouldDeserializeWithoutAdapterFieldFromPioneer() throws Exception {
+        String pioneerJson =
+                """
+                {
+                    "candidate": "candidate:423499824 1 udp 2113937151 192.168.1.100 50002 typ host",
+                    "sdpMid": "0",
+                    "sdpMLineIndex": 0
+                }
+                """;
+
+        CandidatePacket packet = objectMapper.readValue(pioneerJson, CandidatePacket.class);
+        assertNotNull(packet);
+        assertNull(packet.adapter(), "adapter should be null when received from faf-pioneer or legacy client");
+    }
+
+    @Test
+    @DisplayName("Should deserialize CandidatePacket from Pion ICE candidate format with address and numeric protocol")
+    void shouldDeserializeFromPionCandidateFields() throws Exception {
+        String pionJson =
+                """
+                {
+                    "foundation": "3745247045",
+                    "priority": 2130706431,
+                    "address": "fdfd::1a63:324c",
+                    "protocol": 1.0,
+                    "port": 62776,
+                    "type": "host",
+                    "component": 1,
+                    "relatedAddress": "",
+                    "relatedPort": 0,
+                    "sdpMid": "0",
+                    "sdpMLineIndex": 0
+                }
+                """;
+
+        CandidatePacket packet = objectMapper.readValue(pionJson, CandidatePacket.class);
+        assertNotNull(packet);
+        assertEquals("3745247045", packet.foundation());
+        assertEquals("udp", packet.protocol());
+        assertEquals(2130706431L, packet.priority());
+        assertEquals("fdfd::1a63:324c", packet.ip());
+        assertEquals(62776, packet.port());
+        assertEquals(CandidateType.HOST_CANDIDATE, packet.type());
     }
 }

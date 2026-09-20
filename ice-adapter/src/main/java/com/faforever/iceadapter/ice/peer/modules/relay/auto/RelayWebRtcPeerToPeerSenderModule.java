@@ -1,7 +1,5 @@
 package com.faforever.iceadapter.ice.peer.modules.relay.auto;
 
-import static com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule.COMMAND_ECHO;
-
 import com.faforever.iceadapter.dto.FullRelayMessage;
 import com.faforever.iceadapter.dto.command.CommandBase;
 import com.faforever.iceadapter.ice.IceGameSession;
@@ -21,39 +19,36 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
     }
 
     @Override
-    public void onSendToPeer(Peer peer, byte[] data) {
-
-        if (data[0] == COMMAND_AUTO_RELAY || data[0] == COMMAND_ECHO) {
-            if (peer.isConnected()) {
-                sendViaWebRtc(data);
-            }
-            return;
-        }
-
-        if (peer.isAdditionalPacketForwarding()) {
+    public void onSendGameData(Peer peer, byte[] data) {
+        if (peer.isAdditionalPacketForwarding() && peer.isRemoteJavaAdapter()) {
             if (peer.isConnected() && peer.existBestRelays()) {
-                sendViaWebRtc(data);
+                sendGameDataViaWebRtc(data);
                 trySendRelay(data);
             } else if (peer.isConnected()) {
-                sendViaWebRtc(data);
+                sendGameDataViaWebRtc(data);
             } else if (peer.existBestRelays()) {
                 trySendRelay(data);
             }
             return;
         }
 
-        sendViaWebRtc(data);
+        sendGameDataViaWebRtc(data);
+    }
+
+    @Override
+    public void onSendToPeer(Peer peer, byte[] data) {
+        sendControlDataViaWebRtc(data);
     }
 
     @Override
     public void onSendCommand(Peer peer, CommandBase command, boolean force) {
         byte[] data = command.bytes();
         if (command.isOnlyDirect()) {
-            sendViaWebRtc(data);
+            sendControlDataViaWebRtc(data);
             return;
         }
 
-        sendViaWebRtc(data);
+        sendControlDataViaWebRtc(data);
     }
 
     @Override
@@ -83,7 +78,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
             }
 
             fromMsg.setRelayLastPacketReceived(System.currentTimeMillis());
-            fromMsg.handleData(relayMessage.data());
+            fromMsg.handleGameData(relayMessage.data());
             return;
         }
 
@@ -95,7 +90,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
     }
 
     private void trySendRelay(byte[] data) {
-        if (!isEnabled()) {
+        if (!isEnabled() || !peer.isRemoteJavaAdapter()) {
             return;
         }
 
@@ -124,7 +119,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
         for (Integer id : peer.getBestRelays()) {
             Peer relay = gameSession.getPeer(id).orElse(null);
 
-            if (relay == null || !relay.isConnected() || !relay.isAllowRelay()) {
+            if (relay == null || !relay.isConnected() || !relay.isAllowRelay() || !relay.isRemoteJavaAdapter()) {
                 continue;
             }
             return relay;

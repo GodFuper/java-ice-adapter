@@ -6,6 +6,7 @@ import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.dto.IceServerView;
 import com.faforever.iceadapter.dto.PeerView;
+import com.faforever.iceadapter.dto.WebRtcDataChannelView;
 import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.ice.IceGameSession;
@@ -14,6 +15,8 @@ import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.UIAdapter;
+import com.faforever.iceadapter.webrtc.WebRtcSession;
+import com.faforever.iceadapter.webrtc.WebRtcSession.DataChannelStats;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import javafx.collections.FXCollections;
@@ -29,8 +32,10 @@ public class UIAdapterImpl implements UIAdapter {
 
     private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
     private final Map<Integer, WebRtcPeerView> uiWebRtcPeers = new ConcurrentHashMap<>();
+    private final Map<String, WebRtcDataChannelView> uiDataChannels = new ConcurrentHashMap<>();
     private final ObservableList<PeerView> peerInfoList = FXCollections.observableArrayList();
     private final ObservableList<WebRtcPeerView> webRtcPeerInfoList = FXCollections.observableArrayList();
+    private final ObservableList<WebRtcDataChannelView> webRtcDataChannelsList = FXCollections.observableArrayList();
     private final ObservableList<IceServerView> iceServersList = FXCollections.observableArrayList();
 
     private Optional<IceGameSession> getGameSession() {
@@ -138,6 +143,55 @@ public class UIAdapterImpl implements UIAdapter {
         }
 
         return webRtcPeerInfoList;
+    }
+
+    @Override
+    public ObservableList<WebRtcDataChannelView> getWebRtcDataChannelsList() {
+        Map<Integer, Peer> peers =
+                getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
+
+        Set<String> activeKeys = new HashSet<>();
+        List<WebRtcDataChannelView> currentChannels = new ArrayList<>();
+
+        for (Peer peer : peers.values()) {
+            int peerId = peer.getRemoteId();
+            String login = peer.getRemoteLogin();
+            WebRtcSession session = peer.getWebRtcSession();
+            if (session != null) {
+                Map<String, DataChannelStats> dcStatsMap = session.getStats().getDataChannels();
+                for (Map.Entry<String, DataChannelStats> entry : dcStatsMap.entrySet()) {
+                    String label = entry.getKey();
+                    String key = peerId + ":" + label;
+                    activeKeys.add(key);
+
+                    WebRtcDataChannelView view =
+                            uiDataChannels.computeIfAbsent(key, k -> new WebRtcDataChannelView(peerId, login, label));
+                    view.update(login, entry.getValue());
+                    currentChannels.add(view);
+                }
+            }
+        }
+
+        uiDataChannels.keySet().removeIf(k -> !activeKeys.contains(k));
+
+        boolean structureChanged = webRtcDataChannelsList.size() != currentChannels.size();
+        if (!structureChanged) {
+            for (int i = 0; i < currentChannels.size(); i++) {
+                if (webRtcDataChannelsList.get(i) != currentChannels.get(i)) {
+                    structureChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (structureChanged) {
+            currentChannels.sort(Comparator.comparingInt(
+                            (WebRtcDataChannelView v) -> v.getPeerId().get())
+                    .thenComparing(v -> v.getLabel().get()));
+            webRtcDataChannelsList.setAll(currentChannels);
+        }
+
+        return webRtcDataChannelsList;
     }
 
     @Override
