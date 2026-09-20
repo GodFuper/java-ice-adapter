@@ -44,6 +44,8 @@ import org.junit.jupiter.api.Timeout;
 @DisplayName("WebRTC Pioneer (Go Pion) Live Process Integration Tests")
 class WebRtcPioneerProcessIntegrationTest {
 
+    private static final String FAF_PIONEER_DIR = "temp/faf-pioneer";
+
     public record CandidateDto(String candidate, String sdpMid, int sdpMLineIndex) {}
 
     public record SdpMessageDto(String type, String sdp, List<CandidateDto> candidates) {}
@@ -58,10 +60,10 @@ class WebRtcPioneerProcessIntegrationTest {
     @BeforeAll
     static void findPioneerHarness() {
         List<File> candidates = List.of(
-                new File("../temp/faf-pioneer/direct-harness.exe"),
-                new File("temp/faf-pioneer/direct-harness.exe"),
-                new File("temp/faf-pioneer/direct-harness"),
-                new File("../temp/faf-pioneer/direct-harness"));
+                new File("../" + FAF_PIONEER_DIR + "/direct-harness.exe"),
+                new File(FAF_PIONEER_DIR + "/direct-harness.exe"),
+                new File(FAF_PIONEER_DIR + "/direct-harness"),
+                new File("../" + FAF_PIONEER_DIR + "/direct-harness"));
 
         for (File candidate : candidates) {
             if (candidate.exists() && candidate.canExecute()) {
@@ -73,9 +75,9 @@ class WebRtcPioneerProcessIntegrationTest {
 
         if (pioneerHarnessExe == null) {
             // Attempt to build if go is present
-            File pioneerDir = new File("../temp/faf-pioneer");
+            File pioneerDir = new File("../" + FAF_PIONEER_DIR);
             if (!pioneerDir.exists()) {
-                pioneerDir = new File("temp/faf-pioneer");
+                pioneerDir = new File(FAF_PIONEER_DIR);
             }
             if (pioneerDir.exists()) {
                 try {
