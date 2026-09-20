@@ -339,8 +339,8 @@ public class Peer {
         return invalidPacket.get();
     }
 
-    public void handleData(byte[] data) {
-        event(bus -> bus.onHandleData(this, data));
+    public void handleControlData(byte[] data) {
+        event(bus -> bus.onHandleControlData(this, data));
     }
 
     public void handleGameData(byte[] data) {
@@ -351,8 +351,8 @@ public class Peer {
         event(bus -> bus.onHandleCommand(this, command));
     }
 
-    public void sendToPeer(byte[] data) {
-        event(bus -> bus.onSendToPeer(this, data));
+    public void sendControlData(byte[] data) {
+        event(bus -> bus.onSendControlData(this, data));
     }
 
     public void sendGameData(byte[] data) {

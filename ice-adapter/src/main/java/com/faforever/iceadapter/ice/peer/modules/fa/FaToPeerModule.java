@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class FaToPeerModule implements ModuleBase {
-    public static final char COMMAND_FA = 'd';
     private static final String LOCK_MODULE = "FAListenerModule";
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 

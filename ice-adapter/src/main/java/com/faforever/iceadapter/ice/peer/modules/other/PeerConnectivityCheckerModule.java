@@ -69,13 +69,13 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
     }
 
     @Override
-    public void onHandleData(Peer peer, byte[] data) {
+    public void onHandleControlData(Peer peer, byte[] data) {
         if (data == null || data.length == 0 || data[0] != COMMAND_ECHO) {
             return;
         }
         int length = data.length;
         if (!peer.isLocalOffer()) {
-            peer.sendToPeer(data);
+            peer.sendControlData(data);
         }
         if (length == 9) {
             peer.setLastEcho(Longs.fromByteArray(Arrays.copyOfRange(data, 1, length)));
@@ -137,7 +137,7 @@ public class PeerConnectivityCheckerModule implements ModuleBase, PeerEventListe
         // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
         System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, data, 1, 8);
 
-        peer.sendToPeer(data);
+        peer.sendControlData(data);
 
         long lastPacketReceived = peer.getLastPacketReceived();
         long sinceLastReal = System.currentTimeMillis() - lastPacketReceived;

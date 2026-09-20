@@ -11,6 +11,7 @@ import java.net.UnknownHostException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+
 @Slf4j
 @RequiredArgsConstructor
 public class PeerToFaModule implements ModuleBase, PeerEventListener {
@@ -37,13 +38,6 @@ public class PeerToFaModule implements ModuleBase, PeerEventListener {
         getSocketAndTrySend(data, 0, data.length);
     }
 
-    @Override
-    public void onHandleData(Peer peer, byte[] data) {
-        if (data.length > 0 && data[0] == FaToPeerModule.COMMAND_FA) {
-            int length = data.length;
-            getSocketAndTrySend(data, 1, length - 1);
-        }
-    }
 
     private void getSocketAndTrySend(byte[] data, int offset, int length) {
         DatagramSocket socket = peer.getFaSocket();

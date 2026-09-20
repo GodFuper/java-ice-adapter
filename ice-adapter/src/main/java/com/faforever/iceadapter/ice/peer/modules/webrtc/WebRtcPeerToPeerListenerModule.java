@@ -3,19 +3,19 @@ package com.faforever.iceadapter.ice.peer.modules.webrtc;
 import com.faforever.iceadapter.ice.ModuleBase;
 import com.faforever.iceadapter.ice.peer.Peer;
 import com.faforever.iceadapter.ice.peer.PeerEventListener;
-import com.faforever.iceadapter.ice.peer.modules.fa.FaToPeerModule;
 import com.faforever.iceadapter.ice.peer.modules.other.CommandModule;
 import com.faforever.iceadapter.ice.peer.modules.other.PeerConnectivityCheckerModule;
 import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPeerSenderModule;
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.webrtc.WebRtcSession;
 import java.util.Arrays;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * WebRTC-based peer-to-peer listener module.
  * Replaces PeerToPeerListenerModule when --transport=webrtc is used.
- * Receives data from WebRTC data channel and calls peer.handleData().
+ * Receives data from WebRTC data channel and calls peer.handleControlData() / peer.handleGameData().
  */
 @Slf4j
 public class WebRtcPeerToPeerListenerModule implements ModuleBase, PeerEventListener {
@@ -70,11 +70,10 @@ public class WebRtcPeerToPeerListenerModule implements ModuleBase, PeerEventList
     protected void handleControlData(Peer peer, byte[] data, int length) {
         peer.setLastPacketReceived(System.currentTimeMillis());
 
-        peer.handleData(data);
+        peer.handleControlData(data);
 
         // Log unknown packet types
-        if (data[0] == FaToPeerModule.COMMAND_FA
-                || data[0] == PeerConnectivityCheckerModule.COMMAND_ECHO
+        if (data[0] == PeerConnectivityCheckerModule.COMMAND_ECHO
                 || data[0] == CommandModule.COMMAND_BASE
                 || data[0] == RelayWebRtcPeerToPeerSenderModule.COMMAND_AUTO_RELAY) {
             // Known protocol markers - silent

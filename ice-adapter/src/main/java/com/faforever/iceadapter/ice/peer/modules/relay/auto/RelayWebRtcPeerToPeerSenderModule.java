@@ -36,7 +36,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
     }
 
     @Override
-    public void onSendToPeer(Peer peer, byte[] data) {
+    public void onSendControlData(Peer peer, byte[] data) {
         sendControlDataViaWebRtc(data);
     }
 
@@ -52,7 +52,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
     }
 
     @Override
-    public void onHandleData(Peer peer, byte[] data) {
+    public void onHandleControlData(Peer peer, byte[] data) {
         if (data[0] != COMMAND_AUTO_RELAY) {
             return;
         }
@@ -86,7 +86,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
         if (target == null) {
             return;
         }
-        target.sendToPeer(data);
+        target.sendControlData(data);
     }
 
     private void trySendRelay(byte[] data) {
@@ -102,7 +102,7 @@ public class RelayWebRtcPeerToPeerSenderModule extends WebRtcPeerToPeerSenderMod
 
         FullRelayMessage relayMessage = new FullRelayMessage(peer.getFromId(), peer.getRemoteId(), data);
         byte[] messageBytes = relayMessage.toBytes((byte) COMMAND_AUTO_RELAY);
-        relay.sendToPeer(messageBytes);
+        relay.sendControlData(messageBytes);
     }
 
     private Peer getPeerForRelay() {

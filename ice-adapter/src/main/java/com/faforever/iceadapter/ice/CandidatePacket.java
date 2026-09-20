@@ -1,8 +1,13 @@
 package com.faforever.iceadapter.ice;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * Represents a candidate to be sent/received via IceMessage
  */
+@JsonSerialize(using = CandidatePacketSerializer.class)
+@JsonDeserialize(using = CandidatePacketDeserializer.class)
 public record CandidatePacket(
         String foundation,
         String protocol,

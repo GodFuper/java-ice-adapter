@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObserver {
 
     private static final long GATHER_TIMEOUT_MS = 1500;
+    private static final int MAX_PENDING_CONTROL_MESSAGES = 128;
 
     public static final String CHANNEL_GAME_DATA = "gameData";
     public static final String CHANNEL_CONTROL_DATA = "controlData";
@@ -48,7 +49,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
     @Getter
     private volatile RTCPeerConnection peerConnection;
 
-    private volatile RTCDataChannel dataChannel;
     private volatile RTCDataChannel gameDataChannel;
     private volatile RTCDataChannel controlDataChannel;
     private final Queue<byte[]> pendingControlMessages = new ConcurrentLinkedQueue<>();
@@ -595,7 +595,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             RTCDataChannelInit init = new RTCDataChannelInit();
             init.ordered = true;
             this.gameDataChannel = peerConnection.createDataChannel(label, init);
-            this.dataChannel = this.gameDataChannel;
             this.gameDataChannel.registerObserver(this);
             stats.setDataChannelLabel(label);
             log.info("Created local data channel '{}' for offerer", label);
@@ -836,7 +835,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Get the game data channel (null if not yet created/received).
      */
     public Optional<RTCDataChannel> getDataChannel() {
-        return Optional.ofNullable(gameDataChannel != null ? gameDataChannel : dataChannel);
+        return Optional.ofNullable(gameDataChannel);
     }
 
     /**
@@ -857,8 +856,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Send game data asynchronously over the gameData channel.
      */
     public boolean sendGameDataAsync(byte[] data) {
-        RTCDataChannel dc = gameDataChannel != null ? gameDataChannel : dataChannel;
-        return sendDataAsync(dc, data, true, null);
+        return sendDataAsync(gameDataChannel, data, true, null);
     }
 
     /**
@@ -875,6 +873,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             return sendDataAsync(dc, data, true, null);
         }
         if (remoteIsJavaAdapter) {
+            if (pendingControlMessages.size() >= MAX_PENDING_CONTROL_MESSAGES) {
+                log.warn("pendingControlMessages queue is full ({} messages), dropping control message", MAX_PENDING_CONTROL_MESSAGES);
+                return false;
+            }
             pendingControlMessages.offer(data);
             log.trace("Queued {} bytes of control data while controlData channel is activating", data.length);
             return true;
@@ -902,7 +904,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Send data over the data channel.
      */
     public boolean sendData(byte[] data, boolean isBinary) {
-        return sendData(gameDataChannel != null ? gameDataChannel : dataChannel, data, isBinary);
+        return sendData(gameDataChannel, data, isBinary);
     }
 
     private boolean sendData(RTCDataChannel dc, byte[] data, boolean isBinary) {
@@ -924,14 +926,14 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
      * Send data asynchronously without blocking calling thread on native WebRTC network thread.
      */
     public boolean sendDataAsync(byte[] data, boolean isBinary) {
-        return sendDataAsync(gameDataChannel != null ? gameDataChannel : dataChannel, data, isBinary, null);
+        return sendDataAsync(gameDataChannel, data, isBinary, null);
     }
 
     /**
      * Send data asynchronously and report the result via observer.
      */
     public boolean sendDataAsync(byte[] data, boolean isBinary, RTCDataChannelSendObserver observer) {
-        return sendDataAsync(gameDataChannel != null ? gameDataChannel : dataChannel, data, isBinary, observer);
+        return sendDataAsync(gameDataChannel, data, isBinary, observer);
     }
 
     private boolean sendDataAsync(
@@ -980,9 +982,8 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             closed = true;
             stateHandler = null;
             messageHandler = null;
-            dc = this.gameDataChannel != null ? this.gameDataChannel : this.dataChannel;
+            dc = this.gameDataChannel;
             this.gameDataChannel = null;
-            this.dataChannel = null;
             ctrlDc = this.controlDataChannel;
             this.controlDataChannel = null;
             pc = this.peerConnection;
@@ -1099,7 +1100,6 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         }
 
         this.gameDataChannel = dataChannel;
-        this.dataChannel = dataChannel;
         dataChannel.registerObserver(this);
         if (dataChannel.getState() == RTCDataChannelState.OPEN) {
             connected = true;
@@ -1141,7 +1141,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         if (closed) {
             return;
         }
-        RTCDataChannel dc = gameDataChannel != null ? gameDataChannel : dataChannel;
+        RTCDataChannel dc = gameDataChannel;
         if (dc == null) {
             return;
         }
@@ -1171,9 +1171,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         data.get(payload);
         log.trace("Game data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
         if (messageHandler != null) {
-            String label = gameDataChannel != null
-                    ? gameDataChannel.getLabel()
-                    : (dataChannel != null ? dataChannel.getLabel() : CHANNEL_GAME_DATA);
+            String label = gameDataChannel != null ? gameDataChannel.getLabel() : CHANNEL_GAME_DATA;
             messageHandler.onMessage(label, payload, buffer.binary);
         }
     }

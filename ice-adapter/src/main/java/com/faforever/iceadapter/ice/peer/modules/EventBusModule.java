@@ -58,9 +58,9 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onHandleData(Peer peer, byte[] data) {
-        log.trace("Peer {} handle data. data.length={}", peer.getPeerIdentifier(), data.length);
-        listeners.forEach(l -> callMethod(peer, "onHandleData", () -> l.onHandleData(peer, data)));
+    public void onHandleControlData(Peer peer, byte[] data) {
+        log.trace("Peer {} handle control data. data.length={}", peer.getPeerIdentifier(), data.length);
+        listeners.forEach(l -> callMethod(peer, "onHandleControlData", () -> l.onHandleControlData(peer, data)));
     }
 
     @Override
@@ -87,9 +87,9 @@ public class EventBusModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onSendToPeer(Peer peer, byte[] data) {
-        log.trace("Peer {} onSendToPeer data with length {}", peer.getPeerIdentifier(), data.length);
-        listeners.forEach(l -> callMethod(peer, "onSendToPeer", () -> l.onSendToPeer(peer, data)));
+    public void onSendControlData(Peer peer, byte[] data) {
+        log.trace("Peer {} onSendControlData data with length {}", peer.getPeerIdentifier(), data.length);
+        listeners.forEach(l -> callMethod(peer, "onSendControlData", () -> l.onSendControlData(peer, data)));
     }
 
     @Override

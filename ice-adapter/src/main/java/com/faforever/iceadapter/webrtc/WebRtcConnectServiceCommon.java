@@ -96,7 +96,7 @@ public abstract class WebRtcConnectServiceCommon {
                             .ifPresentOrElse(m -> m.onMessageReceived(channelLabel, data, isBinary), () -> {
                                 if (isBinary) {
                                     if (WebRtcSession.CHANNEL_CONTROL_DATA.equals(channelLabel)) {
-                                        peer.handleData(data);
+                                        peer.handleControlData(data);
                                     } else {
                                         peer.handleGameData(data);
                                     }

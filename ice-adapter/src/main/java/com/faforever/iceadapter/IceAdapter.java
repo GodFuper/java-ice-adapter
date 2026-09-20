@@ -142,8 +142,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
             return;
         }
 
-        boolean calculatedOffer = iceOptions.getId() < remotePlayerId;
-        log.info("onConnectToPeer {} {}, offer: {} (calculated: {})", remotePlayerId, remotePlayerLogin, offer, calculatedOffer);
+        log.info("onConnectToPeer {} {}, offer: {}", remotePlayerId, remotePlayerLogin, offer);
 
         GameSession gs = getGameSession();
         if (gs == null) {
@@ -155,7 +154,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         AllowCombination combination = iceOptions.isForceRelay() ? AllowCombination.RELAY : AllowCombination.ALL;
 
         try {
-            port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, calculatedOffer, 0, combination);
+            port = gs.connectToPeer(remotePlayerLogin, remotePlayerId, offer, 0, combination);
         } catch (RuntimeException e) {
             log.error("connectToPeer failed for {} {}: {}", remotePlayerId, remotePlayerLogin, e.toString());
             return;

@@ -16,13 +16,13 @@ public interface PeerEventListener {
 
     default void onChangeEcho(Peer peer, Long lastEcho, long echo) {}
 
-    default void onHandleData(Peer peer, byte[] data) {}
+    default void onHandleControlData(Peer peer, byte[] data) {}
 
     default void onHandleGameData(Peer peer, byte[] data) {}
 
     default void onHandleCommand(Peer peer, CommandBase command) {}
 
-    default void onSendToPeer(Peer peer, byte[] data) {}
+    default void onSendControlData(Peer peer, byte[] data) {}
 
     default void onSendGameData(Peer peer, byte[] data) {}
 

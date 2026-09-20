@@ -33,7 +33,7 @@ public class WebRtcPeerToPeerSenderModule implements ModuleBase, PeerEventListen
     }
 
     @Override
-    public void onSendToPeer(Peer peer, byte[] data) {
+    public void onSendControlData(Peer peer, byte[] data) {
         sendControlDataViaWebRtc(data);
     }
 

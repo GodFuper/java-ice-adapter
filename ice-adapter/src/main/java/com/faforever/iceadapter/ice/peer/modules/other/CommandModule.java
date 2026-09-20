@@ -21,7 +21,7 @@ public class CommandModule implements ModuleBase, PeerEventListener {
     }
 
     @Override
-    public void onHandleData(Peer p, byte[] data) {
+    public void onHandleControlData(Peer p, byte[] data) {
         if (data[0] != COMMAND_BASE) {
             return;
         }
