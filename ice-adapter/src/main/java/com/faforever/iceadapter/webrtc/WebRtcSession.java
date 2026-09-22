@@ -1,6 +1,7 @@
 package com.faforever.iceadapter.webrtc;
 
 import com.faforever.iceadapter.IceOptions;
+import com.faforever.iceadapter.dto.ControlTrafficStats;
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.IceServer;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
@@ -122,6 +123,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         private volatile double availableIncomingBitrate = 0.0;
 
         private final Map<String, DataChannelStats> dataChannels = new ConcurrentHashMap<>();
+        private final ControlTrafficStats controlTrafficStats = new ControlTrafficStats();
 
         // Fallback fields for backwards compatibility / mock convenience
         private volatile String dataChannelState = null;
@@ -859,6 +861,18 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         return sendDataAsync(gameDataChannel, data, true, null);
     }
 
+    public void recordControlDataSent(byte[] data) {
+        if (data != null && data.length > 0) {
+            stats.getControlTrafficStats().recordSent(data[0], data.length);
+        }
+    }
+
+    public void recordControlDataReceived(byte[] data) {
+        if (data != null && data.length > 0) {
+            stats.getControlTrafficStats().recordReceived(data[0], data.length);
+        }
+    }
+
     /**
      * Send control data asynchronously over the controlData channel.
      * If controlData channel is still activating (CONNECTING) and remote is Java adapter,
@@ -870,7 +884,11 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         }
         RTCDataChannel dc = controlDataChannel;
         if (dc != null && dc.getState() == RTCDataChannelState.OPEN) {
-            return sendDataAsync(dc, data, true, null);
+            boolean sent = sendDataAsync(dc, data, true, null);
+            if (sent) {
+                recordControlDataSent(data);
+            }
+            return sent;
         }
         if (remoteIsJavaAdapter) {
             if (pendingControlMessages.size() >= MAX_PENDING_CONTROL_MESSAGES) {
@@ -892,7 +910,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         byte[] msg;
         int count = 0;
         while ((msg = pendingControlMessages.poll()) != null) {
-            sendDataAsync(dc, msg, true, null);
+            boolean sent = sendDataAsync(dc, msg, true, null);
+            if (sent) {
+                recordControlDataSent(msg);
+            }
             count++;
         }
         if (count > 0) {
@@ -1199,6 +1220,7 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
             ByteBuffer data = buffer.data;
             byte[] payload = new byte[data.remaining()];
             data.get(payload);
+            recordControlDataReceived(payload);
             log.trace("Control data channel message received: {} bytes, binary={}", payload.length, buffer.binary);
             if (messageHandler != null) {
                 messageHandler.onMessage(CHANNEL_CONTROL_DATA, payload, buffer.binary);

@@ -1,6 +1,10 @@
 package com.faforever.iceadapter.services;
 
-import com.faforever.iceadapter.dto.*;
+import com.faforever.iceadapter.dto.ControlTrafficView;
+import com.faforever.iceadapter.dto.IceServerView;
+import com.faforever.iceadapter.dto.PeerView;
+import com.faforever.iceadapter.dto.WebRtcDataChannelView;
+import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import javafx.collections.ObservableList;
 
@@ -100,6 +104,14 @@ public interface UIAdapter {
      * @return observable list of WebRTC data channel view objects
      */
     ObservableList<WebRtcDataChannelView> getWebRtcDataChannelsList();
+
+    /**
+     * Returns an observable list of controlData traffic statistics grouped by message type.
+     *
+     * @param peerId peer remote ID or null/-1 for all peers aggregated
+     * @return observable list of control traffic view objects
+     */
+    ObservableList<ControlTrafficView> getControlTrafficViewList(Integer peerId);
 
     /**
      * Returns an observable list of peer connection details.

@@ -1,12 +1,15 @@
 package com.faforever.iceadapter.ui.controller;
 
+import com.faforever.iceadapter.dto.ControlTrafficView;
 import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.dto.WebRtcDataChannelView;
 import com.faforever.iceadapter.dto.WebRtcPeerView;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
 import com.faforever.iceadapter.services.UIAdapter;
 import com.faforever.iceadapter.ui.IceServerWindow;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -18,6 +21,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -338,6 +342,55 @@ public class WindowController {
     @FXML
     private TableColumn<WebRtcPeerView, String> mTransPacketsDiscardedCol;
 
+    // Control Traffic Tab
+    @FXML
+    private ComboBox<String> controlTrafficPeerComboBox;
+
+    @FXML
+    private ComboBox<String> controlTrafficMetricComboBox;
+
+    @FXML
+    private Label controlTrafficTotalVolumeLabel;
+
+    @FXML
+    private Label controlTrafficTotalMessagesLabel;
+
+    @FXML
+    private Label controlTrafficDominantTypeLabel;
+
+    @FXML
+    private PieChart controlTrafficPieChart;
+
+    @FXML
+    private TableView<ControlTrafficView> controlTrafficTable;
+
+    @FXML
+    private TableColumn<ControlTrafficView, String> ctColType;
+
+    @FXML
+    private TableColumn<ControlTrafficView, String> ctColCode;
+
+    @FXML
+    private TableColumn<ControlTrafficView, String> ctColBytesSent;
+
+    @FXML
+    private TableColumn<ControlTrafficView, String> ctColBytesRecv;
+
+    @FXML
+    private TableColumn<ControlTrafficView, String> ctColTotalBytes;
+
+    @FXML
+    private TableColumn<ControlTrafficView, String> ctColShare;
+
+    @FXML
+    private TableColumn<ControlTrafficView, Long> ctColMsgSent;
+
+    @FXML
+    private TableColumn<ControlTrafficView, Long> ctColMsgRecv;
+
+    @FXML
+    private TableColumn<ControlTrafficView, Long> ctColTotalMsg;
+
     private UIAdapter adapter;
     private ScheduledExecutorService updateScheduler;
 
@@ -474,6 +527,10 @@ public class WindowController {
             SortedList<WebRtcPeerView> sortedTrans = new SortedList<>(webRtcList);
             sortedTrans.comparatorProperty().bind(matrixTransportTable.comparatorProperty());
             matrixTransportTable.setItems(sortedTrans);
+        }
+        if (controlTrafficTable != null) {
+            ObservableList<ControlTrafficView> trafficList = adapter.getControlTrafficViewList(getSelectedControlTrafficPeerId());
+            controlTrafficTable.setItems(trafficList);
         }
     }
 
@@ -760,6 +817,153 @@ public class WindowController {
         mTransPacketsRecvCol.setCellValueFactory(cellData -> cellData.getValue().getPacketsReceived());
         mTransPacketsDiscardedCol.setCellValueFactory(
                 cellData -> cellData.getValue().getPacketsDiscarded());
+
+        setupControlTrafficTab();
+    }
+
+    private void setupControlTrafficTab() {
+        if (controlTrafficMetricComboBox != null) {
+            controlTrafficMetricComboBox.getItems().setAll(
+                    "Total Traffic (Bytes)",
+                    "Bytes Sent",
+                    "Bytes Received",
+                    "Total Messages",
+                    "Messages Sent",
+                    "Messages Received");
+            controlTrafficMetricComboBox.getSelectionModel().selectFirst();
+            controlTrafficMetricComboBox.valueProperty().addListener((obs, oldVal, newVal) -> updateControlTrafficInfo());
+        }
+
+        if (controlTrafficPeerComboBox != null) {
+            controlTrafficPeerComboBox.getItems().setAll("All Peers (Aggregated)");
+            controlTrafficPeerComboBox.getSelectionModel().selectFirst();
+            controlTrafficPeerComboBox.valueProperty().addListener((obs, oldVal, newVal) -> updateControlTrafficInfo());
+        }
+
+        if (controlTrafficTable != null) {
+            ctColType.setCellValueFactory(cellData -> cellData.getValue().getTypeName());
+            ctColCode.setCellValueFactory(cellData -> cellData.getValue().getTypeCode());
+            ctColBytesSent.setCellValueFactory(cellData -> cellData.getValue().getFormattedBytesSent());
+            ctColBytesRecv.setCellValueFactory(cellData -> cellData.getValue().getFormattedBytesReceived());
+            ctColTotalBytes.setCellValueFactory(cellData -> cellData.getValue().getFormattedTotalBytes());
+            ctColShare.setCellValueFactory(cellData -> cellData.getValue().getFormattedSharePercent());
+            ctColMsgSent.setCellValueFactory(cellData -> cellData.getValue().getMessagesSent().asObject());
+            ctColMsgRecv.setCellValueFactory(cellData -> cellData.getValue().getMessagesReceived().asObject());
+            ctColTotalMsg.setCellValueFactory(cellData -> cellData.getValue().getTotalMessages().asObject());
+        }
+
+        if (controlTrafficPieChart != null) {
+            controlTrafficPieChart.setLabelsVisible(true);
+        }
+    }
+
+    private Integer getSelectedControlTrafficPeerId() {
+        if (controlTrafficPeerComboBox == null || controlTrafficPeerComboBox.getValue() == null) {
+            return null;
+        }
+        String selected = controlTrafficPeerComboBox.getValue();
+        if (selected.startsWith("All Peers") || !selected.contains("#")) {
+            return null;
+        }
+        try {
+            int hashIndex = selected.indexOf('#');
+            int spaceIndex = selected.indexOf(' ', hashIndex);
+            String idStr = spaceIndex > hashIndex ? selected.substring(hashIndex + 1, spaceIndex) : selected.substring(hashIndex + 1);
+            return Integer.parseInt(idStr);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void updateControlTrafficPeerList() {
+        if (controlTrafficPeerComboBox == null || adapter == null) {
+            return;
+        }
+        ObservableList<PeerView> peers = adapter.getPeerInfoList();
+        List<String> options = new ArrayList<>();
+        options.add("All Peers (Aggregated)");
+        if (peers != null) {
+            for (PeerView p : peers) {
+                options.add("Peer #" + p.getId().get() + " (" + p.getLogin().get() + ")");
+            }
+        }
+        String currentSelection = controlTrafficPeerComboBox.getValue();
+        if (!options.equals(new ArrayList<>(controlTrafficPeerComboBox.getItems()))) {
+            controlTrafficPeerComboBox.getItems().setAll(options);
+            if (options.contains(currentSelection)) {
+                controlTrafficPeerComboBox.setValue(currentSelection);
+            } else {
+                controlTrafficPeerComboBox.getSelectionModel().selectFirst();
+            }
+        }
+    }
+
+    private void updateControlTrafficInfo() {
+        if (adapter == null || controlTrafficTable == null) {
+            return;
+        }
+        updateControlTrafficPeerList();
+
+        Integer targetPeerId = getSelectedControlTrafficPeerId();
+        ObservableList<ControlTrafficView> trafficList = adapter.getControlTrafficViewList(targetPeerId);
+
+        if (controlTrafficPieChart != null) {
+            String selectedMetric = controlTrafficMetricComboBox != null && controlTrafficMetricComboBox.getValue() != null
+                    ? controlTrafficMetricComboBox.getValue()
+                    : "Total Traffic (Bytes)";
+
+            long maxVal = -1;
+            String dominantType = "-";
+            long grandTotal = 0;
+            long grandMessages = 0;
+
+            ObservableList<PieChart.Data> pieData = controlTrafficPieChart.getData();
+            if (pieData.isEmpty() || pieData.size() != trafficList.size()) {
+                pieData.clear();
+                for (ControlTrafficView view : trafficList) {
+                    pieData.add(new PieChart.Data(view.getTypeName().get(), 0));
+                }
+            }
+
+            for (int i = 0; i < trafficList.size() && i < pieData.size(); i++) {
+                ControlTrafficView view = trafficList.get(i);
+                PieChart.Data slice = pieData.get(i);
+
+                double value = switch (selectedMetric) {
+                    case "Bytes Sent" -> view.getBytesSent().get();
+                    case "Bytes Received" -> view.getBytesReceived().get();
+                    case "Total Messages" -> view.getTotalMessages().get();
+                    case "Messages Sent" -> view.getMessagesSent().get();
+                    case "Messages Received" -> view.getMessagesReceived().get();
+                    default -> view.getTotalBytes().get();
+                };
+
+                long totalBytesForView = view.getTotalBytes().get();
+                if (totalBytesForView > maxVal && totalBytesForView > 0) {
+                    maxVal = totalBytesForView;
+                    dominantType = view.getTypeName().get();
+                }
+
+                grandTotal += totalBytesForView;
+                grandMessages += view.getTotalMessages().get();
+
+                String formattedVal = (selectedMetric.contains("Bytes") || selectedMetric.contains("Traffic"))
+                        ? ControlTrafficView.formatBytes((long) value)
+                        : String.valueOf((long) value);
+                slice.setName(view.getTypeName().get() + " (" + formattedVal + ")");
+                slice.setPieValue(value);
+            }
+
+            if (controlTrafficTotalVolumeLabel != null) {
+                controlTrafficTotalVolumeLabel.setText(ControlTrafficView.formatBytes(grandTotal));
+            }
+            if (controlTrafficTotalMessagesLabel != null) {
+                controlTrafficTotalMessagesLabel.setText(String.valueOf(grandMessages));
+            }
+            if (controlTrafficDominantTypeLabel != null) {
+                controlTrafficDominantTypeLabel.setText(dominantType);
+            }
+        }
     }
 
     @FXML
@@ -1028,6 +1232,7 @@ public class WindowController {
 
         adapter.getWebRtcPeerInfoList();
         adapter.getWebRtcDataChannelsList();
+        updateControlTrafficInfo();
 
         if (mCandLocalAddrCol != null) {
             boolean showIp = adapter.isShowIpAddresses();

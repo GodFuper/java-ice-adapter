@@ -723,3 +723,66 @@
     -fx-padding: 5 8 5 8;
     -fx-font-size: 11px;
 }
+
+/* ==========================================================================
+   PieChart Styling for Control Traffic & Metrics
+   ========================================================================== */
+.chart {
+    -fx-padding: 8px;
+    -fx-background-color: transparent;
+}
+
+.chart-title {
+    -fx-text-fill: -color-text-primary;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.chart-pie-label {
+    -fx-fill: -color-text-secondary;
+    -fx-font-size: 11px;
+}
+
+.chart-pie-label-line {
+    -fx-stroke: -color-border-default;
+    -fx-stroke-width: 1px;
+}
+
+.chart-legend {
+    -fx-background-color: -color-bg-card;
+    -fx-background-radius: 6px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-padding: 6px 12px;
+}
+
+.chart-legend-item {
+    -fx-text-fill: -color-text-primary;
+    -fx-font-size: 11px;
+}
+
+.chart-legend-item-symbol {
+    -fx-background-radius: 3px;
+}
+
+.default-color0.chart-pie {
+    -fx-pie-color: #2b71d9; /* FAF Blue / Echo */
+}
+
+.default-color1.chart-pie {
+    -fx-pie-color: #4caf50; /* Green / Command */
+}
+
+.default-color2.chart-pie {
+    -fx-pie-color: #ff9800; /* Orange / Auto Relay */
+}
+
+.default-color3.chart-pie {
+    -fx-pie-color: #9c27b0; /* Purple / Other */
+}
+
+.default-color4.chart-pie {
+    -fx-pie-color: #00bcd4; /* Cyan */
+}
+

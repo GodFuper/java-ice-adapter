@@ -2,6 +2,7 @@
 
 <?import java.net.URL?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
@@ -443,6 +444,62 @@
                                     <TableColumn fx:id="mTransPacketsDiscardedCol" text="Discarded" prefWidth="95"/>
                                 </columns>
                             </TableView>
+                        </Tab>
+
+                        <!-- Matrix: Control Traffic -->
+                        <Tab text="Control Traffic">
+                            <VBox spacing="10">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
+                                <HBox spacing="15" alignment="CENTER_LEFT">
+                                    <HBox spacing="6" alignment="CENTER_LEFT">
+                                        <Label text="Target Peer:" styleClass="metric-label"/>
+                                        <ComboBox fx:id="controlTrafficPeerComboBox" prefWidth="200"/>
+                                    </HBox>
+                                    <HBox spacing="6" alignment="CENTER_LEFT">
+                                        <Label text="Chart Metric:" styleClass="metric-label"/>
+                                        <ComboBox fx:id="controlTrafficMetricComboBox" prefWidth="180"/>
+                                    </HBox>
+                                    <Region HBox.hgrow="ALWAYS"/>
+                                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                                        <HBox spacing="6" alignment="CENTER_LEFT" styleClass="kpi-card">
+                                            <Label text="Total Volume:" styleClass="kpi-title"/>
+                                            <Label fx:id="controlTrafficTotalVolumeLabel" text="0 B" styleClass="mono-text"/>
+                                        </HBox>
+                                        <HBox spacing="6" alignment="CENTER_LEFT" styleClass="kpi-card">
+                                            <Label text="Total Messages:" styleClass="kpi-title"/>
+                                            <Label fx:id="controlTrafficTotalMessagesLabel" text="0" styleClass="mono-text"/>
+                                        </HBox>
+                                        <HBox spacing="6" alignment="CENTER_LEFT" styleClass="kpi-card">
+                                            <Label text="Dominant:" styleClass="kpi-title"/>
+                                            <Label fx:id="controlTrafficDominantTypeLabel" text="-" styleClass="mono-text"/>
+                                        </HBox>
+                                    </HBox>
+                                </HBox>
+
+                                <SplitPane VBox.vgrow="ALWAYS" dividerPositions="0.45" styleClass="dashboard-split-pane">
+                                    <VBox spacing="6" alignment="CENTER" minWidth="280">
+                                        <PieChart fx:id="controlTrafficPieChart" animated="false" legendVisible="true" legendSide="BOTTOM" VBox.vgrow="ALWAYS"/>
+                                    </VBox>
+                                    <TableView fx:id="controlTrafficTable" editable="false" tableMenuButtonVisible="true" VBox.vgrow="ALWAYS">
+                                        <placeholder>
+                                            <Label text="No control data traffic recorded yet."/>
+                                        </placeholder>
+                                        <columns>
+                                            <TableColumn fx:id="ctColType" text="Message Type" prefWidth="130"/>
+                                            <TableColumn fx:id="ctColCode" text="Protocol Byte" prefWidth="105"/>
+                                            <TableColumn fx:id="ctColBytesSent" text="Bytes Sent" prefWidth="105"/>
+                                            <TableColumn fx:id="ctColBytesRecv" text="Bytes Recv" prefWidth="105"/>
+                                            <TableColumn fx:id="ctColTotalBytes" text="Total Bytes" prefWidth="110"/>
+                                            <TableColumn fx:id="ctColShare" text="Traffic %" prefWidth="80"/>
+                                            <TableColumn fx:id="ctColMsgSent" text="Msg Sent" prefWidth="85"/>
+                                            <TableColumn fx:id="ctColMsgRecv" text="Msg Recv" prefWidth="85"/>
+                                            <TableColumn fx:id="ctColTotalMsg" text="Total Msg" prefWidth="90"/>
+                                        </columns>
+                                    </TableView>
+                                </SplitPane>
+                            </VBox>
                         </Tab>
                     </TabPane>
                 </VBox>

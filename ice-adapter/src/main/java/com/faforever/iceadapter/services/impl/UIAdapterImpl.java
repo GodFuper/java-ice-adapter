@@ -4,6 +4,10 @@ import static com.faforever.iceadapter.debug.Debug.debug;
 
 import com.faforever.iceadapter.IceAdapter;
 import com.faforever.iceadapter.IceOptions;
+import com.faforever.iceadapter.dto.ControlMessageType;
+import com.faforever.iceadapter.dto.ControlTrafficRecord;
+import com.faforever.iceadapter.dto.ControlTrafficStats;
+import com.faforever.iceadapter.dto.ControlTrafficView;
 import com.faforever.iceadapter.dto.IceServerView;
 import com.faforever.iceadapter.dto.PeerView;
 import com.faforever.iceadapter.dto.WebRtcDataChannelView;
@@ -33,10 +37,20 @@ public class UIAdapterImpl implements UIAdapter {
     private final Map<Integer, PeerView> uiPeers = new ConcurrentHashMap<>();
     private final Map<Integer, WebRtcPeerView> uiWebRtcPeers = new ConcurrentHashMap<>();
     private final Map<String, WebRtcDataChannelView> uiDataChannels = new ConcurrentHashMap<>();
+    private final Map<ControlMessageType, ControlTrafficView> uiControlTrafficMap = new EnumMap<>(ControlMessageType.class);
     private final ObservableList<PeerView> peerInfoList = FXCollections.observableArrayList();
     private final ObservableList<WebRtcPeerView> webRtcPeerInfoList = FXCollections.observableArrayList();
     private final ObservableList<WebRtcDataChannelView> webRtcDataChannelsList = FXCollections.observableArrayList();
+    private final ObservableList<ControlTrafficView> controlTrafficViewList = FXCollections.observableArrayList();
     private final ObservableList<IceServerView> iceServersList = FXCollections.observableArrayList();
+
+    {
+        for (ControlMessageType type : ControlMessageType.values()) {
+            ControlTrafficView view = new ControlTrafficView(type);
+            uiControlTrafficMap.put(type, view);
+            controlTrafficViewList.add(view);
+        }
+    }
 
     private Optional<IceGameSession> getGameSession() {
         return Optional.ofNullable(iceAdapter.getGameSession());
@@ -195,6 +209,55 @@ public class UIAdapterImpl implements UIAdapter {
         }
 
         return webRtcDataChannelsList;
+    }
+
+    @Override
+    public ObservableList<ControlTrafficView> getControlTrafficViewList(Integer peerId) {
+        Map<Integer, Peer> peers =
+                getGameSession().map(IceGameSession::getPeers).orElse(Collections.emptyMap());
+
+        long overallTotalBytes = 0;
+        Map<ControlMessageType, long[]> aggregated = new EnumMap<>(ControlMessageType.class);
+        for (ControlMessageType type : ControlMessageType.values()) {
+            aggregated.put(type, new long[4]); // [sentBytes, recvBytes, sentMsgs, recvMsgs]
+        }
+
+        for (Peer peer : peers.values()) {
+            if (peerId != null && peerId != -1 && peer.getRemoteId() != peerId) {
+                continue;
+            }
+            WebRtcSession session = peer.getWebRtcSession();
+            if (session != null) {
+                ControlTrafficStats stats = session.getStats().getControlTrafficStats();
+                if (stats != null) {
+                    for (ControlMessageType type : ControlMessageType.values()) {
+                        ControlTrafficRecord record = stats.getRecord(type);
+                        if (record != null) {
+                            long[] counts = aggregated.get(type);
+                            long sBytes = record.getBytesSentCount();
+                            long rBytes = record.getBytesReceivedCount();
+                            long sMsgs = record.getMessagesSentCount();
+                            long rMsgs = record.getMessagesReceivedCount();
+                            counts[0] += sBytes;
+                            counts[1] += rBytes;
+                            counts[2] += sMsgs;
+                            counts[3] += rMsgs;
+                            overallTotalBytes += (sBytes + rBytes);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (ControlMessageType type : ControlMessageType.values()) {
+            long[] counts = aggregated.get(type);
+            ControlTrafficView view = uiControlTrafficMap.get(type);
+            if (view != null) {
+                view.update(counts[0], counts[1], counts[2], counts[3], overallTotalBytes);
+            }
+        }
+
+        return controlTrafficViewList;
     }
 
     @Override
