@@ -91,12 +91,12 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerSseListenerTest.java`
 
 **Steps:**
-- [ ] Написать failing test `IcebreakerSseListenerTest`:
+- [x] Написать failing test `IcebreakerSseListenerTest`:
   * Открытие потока SSE на mock-сервере, отправка эвентов `connected`, `candidates`, `peerClosing` и проверка вызова коллбэков.
   * Имитация обрыва соединения и проверка автоматического переподключения с exponential backoff.
-- [ ] Реализовать `IcebreakerSseListener` через асинхронный поток `HttpResponse.BodyHandlers.ofLines()`.
-- [ ] Запустить тесты и убедиться в успешном прохождении.
-- [ ] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Реализовать `IcebreakerSseListener` через асинхронный поток `HttpResponse.BodyHandlers.ofLines()`.
+- [x] Запустить тесты и убедиться в успешном прохождении.
+- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
 
 ---
 
