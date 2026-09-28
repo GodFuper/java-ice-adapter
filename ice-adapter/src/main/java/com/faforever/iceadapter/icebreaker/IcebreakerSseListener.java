@@ -38,7 +38,7 @@ public class IcebreakerSseListener implements AutoCloseable {
 
     private final Supplier<String> sessionTokenSupplier;
     private final String hmac;
-    private final Consumer<EventMessageDto> onEvent;
+    private volatile Consumer<EventMessageDto> onEvent;
     private final Consumer<Throwable> onError;
     private final Consumer<Boolean> onConnectionStateChanged;
     private final HttpClient httpClient;
@@ -181,6 +181,10 @@ public class IcebreakerSseListener implements AutoCloseable {
 
     public boolean isConnected() {
         return connected.get();
+    }
+
+    public void setOnEvent(Consumer<EventMessageDto> onEvent) {
+        this.onEvent = onEvent;
     }
 
     public synchronized void start() {

@@ -11,6 +11,7 @@ import com.faforever.iceadapter.ice.peer.PeerModule;
 import com.faforever.iceadapter.ice.peer.modules.webrtc.WebRtcPeerToPeerListenerModule;
 import com.faforever.iceadapter.services.IceAsync;
 import com.faforever.iceadapter.services.MessageService;
+import com.faforever.iceadapter.signaling.SignalingProvider;
 import com.faforever.iceadapter.util.LockUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -82,7 +83,12 @@ public abstract class WebRtcConnectServiceCommon {
         // Set up signaling service
         WebRtcSignalingService signalingService =
                 new WebRtcSignalingService(webRtcSession, peer.getFromId(), peer.getRemoteId());
-        signalingService.setSignalingMessageSender(msg -> sendSignalingViaRpc(peer, msg));
+        SignalingProvider signalingProvider = iceGameSession.getSignalingProvider();
+        if (signalingProvider != null) {
+            signalingService.setSignalingProvider(signalingProvider);
+        } else {
+            signalingService.setSignalingMessageSender(msg -> sendSignalingViaRpc(peer, msg));
+        }
 
         // Set up WebRTC session callbacks
         webRtcSession.init(
@@ -222,12 +228,17 @@ public abstract class WebRtcConnectServiceCommon {
             return;
         }
 
-        // Get and send all pending messages
-        WebRtcSignalingService.SignalingMessageSender sender = msg -> {
-            // Send via RPC
-            sendSignalingViaRpc(peer, msg);
-        };
-        signalingService.setSignalingMessageSender(sender);
+        SignalingProvider signalingProvider = iceGameSession.getSignalingProvider();
+        if (signalingProvider != null) {
+            signalingService.setSignalingProvider(signalingProvider);
+        } else {
+            // Get and send all pending messages
+            WebRtcSignalingService.SignalingMessageSender sender = msg -> {
+                // Send via RPC
+                sendSignalingViaRpc(peer, msg);
+            };
+            signalingService.setSignalingMessageSender(sender);
+        }
         signalingService.flushPendingSignaling();
     }
 

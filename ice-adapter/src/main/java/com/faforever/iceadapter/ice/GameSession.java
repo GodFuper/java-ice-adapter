@@ -13,6 +13,8 @@ import com.faforever.iceadapter.services.MessageService;
 import com.faforever.iceadapter.services.RpcConnection;
 import com.faforever.iceadapter.services.impl.IceAsyncImpl;
 import com.faforever.iceadapter.services.impl.MessageServiceImpl;
+import com.faforever.iceadapter.signaling.RpcSignalingProvider;
+import com.faforever.iceadapter.signaling.SignalingProvider;
 import com.faforever.iceadapter.telemetry.CoturnServer;
 import com.faforever.iceadapter.util.ExecutorHolder;
 import com.faforever.iceadapter.util.Pair;
@@ -53,6 +55,10 @@ public class GameSession implements IceGameSession {
 
     @Getter
     @Setter
+    private SignalingProvider signalingProvider;
+
+    @Getter
+    @Setter
     private volatile boolean gameEnded = false;
 
     // WebRTC fields
@@ -71,6 +77,16 @@ public class GameSession implements IceGameSession {
      */
     public GameSession(
             IceOptions options, WebRtcConnectionFactory webRtcConnectionFactory, RpcConnection rpcConnection) {
+        this(options, webRtcConnectionFactory, rpcConnection, new RpcSignalingProvider(rpcConnection));
+    }
+
+    public GameSession(
+            IceOptions options,
+            WebRtcConnectionFactory webRtcConnectionFactory,
+            RpcConnection rpcConnection,
+            SignalingProvider signalingProvider) {
+        this.signalingProvider =
+                signalingProvider != null ? signalingProvider : new RpcSignalingProvider(rpcConnection);
         init(options);
         this.webRtcConnectionFactory = webRtcConnectionFactory;
 
@@ -138,6 +154,9 @@ public class GameSession implements IceGameSession {
         if (removedPeer != null) {
             removedPeer.close();
             debug().disconnectFromPeer(remotePlayerId);
+            if (signalingProvider != null) {
+                signalingProvider.onPeerDisconnected(remotePlayerId);
+            }
         }
     }
 
@@ -149,6 +168,9 @@ public class GameSession implements IceGameSession {
         peers.values().forEach(Peer::close);
         peers.clear();
         iceServerChecker.stop();
+        if (signalingProvider != null) {
+            signalingProvider.close();
+        }
     }
 
     public List<IceServer> getIceServers() {

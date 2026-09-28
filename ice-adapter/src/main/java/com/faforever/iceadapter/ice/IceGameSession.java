@@ -2,6 +2,7 @@ package com.faforever.iceadapter.ice;
 
 import com.faforever.iceadapter.IceOptions;
 import com.faforever.iceadapter.ice.peer.Peer;
+import com.faforever.iceadapter.signaling.SignalingProvider;
 import com.faforever.iceadapter.webrtc.WebRtcConnectionFactory;
 import java.util.List;
 import java.util.Map;
@@ -22,4 +23,8 @@ public interface IceGameSession {
     IceOptions getOptions();
 
     WebRtcConnectionFactory getWebRtcConnectionFactory();
+
+    default SignalingProvider getSignalingProvider() {
+        return null;
+    }
 }

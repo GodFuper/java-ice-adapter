@@ -2,6 +2,7 @@ package com.faforever.iceadapter.webrtc;
 
 import com.faforever.iceadapter.ice.CandidatePacket;
 import com.faforever.iceadapter.ice.CandidatesMessage;
+import com.faforever.iceadapter.signaling.SignalingProvider;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,10 @@ public class WebRtcSignalingService {
         if (sender != null) {
             flushPendingSignaling();
         }
+    }
+
+    public void setSignalingProvider(SignalingProvider signalingProvider) {
+        setSignalingMessageSender(signalingProvider != null ? signalingProvider::sendSignalingMessage : null);
     }
 
     /**

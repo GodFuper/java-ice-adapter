@@ -111,12 +111,12 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/signaling/IcebreakerSignalingProviderTest.java`
 
 **Steps:**
-- [ ] Написать failing unit-тест `IcebreakerSignalingProviderTest`, проверяющий маршрутизацию сообщений через `IcebreakerHttpClient` и `IcebreakerSseListener`.
-- [ ] Выделить интерфейс `SignalingProvider` и имплементировать существующий RPC-механизм в `RpcSignalingProvider`.
-- [ ] Реализовать `IcebreakerSignalingProvider`, связывающий SSE-события с вызовом `peer.iceMessageFromRPC(...)` и отправку кандидатов через `IcebreakerHttpClient.sendEvent(...)`.
-- [ ] Внедрить детерминированный выбор роли: пир с `localId < remoteId` создает Offer, с `localId > remoteId` отвечает Answer.
-- [ ] Запустить тесты и убедиться в прохождении.
-- [ ] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Написать failing unit-тест `IcebreakerSignalingProviderTest`, проверяющий маршрутизацию сообщений через `IcebreakerHttpClient` и `IcebreakerSseListener`.
+- [x] Выделить интерфейс `SignalingProvider` и имплементировать существующий RPC-механизм в `RpcSignalingProvider`.
+- [x] Реализовать `IcebreakerSignalingProvider`, связывающий SSE-события с вызовом `peer.iceMessageFromRPC(...)` и отправку кандидатов через `IcebreakerHttpClient.sendEvent(...)`.
+- [x] Внедрить детерминированный выбор роли: пир с `localId < remoteId` создает Offer, с `localId > remoteId` отвечает Answer.
+- [x] Запустить тесты и убедиться в прохождении.
+- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
 
 ---
 
