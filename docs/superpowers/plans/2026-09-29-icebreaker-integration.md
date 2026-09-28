@@ -127,11 +127,11 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/IceAdapterArgsTest.java`
 
 **Steps:**
-- [ ] Написать failing test `IceAdapterArgsTest` на разбор флагов `--icebreaker-url`, `--access-token`, `--force-turn-relay`.
-- [ ] Добавить аннотированные `@Option` поля в класс `IceAdapter`.
-- [ ] Добавить ветвление инициализации: если заданы `--icebreaker-url` и `--access-token`, инициализировать и запустить `IcebreakerSignalingProvider`, запросить серверы сессии и зарегистрировать адреса.
-- [ ] Запустить тесты CLI аргументов.
-- [ ] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Написать failing test `IceAdapterArgsTest` на разбор флагов `--icebreaker-url`, `--access-token`, `--force-turn-relay`.
+- [x] Добавить аннотированные `@Option` поля в класс `IceAdapter`.
+- [x] Добавить ветвление инициализации: если заданы `--icebreaker-url` и `--access-token`, инициализировать и запустить `IcebreakerSignalingProvider`, запросить серверы сессии и зарегистрировать адреса.
+- [x] Запустить тесты CLI аргументов.
+- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
 
 ---
 

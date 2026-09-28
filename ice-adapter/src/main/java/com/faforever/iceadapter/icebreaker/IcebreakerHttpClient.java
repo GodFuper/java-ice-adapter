@@ -23,7 +23,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class IcebreakerHttpClient {
+public class IcebreakerHttpClient implements AutoCloseable {
 
     private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_INITIAL_RETRY_DELAY = Duration.ofMillis(100);
@@ -261,6 +261,15 @@ public class IcebreakerHttpClient {
                             new IcebreakerApiException(response.statusCode(), response.body()));
                 })
                 .thenCompose(Function.identity());
+    }
+
+    @Override
+    public void close() {
+        try {
+            httpClient.close();
+        } catch (Exception e) {
+            log.warn("Error closing HttpClient", e);
+        }
     }
 
     private static String normalizeBaseUrl(String url) {

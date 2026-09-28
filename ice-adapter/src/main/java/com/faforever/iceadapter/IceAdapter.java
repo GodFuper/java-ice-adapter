@@ -8,12 +8,20 @@ import com.faforever.iceadapter.gpgnet.GPGNetServer;
 import com.faforever.iceadapter.gpgnet.GameState;
 import com.faforever.iceadapter.ice.GameSession;
 import com.faforever.iceadapter.ice.peer.modules.AllowCombination;
+import com.faforever.iceadapter.icebreaker.IcebreakerHttpClient;
+import com.faforever.iceadapter.icebreaker.IcebreakerSseListener;
+import com.faforever.iceadapter.icebreaker.dto.SessionGameResponse;
 import com.faforever.iceadapter.rpc.RPCService;
 import com.faforever.iceadapter.services.RpcConnection;
 import com.faforever.iceadapter.services.impl.rpc.RpcConnectionImpl;
+import com.faforever.iceadapter.signaling.IcebreakerSignalingProvider;
 import com.faforever.iceadapter.util.TrayIcon;
 import com.faforever.iceadapter.webrtc.WebRtcConnectionFactory;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +49,16 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
     private RPCService rpcService;
 
     @Getter
+    @Setter
     private WebRtcConnectionFactory webRtcConnectionFactory;
+
+    @Getter
+    @Setter
+    private IcebreakerHttpClient icebreakerClient;
+
+    @Getter
+    @Setter
+    private IcebreakerSignalingProvider icebreakerSignalingProvider;
 
     @Getter
     @Setter
@@ -176,7 +193,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         sendToGpgNet("DisconnectFromPeer", remotePlayerId);
     }
 
-    private synchronized GameSession createGameSession() {
+    synchronized GameSession createGameSession() {
         GameSession gs = gameSession;
         if (gs != null) {
             try {
@@ -189,7 +206,80 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
         RpcConnection rpcConnection = new RpcConnectionImpl(rpcService);
         WebRtcConnectionFactory factory =
                 webRtcConnectionFactory != null ? webRtcConnectionFactory : WebRtcConnectionFactory.getInstance();
-        GameSession newGameSession = new GameSession(iceOptions, factory, rpcConnection);
+        GameSession newGameSession;
+
+        if (iceOptions != null && iceOptions.isIcebreakerEnabled()) {
+            if (icebreakerClient == null) {
+                icebreakerClient = new IcebreakerHttpClient(iceOptions.getIcebreakerUrl(), iceOptions.getAccessToken());
+            }
+
+            long gameId = iceOptions.getGameId();
+            int localId = iceOptions.getId();
+
+            try {
+                icebreakerClient.fetchSessionToken(gameId).orTimeout(10, TimeUnit.SECONDS).join();
+            } catch (Exception e) {
+                log.error("Failed to fetch icebreaker session token for game {}", gameId, e);
+                throw (e instanceof RuntimeException re ? re : new RuntimeException(e));
+            }
+
+            try {
+                SessionGameResponse gameSessionResponse = icebreakerClient
+                        .fetchGameSession(gameId)
+                        .orTimeout(10, TimeUnit.SECONDS)
+                        .join();
+                if (gameSessionResponse.forceRelay()) {
+                    iceOptions.setForceRelay(true);
+                }
+                if (gameSessionResponse.servers() != null) {
+                    List<Map<String, Object>> iceServersData = gameSessionResponse.servers().stream()
+                            .map(serverDto -> {
+                                Map<String, Object> map = new HashMap<>();
+                                if (serverDto.urls() != null) {
+                                    map.put("urls", serverDto.urls());
+                                }
+                                if (serverDto.username() != null) {
+                                    map.put("username", serverDto.username());
+                                }
+                                if (serverDto.credential() != null) {
+                                    map.put("credential", serverDto.credential());
+                                }
+                                return map;
+                            })
+                            .toList();
+                    GameSession.setIceServers(iceServersData);
+                }
+            } catch (Exception e) {
+                log.error("Failed to fetch icebreaker game session for game {}", gameId, e);
+                throw (e instanceof RuntimeException re ? re : new RuntimeException(e));
+            }
+
+            icebreakerClient.registerAddresses(gameId).exceptionally(throwable -> {
+                log.warn("Failed to register addresses with icebreaker for game {}", gameId, throwable);
+                return null;
+            });
+
+            if (icebreakerSignalingProvider == null) {
+                IcebreakerSseListener sseListener = new IcebreakerSseListener(
+                        iceOptions.getIcebreakerUrl(),
+                        gameId,
+                        () -> icebreakerClient.getSessionToken(),
+                        icebreakerClient.getHmac().orElse(null),
+                        null);
+                icebreakerSignalingProvider = new IcebreakerSignalingProvider(
+                        gameId,
+                        localId,
+                        icebreakerClient,
+                        sseListener,
+                        () -> this.gameSession);
+            }
+
+            newGameSession = new GameSession(iceOptions, factory, rpcConnection, icebreakerSignalingProvider);
+            newGameSession.setSignalingProvider(icebreakerSignalingProvider);
+            icebreakerSignalingProvider.init();
+        } else {
+            newGameSession = new GameSession(iceOptions, factory, rpcConnection);
+        }
 
         setGameSession(newGameSession);
         return newGameSession;
@@ -209,6 +299,22 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
                 log.warn("Error while closing GAME_SESSION during onFAShutdown", e);
             }
             gameSession = null;
+        }
+        if (icebreakerSignalingProvider != null) {
+            try {
+                icebreakerSignalingProvider.close();
+            } catch (Exception e) {
+                log.warn("Error closing icebreakerSignalingProvider during onFAShutdown", e);
+            }
+            icebreakerSignalingProvider = null;
+        }
+        if (icebreakerClient != null) {
+            try {
+                icebreakerClient.close();
+            } catch (Exception e) {
+                log.warn("Error closing icebreakerClient during onFAShutdown", e);
+            }
+            icebreakerClient = null;
         }
     }
 

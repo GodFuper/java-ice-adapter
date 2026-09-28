@@ -108,8 +108,31 @@ public class IceOptions {
             description = "Enable additional packet forwarding via relay by default for peers")
     private boolean additionalPacketForwarding = true;
 
+    @Option(
+            names = "--icebreaker-url",
+            description = "Base URL of the faf-icebreaker service (e.g. https://api.faforever.com/ice)")
+    private String icebreakerUrl;
+
+    @Option(
+            names = "--access-token",
+            description = "FAF Lobby JWT access token for authentication with icebreaker")
+    private String accessToken;
+
+    @Option(
+            names = "--force-turn-relay",
+            description = "Force WebRTC relay candidates only (alias/flag for icebreaker mode)")
+    private boolean forceTurnRelay;
+
     public boolean isAllowCombination() {
         return showAllowCombination;
+    }
+
+    public boolean isIcebreakerEnabled() {
+        return icebreakerUrl != null && !icebreakerUrl.isBlank() && accessToken != null && !accessToken.isBlank();
+    }
+
+    public boolean isForceRelay() {
+        return forceRelay || forceTurnRelay;
     }
 
     public IceOptions(
@@ -228,6 +251,9 @@ public class IceOptions {
                 showIpAddresses,
                 allowPeerRelay,
                 showAllowCombination,
-                additionalPacketForwarding);
+                additionalPacketForwarding,
+                null,
+                null,
+                false);
     }
 }
