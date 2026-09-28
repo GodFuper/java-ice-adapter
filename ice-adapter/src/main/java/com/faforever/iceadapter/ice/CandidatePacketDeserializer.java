@@ -39,7 +39,8 @@ public class CandidatePacketDeserializer extends JsonDeserializer<CandidatePacke
         }
 
         // Fallback: parse from individual / legacy fields (including Pion ICE candidate format)
-        String foundation = node.hasNonNull("foundation") ? node.get("foundation").asText() : "";
+        String foundation =
+                node.hasNonNull("foundation") ? node.get("foundation").asText() : "";
         String protocol = "udp";
         if (node.hasNonNull("protocol")) {
             JsonNode protoNode = node.get("protocol");
@@ -76,11 +77,11 @@ public class CandidatePacketDeserializer extends JsonDeserializer<CandidatePacke
             String typeStr = node.get("type").asText().trim().toLowerCase();
             type = switch (typeStr) {
                 case "host", "host_candidate", "local", "local_candidate" -> CandidateType.HOST_CANDIDATE;
-                case "srflx", "server_reflexive_candidate", "stun", "stun_candidate" -> CandidateType.SERVER_REFLEXIVE_CANDIDATE;
+                case "srflx", "server_reflexive_candidate", "stun", "stun_candidate" -> CandidateType
+                        .SERVER_REFLEXIVE_CANDIDATE;
                 case "prflx", "peer_reflexive_candidate" -> CandidateType.PEER_REFLEXIVE_CANDIDATE;
                 case "relay", "relayed_candidate" -> CandidateType.RELAYED_CANDIDATE;
-                default -> CandidateType.HOST_CANDIDATE;
-            };
+                default -> CandidateType.HOST_CANDIDATE;};
         }
 
         int generation = node.hasNonNull("generation") ? node.get("generation").asInt() : 0;
@@ -88,7 +89,8 @@ public class CandidatePacketDeserializer extends JsonDeserializer<CandidatePacke
         String relAddr = null;
         if (node.hasNonNull("relAddr") && !node.get("relAddr").asText().isEmpty()) {
             relAddr = node.get("relAddr").asText();
-        } else if (node.hasNonNull("relatedAddress") && !node.get("relatedAddress").asText().isEmpty()) {
+        } else if (node.hasNonNull("relatedAddress")
+                && !node.get("relatedAddress").asText().isEmpty()) {
             relAddr = node.get("relatedAddress").asText();
         }
 

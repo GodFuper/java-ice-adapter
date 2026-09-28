@@ -217,7 +217,10 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
             int localId = iceOptions.getId();
 
             try {
-                icebreakerClient.fetchSessionToken(gameId).orTimeout(10, TimeUnit.SECONDS).join();
+                icebreakerClient
+                        .fetchSessionToken(gameId)
+                        .orTimeout(10, TimeUnit.SECONDS)
+                        .join();
             } catch (Exception e) {
                 log.error("Failed to fetch icebreaker session token for game {}", gameId, e);
                 throw (e instanceof RuntimeException re ? re : new RuntimeException(e));
@@ -267,11 +270,7 @@ public class IceAdapter implements Callable<Integer>, AutoCloseable, FafRpcCallb
                         icebreakerClient.getHmac().orElse(null),
                         null);
                 icebreakerSignalingProvider = new IcebreakerSignalingProvider(
-                        gameId,
-                        localId,
-                        icebreakerClient,
-                        sseListener,
-                        () -> this.gameSession);
+                        gameId, localId, icebreakerClient, sseListener, () -> this.gameSession);
             }
 
             newGameSession = new GameSession(iceOptions, factory, rpcConnection, icebreakerSignalingProvider);

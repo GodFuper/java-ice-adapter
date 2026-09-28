@@ -49,13 +49,14 @@ class IceAdapterArgsTest {
 
     @Test
     void testCliArgsParsingOnAdapter() {
-        new CommandLine(adapter).parseArgs(
-                "--id=42",
-                "--game-id=100",
-                "--login=Player1",
-                "--icebreaker-url=https://icebreaker.faforever.com",
-                "--access-token=jwt-test-token",
-                "--force-turn-relay");
+        new CommandLine(adapter)
+                .parseArgs(
+                        "--id=42",
+                        "--game-id=100",
+                        "--login=Player1",
+                        "--icebreaker-url=https://icebreaker.faforever.com",
+                        "--access-token=jwt-test-token",
+                        "--force-turn-relay");
 
         IceOptions options = adapter.getIceOptions();
         assertNotNull(options);
@@ -72,12 +73,13 @@ class IceAdapterArgsTest {
     @Test
     void testCliArgsParsingDirectlyOnOptions() {
         IceOptions options = new IceOptions();
-        new CommandLine(options).parseArgs(
-                "--id=1",
-                "--game-id=2",
-                "--login=Player",
-                "--icebreaker-url=http://localhost:8080/ice",
-                "--access-token=token123");
+        new CommandLine(options)
+                .parseArgs(
+                        "--id=1",
+                        "--game-id=2",
+                        "--login=Player",
+                        "--icebreaker-url=http://localhost:8080/ice",
+                        "--access-token=token123");
 
         assertEquals("http://localhost:8080/ice", options.getIcebreakerUrl());
         assertEquals("token123", options.getAccessToken());
@@ -164,9 +166,10 @@ class IceAdapterArgsTest {
         assertSame(adapter.getIcebreakerSignalingProvider(), session.getSignalingProvider());
         assertInstanceOf(IcebreakerSignalingProvider.class, session.getSignalingProvider());
 
-        boolean hasTurnServer = session.getIceServers().stream().anyMatch(s -> s.isTurn()
-                && "turnUser".equals(s.getTurnUsername())
-                && "turnPass".equals(s.getTurnCredential()));
+        boolean hasTurnServer = session.getIceServers().stream()
+                .anyMatch(s -> s.isTurn()
+                        && "turnUser".equals(s.getTurnUsername())
+                        && "turnPass".equals(s.getTurnCredential()));
         assertTrue(hasTurnServer, "ICE servers should contain the configured server from icebreaker");
     }
 

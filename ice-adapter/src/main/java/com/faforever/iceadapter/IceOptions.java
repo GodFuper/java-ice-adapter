@@ -113,9 +113,7 @@ public class IceOptions {
             description = "Base URL of the faf-icebreaker service (e.g. https://api.faforever.com/ice)")
     private String icebreakerUrl;
 
-    @Option(
-            names = "--access-token",
-            description = "FAF Lobby JWT access token for authentication with icebreaker")
+    @Option(names = "--access-token", description = "FAF Lobby JWT access token for authentication with icebreaker")
     private String accessToken;
 
     @Option(

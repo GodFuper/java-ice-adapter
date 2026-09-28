@@ -9,7 +9,6 @@ import com.faforever.iceadapter.ice.peer.modules.relay.auto.RelayWebRtcPeerToPee
 import com.faforever.iceadapter.util.DatagramSocketUtils;
 import com.faforever.iceadapter.webrtc.WebRtcSession;
 import java.util.Arrays;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**

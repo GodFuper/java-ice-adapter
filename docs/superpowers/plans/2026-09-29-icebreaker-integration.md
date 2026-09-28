@@ -141,9 +141,9 @@
 - Create: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerIntegrationTest.java`
 
 **Steps:**
-- [ ] Написать E2E тест с двумя инстансами `IceAdapter` (или `WebRtcSession`), соединенными через локальный mock `faf-icebreaker`.
-- [ ] Проверить полный цикл: авторизация, обмен SDP offer/answer через SSE, сбор кандидатов, установление WebRTC DataChannel соединения между пирами.
-- [ ] Проверить graceful shutdown и отправку `peerClosing`.
-- [ ] Запустить полный набор тестов проекта: `.\gradlew test`.
-- [ ] Запустить `.\gradlew spotlessCheck`.
-- [ ] Закоммитить финальные изменения.
+- [x] Написать E2E тест с двумя инстансами `IceAdapter` (или `WebRtcSession`), соединенными через локальный mock `faf-icebreaker`.
+- [x] Проверить полный цикл: авторизация, обмен SDP offer/answer через SSE, сбор кандидатов, установление WebRTC DataChannel соединения между пирами.
+- [x] Проверить graceful shutdown и отправку `peerClosing`.
+- [x] Запустить полный набор тестов проекта: `.\gradlew test`.
+- [x] Запустить `.\gradlew spotlessCheck`.
+- [x] Закоммитить финальные изменения.

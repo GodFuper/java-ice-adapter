@@ -177,7 +177,8 @@ public class UIAdapterImpl implements UIAdapter {
         // Sort BEFORE comparison to get a stable, deterministic order.
         // Without this, ConcurrentHashMap.entrySet() iteration order is non-deterministic,
         // causing spurious structureChanged=true on every tick → setAll() → table flicker.
-        currentChannels.sort(Comparator.comparingInt((WebRtcDataChannelView v) -> v.getPeerId().get())
+        currentChannels.sort(Comparator.comparingInt(
+                        (WebRtcDataChannelView v) -> v.getPeerId().get())
                 .thenComparing(v -> v.getLabel().get()));
 
         boolean structureChanged = webRtcDataChannelsList.size() != currentChannels.size();
