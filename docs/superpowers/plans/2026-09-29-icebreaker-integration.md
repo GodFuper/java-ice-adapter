@@ -72,15 +72,15 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerHttpClientTest.java`
 
 **Steps:**
-- [ ] Создать тестовый HTTP сервер (mock) на базе `com.sun.net.httpserver.HttpServer` в тесте `IcebreakerHttpClientTest`.
-- [ ] Написать failing test:
+- [x] Создать тестовый HTTP сервер (mock) на базе `com.sun.net.httpserver.HttpServer` в тесте `IcebreakerHttpClientTest`.
+- [x] Написать failing test:
   * Проверка вызова `POST /session/token` с передачей `Bearer <token>` и `X-HMAC: <hmac>`.
   * Проверка вызова `GET /session/game/{gameId}` и парсинга серверов.
   * Проверка параллельных вызовов `POST /session/game/{gameId}/addresses` по IPv4 и IPv6.
   * Проверка `POST /session/game/{gameId}/events` с повторными попытками (retry) при временных 5xx ошибках.
-- [ ] Реализовать `IcebreakerHttpClient` с асинхронными методами на базе `CompletableFuture` и `HttpClient`.
-- [ ] Запустить тесты и убедиться в прохождении.
-- [ ] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Реализовать `IcebreakerHttpClient` с асинхронными методами на базе `CompletableFuture` и `HttpClient`.
+- [x] Запустить тесты и убедиться в прохождении.
+- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
 
 ---
 
