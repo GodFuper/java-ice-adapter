@@ -55,13 +55,13 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerMessageConverterTest.java`
 
 **Steps:**
-- [ ] Написать failing test `IcebreakerMessageConverterTest`:
+- [x] Написать failing test `IcebreakerMessageConverterTest`:
   * Конвертация внутреннего `CandidatesMessage` (SDP offer/answer + список `CandidatePacket`) в `EventMessageDto.Candidates`.
   * Обратная конвертация из `EventMessageDto.Candidates` во внутренний `CandidatesMessage`.
-- [ ] Запустить тесты и подтвердить ошибку.
-- [ ] Реализовать `IcebreakerMessageConverter`, учитывающий маппинг типов кандидатов (`host`, `srflx`, `relay`, `prflx`) и форматов SDP.
-- [ ] Запустить тесты и убедиться в успешном прохождении.
-- [ ] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Запустить тесты и подтвердить ошибку.
+- [x] Реализовать `IcebreakerMessageConverter`, учитывающий маппинг типов кандидатов (`host`, `srflx`, `relay`, `prflx`) и форматов SDP.
+- [x] Запустить тесты и убедиться в успешном прохождении.
+- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
 
 ---
 
