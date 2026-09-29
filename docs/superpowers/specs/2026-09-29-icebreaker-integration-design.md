@@ -1,30 +1,30 @@
-# Дизайн-документ: Интеграция faf-ice-adapter с сервером faf-icebreaker
+# Design Document: faf-ice-adapter Integration with faf-icebreaker Server
 
-## 1. Контекст и цели
+## 1. Context and Goals
 
-### 1.1. Контекст
-Исторически `faf-ice-adapter` (Java) взаимодействует с инфраструктурой FAF через промежуточный клиент (FAF Client) посредством локального протокола JSON-RPC 2.0 по TCP. Обмен SDP-офферами, ответами и ICE-кандидатами между пирами транслируется через Python лобби-сервер FAF.
+### 1.1. Context
+Historically, `faf-ice-adapter` (Java) interacts with the FAF infrastructure through an intermediate client (FAF Client) via the local JSON-RPC 2.0 protocol over TCP. The exchange of SDP offers, answers, and ICE candidates between peers is relayed through the Python FAF lobby server.
 
-Новый бэкенд FAForever — **`faf-icebreaker`** (Quarkus/Kotlin) — переносит сигналинг в выделенный сервис (REST API + Server-Sent Events) и централизованно управляет доступом к TURN-серверам и динамическим whitelist Hetzner Cloud Firewall.
+The new FAForever backend — **`faf-icebreaker`** (Quarkus/Kotlin) — moves signaling to a dedicated service (REST API + Server-Sent Events) and centrally manages access to TURN servers and dynamic Hetzner Cloud Firewall whitelisting.
 
-Новый Go-адаптер **`faf-pioneer`** уже работает напрямую с `faf-icebreaker`. Задача — обеспечить полноценную поддержку работы `faf-ice-adapter` с `faf-icebreaker`.
+The new Go adapter **`faf-pioneer`** already works directly with `faf-icebreaker`. The goal is to provide full support for `faf-ice-adapter` to operate with `faf-icebreaker`.
 
-### 1.2. Цели
-1. Реализовать в `faf-ice-adapter` прямой клиент к `faf-icebreaker` по протоколам REST и SSE.
-2. Поддержать получение сессионного токена, списка ICE/TURN-серверов и автоматическую двухстековую (IPv4/IPv6) регистрацию IP-адресов клиента для файрвола Hetzner.
-3. Обеспечить двусторонний обмен WebRTC-сообщениями (`CandidatesMessage`, `ConnectedMessage`, `PeerClosingMessage`) через `faf-icebreaker`.
-4. Сохранить полную обратную совместимость: если параметры `--icebreaker-url` и `--access-token` не переданы, адаптер функционирует в классическом режиме (JSON-RPC от FAF Client).
+### 1.2. Goals
+1. Implement a direct client for `faf-icebreaker` in `faf-ice-adapter` using REST and SSE protocols.
+2. Support retrieving a session token, the list of ICE/TURN servers, and automatic dual-stack (IPv4/IPv6) client IP address registration for the Hetzner firewall.
+3. Enable bidirectional WebRTC message exchange (`CandidatesMessage`, `ConnectedMessage`, `PeerClosingMessage`) via `faf-icebreaker`.
+4. Maintain full backward compatibility: if `--icebreaker-url` and `--access-token` are not provided, the adapter operates in classic mode (JSON-RPC from FAF Client).
 
 ---
 
-## 2. Архитектура решения
+## 2. Solution Architecture
 
 ```mermaid
 flowchart TD
-    subgraph FAF_Infrastructure["Инфраструктура FAF"]
+    subgraph FAF_Infrastructure["FAF Infrastructure"]
         IB["faf-icebreaker (REST / SSE)"]
         HFW["Hetzner Cloud Firewall"]
-        TURN["TURN/STUN Серверы (Coturn / Cloudflare / Xirsys)"]
+        TURN["TURN/STUN Servers (Coturn / Cloudflare / Xirsys)"]
         IB -->|Rules sync| HFW
         HFW -->|Traffic filter| TURN
     end
@@ -56,35 +56,35 @@ flowchart TD
 
 ---
 
-## 3. Компоненты и ответственность
+## 3. Components and Responsibilities
 
-### 3.1. Параметры командной строки (`IceAdapter.java`)
-Добавляются новые опции в Picocli:
-* `--icebreaker-url`: Базовый URL сервиса icebreaker (например, `https://api.faforever.com/ice`).
-* `--access-token`: JWT access token игрока (содержит claim `ext.hmac`).
-* `--force-turn-relay`: Флаг принудительной маршрутизации через TURN (`ICETransportPolicy.RELAY`).
+### 3.1. Command-Line Arguments (`IceAdapter.java`)
+Add new options to Picocli:
+* `--icebreaker-url`: Base URL of the icebreaker service (e.g., `https://api.faforever.com/ice`).
+* `--access-token`: Player's JWT access token (contains the `ext.hmac` claim).
+* `--force-turn-relay`: Flag to force routing through TURN (`ICETransportPolicy.RELAY`).
 
-### 3.2. Клиент icebreaker (`com.faforever.iceadapter.icebreaker`)
-Пакет включает:
+### 3.2. Icebreaker Client (`com.faforever.iceadapter.icebreaker`)
+Package includes:
 * **`IcebreakerClient`**:
-  * Извлечение HMAC-подписи из JWT токена (`extractHmac(accessToken)`) и добавление заголовка `X-HMAC: <hmac>`.
-  * `fetchSessionToken(long gameId)`: обмен access-токена на session-токен через `POST /session/token`.
-  * `fetchGameSession(long gameId)`: получение списка TURN/STUN серверов и параметра `forceRelay` через `GET /session/game/{gameId}`.
-  * `registerAddresses(long gameId)`: параллельные POST-запросы на `/session/game/{gameId}/addresses` по IPv4 и IPv6 для белого списка Hetzner Firewall.
-  * `sendEvent(long gameId, EventMessage message)`: отправка сообщений кандидатов и выхода пира через `POST /session/game/{gameId}/events` с экспоненциальным retry.
+  * Extract HMAC signature from JWT token (`extractHmac(accessToken)`) and add `X-HMAC: <hmac>` header.
+  * `fetchSessionToken(long gameId)`: exchange access token for session token via `POST /session/token`.
+  * `fetchGameSession(long gameId)`: retrieve list of TURN/STUN servers and `forceRelay` parameter via `GET /session/game/{gameId}`.
+  * `registerAddresses(long gameId)`: parallel POST requests to `/session/game/{gameId}/addresses` over IPv4 and IPv6 for Hetzner Firewall whitelisting.
+  * `sendEvent(long gameId, EventMessage message)`: send candidate messages and peer closing notifications via `POST /session/game/{gameId}/events` with exponential retry.
 * **`IcebreakerSseListener`**:
-  * Чтение SSE-потока `GET /session/game/{gameId}/events` с использованием `HttpClient` и `HttpResponse.BodyHandlers.ofLines()`.
-  * Разбор строк `event:` и `data:`, парсинг событий в Jackson.
-  * Автоматический реконнект при обрыве соединения с exponential backoff (1s .. 30s).
-* **Модели данных (`dto`)**:
+  * Read SSE stream `GET /session/game/{gameId}/events` using `HttpClient` and `HttpResponse.BodyHandlers.ofLines()`.
+  * Parse `event:` and `data:` lines, deserialize events using Jackson.
+  * Automatic reconnection on connection drop with exponential backoff (1s .. 30s).
+* **Data Models (`dto`)**:
   * `SessionTokenRequest`, `SessionTokenResponse`.
   * `SessionGameResponse`, `IceServerDto`.
-  * `EventMessage` (интерфейс/record) с типами: `connected`, `candidates`, `peerClosing`.
+  * `EventMessage` (interface/record) with types: `connected`, `candidates`, `peerClosing`.
 
-### 3.3. Преобразование WebRTC сообщений (`IcebreakerMessageConverter`)
-* Внутренний `CandidatesMessage` в `faf-ice-adapter` содержит:
+### 3.3. WebRTC Message Conversion (`IcebreakerMessageConverter`)
+* The internal `CandidatesMessage` in `faf-ice-adapter` contains:
   `int srcId, int destId, String password, String ufrag, List<CandidatePacket> candidates`.
-* В `faf-icebreaker` сообщение `candidates` имеет вид:
+* In `faf-icebreaker`, the `candidates` message structure is:
   ```json
   {
     "eventType": "candidates",
@@ -105,10 +105,10 @@ flowchart TD
     ]
   }
   ```
-* Конвертер преобразует SDP offer/answer и список кандидатов `webrtc-java` в структуру `session` и `candidates` и обратно.
+* The converter transforms the SDP offer/answer and `webrtc-java` candidate list into the `session` and `candidates` structure and vice versa.
 
-### 3.4. Абстракция сигналинга (`SignalingProvider`)
-Вводится интерфейс сигналинга:
+### 3.4. Signaling Abstraction (`SignalingProvider`)
+Introduce a signaling interface:
 ```java
 public interface SignalingProvider {
     void init();
@@ -116,23 +116,23 @@ public interface SignalingProvider {
     void close();
 }
 ```
-* **`RpcSignalingProvider`**: текущая логика через `RPCService.onIceMsg(...)` и RPC `iceMsg`.
-* **`IcebreakerSignalingProvider`**: логика через `IcebreakerClient` (POST) и `IcebreakerSseListener` (SSE).
+* **`RpcSignalingProvider`**: current logic via `RPCService.onIceMsg(...)` and RPC `iceMsg`.
+* **`IcebreakerSignalingProvider`**: logic via `IcebreakerClient` (POST) and `IcebreakerSseListener` (SSE).
 
-### 3.5. Определение ролей (Offerer / Answerer)
-Аналогично `faf-pioneer`, роль офферера определяется детерминированно:
-* Если `localId < remoteId`: локальный пир создает Offer (`isOfferer = true`).
-* Если `localId > remoteId`: локальный пир ожидает Offer и отвечает Answer (`isOfferer = false`).
+### 3.5. Role Determination (Offerer / Answerer)
+Similar to `faf-pioneer`, the offerer role is determined deterministically:
+* If `localId < remoteId`: local peer creates the Offer (`isOfferer = true`).
+* If `localId > remoteId`: local peer waits for the Offer and responds with an Answer (`isOfferer = false`).
 
 ---
 
-## 4. Тестирование и верификация
+## 4. Testing and Verification
 
-1. **Модульные тесты**:
-   * Тестирование извлечения HMAC из JWT.
-   * Сериализация и десериализация DTO и сообщений `EventMessage`.
-   * Тесты конвертера `IcebreakerMessageConverter` (корректность сборки SDP offer/answer и маппинга полей кандидатов).
-2. **Интеграционные тесты с `MockIcebreakerServer`**:
-   * Легковесный mock HTTP-сервер на базе `com.sun.net.httpserver.HttpServer`.
-   * Проверка жизненного цикла: handshake токена, получение серверов, регистрация IP, получение и отправка сообщений через SSE и REST.
-   * Проверка устойчивости SSE к разрывам соединения (reconnect).
+1. **Unit Tests**:
+   * HMAC extraction from JWT.
+   * Serialization and deserialization of DTOs and `EventMessage`.
+   * `IcebreakerMessageConverter` tests (correctness of SDP offer/answer assembly and candidate field mapping).
+2. **Integration Tests with `MockIcebreakerServer`**:
+   * Lightweight mock HTTP server based on `com.sun.net.httpserver.HttpServer`.
+   * Verify lifecycle: token handshake, server list retrieval, IP registration, receiving and sending messages via SSE and REST.
+   * Verify SSE resilience to connection drops (reconnect).

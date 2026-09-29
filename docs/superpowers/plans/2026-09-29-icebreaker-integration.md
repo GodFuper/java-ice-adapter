@@ -1,31 +1,31 @@
-# План реализации: Интеграция faf-ice-adapter с сервером faf-icebreaker
+# Implementation Plan: faf-ice-adapter Integration with faf-icebreaker Server
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Реализовать в `faf-ice-adapter` поддержку прямого взаимодействия с сервером `faf-icebreaker` для получения STUN/TURN серверов, регистрации IP в файрволе Hetzner и обмена WebRTC сигналингом через REST и Server-Sent Events (SSE).
+**Goal:** Implement direct interaction support between `faf-ice-adapter` and the `faf-icebreaker` server to retrieve STUN/TURN servers, register client IP addresses in Hetzner Firewall, and exchange WebRTC signaling via REST and Server-Sent Events (SSE).
 
-**Architecture:** Внедряется модульный HTTP/SSE-клиент `IcebreakerClient` на стандартном Java 21 `HttpClient` и Jackson, абстрагирующий сигналинг через интерфейс `SignalingProvider`. Сохраняется полная обратная совместимость с классическим JSON-RPC режимом: при передаче CLI-флагов `--icebreaker-url` и `--access-token` адаптер автоматически подключается к `faf-icebreaker`, получает ICE-серверы, регистрирует IP-адреса и обрабатывает WebRTC-сообщения по SSE и REST.
+**Architecture:** Introduce a modular HTTP/SSE client `IcebreakerClient` using standard Java 21 `HttpClient` and Jackson, abstracting signaling via the `SignalingProvider` interface. Maintain full backward compatibility with the classic JSON-RPC mode: when `--icebreaker-url` and `--access-token` CLI flags are passed, the adapter automatically connects to `faf-icebreaker`, retrieves ICE servers, registers IP addresses, and processes WebRTC messages over SSE and REST.
 
 **Tech Stack:** Java 21, `java.net.http.HttpClient`, Jackson, `webrtc-java`, JUnit 5, AssertJ, Mockito, Spotless (Palantir Java Format).
 
 **Spec:** [2026-09-29-icebreaker-integration-design.md](file:///C:/Users/User/Desktop/faf/java-ice-adapter-fork/docs/superpowers/specs/2026-09-29-icebreaker-integration-design.md)
 
 ## Global Constraints
-- Использовать только Java 21 стандартные библиотеки сетевого ввода-вывода (`java.net.http.HttpClient`, `CompletableFuture`) без привлечения тяжелых сторонних HTTP-фреймворков.
-- Строго соблюдать правила форматирования Spotless (`.\gradlew spotlessApply`).
-- Избегать FQCN (Fully Qualified Class Names), использовать чистые импорты.
-- Не нарушать обратную совместимость с существующими интеграционными тестами и режимом JSON-RPC.
+- Use only standard Java 21 networking I/O libraries (`java.net.http.HttpClient`, `CompletableFuture`) without introducing heavy external HTTP frameworks.
+- Strictly adhere to Spotless formatting rules (`.\gradlew spotlessApply`).
+- Avoid FQCN (Fully Qualified Class Names), use clean imports.
+- Do not break backward compatibility with existing integration tests and JSON-RPC mode.
 
 ## Review Focus
-1. **Обработка разрывов SSE-соединения:** автореконнект с backoff без потери сообщений и без зависания тредов.
-2. **Параллельная двухстековая регистрация адресов (IPv4 и IPv6):** отсутствие блокировок и корректная обработка ситуаций, когда у клиента нет IPv6.
-3. **Корректность формата `CandidatesMessage`:** строгое соответствие JSON-схеме `faf-icebreaker` (поля `session.type`, `session.sdp`, массив `candidates`).
-4. **Детерминированный выбор роли (Glare handling):** пир с меньшим ID всегда инициирует Offer, пир с большим ID отвечает Answer.
-5. **Изоляция потоков WebRTC:** сетевые вызовы HTTP/SSE не должны блокировать нативные потоки `webrtc-java`.
+1. **Handling SSE Connection Drops:** automatic reconnect with backoff without message loss or thread starvation.
+2. **Parallel Dual-Stack Address Registration (IPv4 and IPv6):** no deadlocks/blocking, gracefully handle environments where client has no IPv6 connectivity.
+3. **`CandidatesMessage` Format Correctness:** strict compliance with `faf-icebreaker` JSON schema (`session.type`, `session.sdp` fields, `candidates` array).
+4. **Deterministic Role Selection (Glare handling):** peer with lower ID always initiates Offer, peer with higher ID responds with Answer.
+5. **WebRTC Thread Isolation:** HTTP/SSE network calls must not block native `webrtc-java` threads.
 
 ---
 
-### Task 1: DTO модели и утилита извлечения HMAC из JWT
+### Task 1: DTO Models and JWT HMAC Extraction Utility
 
 **Files:**
 - Create: `ice-adapter/src/main/java/com/faforever/iceadapter/icebreaker/dto/SessionTokenRequest.java`
@@ -38,69 +38,69 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/dto/EventMessageDtoTest.java`
 
 **Steps:**
-- [x] Написать failing test `HmacExtractorTest`: извлечение `claims.ext.hmac` из валидного JWT токена и обработка токенов без HMAC.
-- [x] Написать failing test `EventMessageDtoTest`: сериализация/десериализация полиморфных событий `connected`, `candidates`, `peerClosing`.
-- [x] Запустить тесты и убедиться в падении (`.\gradlew :ice-adapter:test --tests "com.faforever.iceadapter.icebreaker.*"`).
-- [x] Реализовать `HmacExtractor` (декодирование Base64 payload и чтение через Jackson).
-- [x] Реализовать все DTO-рекорды с аннотациями Jackson.
-- [x] Запустить тесты и убедиться в успешном прохождении.
-- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Write failing test `HmacExtractorTest`: extract `claims.ext.hmac` from a valid JWT token and handle tokens without HMAC.
+- [x] Write failing test `EventMessageDtoTest`: serialization/deserialization of polymorphic events `connected`, `candidates`, `peerClosing`.
+- [x] Run tests and verify failure (`.\gradlew :ice-adapter:test --tests "com.faforever.iceadapter.icebreaker.*"`).
+- [x] Implement `HmacExtractor` (decode Base64 payload and parse via Jackson).
+- [x] Implement all DTO records with Jackson annotations.
+- [x] Run tests and verify they pass.
+- [x] Run `.\gradlew spotlessApply` and commit changes.
 
 ---
 
-### Task 2: Двусторонний конвертер сообщений `IcebreakerMessageConverter`
+### Task 2: Bidirectional Message Converter `IcebreakerMessageConverter`
 
 **Files:**
 - Create: `ice-adapter/src/main/java/com/faforever/iceadapter/icebreaker/IcebreakerMessageConverter.java`
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerMessageConverterTest.java`
 
 **Steps:**
-- [x] Написать failing test `IcebreakerMessageConverterTest`:
-  * Конвертация внутреннего `CandidatesMessage` (SDP offer/answer + список `CandidatePacket`) в `EventMessageDto.Candidates`.
-  * Обратная конвертация из `EventMessageDto.Candidates` во внутренний `CandidatesMessage`.
-- [x] Запустить тесты и подтвердить ошибку.
-- [x] Реализовать `IcebreakerMessageConverter`, учитывающий маппинг типов кандидатов (`host`, `srflx`, `relay`, `prflx`) и форматов SDP.
-- [x] Запустить тесты и убедиться в успешном прохождении.
-- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Write failing test `IcebreakerMessageConverterTest`:
+  * Conversion of internal `CandidatesMessage` (SDP offer/answer + list of `CandidatePacket`) to `EventMessageDto.Candidates`.
+  * Reverse conversion from `EventMessageDto.Candidates` to internal `CandidatesMessage`.
+- [x] Run tests and confirm failure.
+- [x] Implement `IcebreakerMessageConverter`, handling candidate type mapping (`host`, `srflx`, `relay`, `prflx`) and SDP formats.
+- [x] Run tests and verify they pass.
+- [x] Run `.\gradlew spotlessApply` and commit changes.
 
 ---
 
-### Task 3: REST клиент `IcebreakerHttpClient` и регистрация IP-адресов
+### Task 3: REST Client `IcebreakerHttpClient` and IP Address Registration
 
 **Files:**
 - Create: `ice-adapter/src/main/java/com/faforever/iceadapter/icebreaker/IcebreakerHttpClient.java`
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerHttpClientTest.java`
 
 **Steps:**
-- [x] Создать тестовый HTTP сервер (mock) на базе `com.sun.net.httpserver.HttpServer` в тесте `IcebreakerHttpClientTest`.
-- [x] Написать failing test:
-  * Проверка вызова `POST /session/token` с передачей `Bearer <token>` и `X-HMAC: <hmac>`.
-  * Проверка вызова `GET /session/game/{gameId}` и парсинга серверов.
-  * Проверка параллельных вызовов `POST /session/game/{gameId}/addresses` по IPv4 и IPv6.
-  * Проверка `POST /session/game/{gameId}/events` с повторными попытками (retry) при временных 5xx ошибках.
-- [x] Реализовать `IcebreakerHttpClient` с асинхронными методами на базе `CompletableFuture` и `HttpClient`.
-- [x] Запустить тесты и убедиться в прохождении.
-- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Create mock HTTP server based on `com.sun.net.httpserver.HttpServer` in `IcebreakerHttpClientTest`.
+- [x] Write failing test:
+  * Verify `POST /session/token` request with `Bearer <token>` and `X-HMAC: <hmac>`.
+  * Verify `GET /session/game/{gameId}` request and server list parsing.
+  * Verify parallel `POST /session/game/{gameId}/addresses` calls over IPv4 and IPv6.
+  * Verify `POST /session/game/{gameId}/events` with retries on transient 5xx errors.
+- [x] Implement `IcebreakerHttpClient` with asynchronous methods using `CompletableFuture` and `HttpClient`.
+- [x] Run tests and verify they pass.
+- [x] Run `.\gradlew spotlessApply` and commit changes.
 
 ---
 
-### Task 4: SSE-клиент `IcebreakerSseListener` с автореконнектом
+### Task 4: SSE Client `IcebreakerSseListener` with Auto-Reconnect
 
 **Files:**
 - Create: `ice-adapter/src/main/java/com/faforever/iceadapter/icebreaker/IcebreakerSseListener.java`
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerSseListenerTest.java`
 
 **Steps:**
-- [x] Написать failing test `IcebreakerSseListenerTest`:
-  * Открытие потока SSE на mock-сервере, отправка эвентов `connected`, `candidates`, `peerClosing` и проверка вызова коллбэков.
-  * Имитация обрыва соединения и проверка автоматического переподключения с exponential backoff.
-- [x] Реализовать `IcebreakerSseListener` через асинхронный поток `HttpResponse.BodyHandlers.ofLines()`.
-- [x] Запустить тесты и убедиться в успешном прохождении.
-- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Write failing test `IcebreakerSseListenerTest`:
+  * Open SSE stream on mock server, emit `connected`, `candidates`, `peerClosing` events, and verify callback invocation.
+  * Simulate connection drop and verify automatic reconnection with exponential backoff.
+- [x] Implement `IcebreakerSseListener` using asynchronous stream `HttpResponse.BodyHandlers.ofLines()`.
+- [x] Run tests and verify they pass.
+- [x] Run `.\gradlew spotlessApply` and commit changes.
 
 ---
 
-### Task 5: Абстракция `SignalingProvider` и интеграция в `WebRtcSignalingService`
+### Task 5: `SignalingProvider` Abstraction and Integration into `WebRtcSignalingService`
 
 **Files:**
 - Create: `ice-adapter/src/main/java/com/faforever/iceadapter/signaling/SignalingProvider.java`
@@ -111,39 +111,39 @@
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/signaling/IcebreakerSignalingProviderTest.java`
 
 **Steps:**
-- [x] Написать failing unit-тест `IcebreakerSignalingProviderTest`, проверяющий маршрутизацию сообщений через `IcebreakerHttpClient` и `IcebreakerSseListener`.
-- [x] Выделить интерфейс `SignalingProvider` и имплементировать существующий RPC-механизм в `RpcSignalingProvider`.
-- [x] Реализовать `IcebreakerSignalingProvider`, связывающий SSE-события с вызовом `peer.iceMessageFromRPC(...)` и отправку кандидатов через `IcebreakerHttpClient.sendEvent(...)`.
-- [x] Внедрить детерминированный выбор роли: пир с `localId < remoteId` создает Offer, с `localId > remoteId` отвечает Answer.
-- [x] Запустить тесты и убедиться в прохождении.
-- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Write failing unit test `IcebreakerSignalingProviderTest`, verifying message routing via `IcebreakerHttpClient` and `IcebreakerSseListener`.
+- [x] Extract `SignalingProvider` interface and implement existing RPC mechanism in `RpcSignalingProvider`.
+- [x] Implement `IcebreakerSignalingProvider`, connecting SSE events to `peer.iceMessageFromRPC(...)` and candidates dispatch via `IcebreakerHttpClient.sendEvent(...)`.
+- [x] Implement deterministic role selection: peer with `localId < remoteId` creates Offer, peer with `localId > remoteId` responds with Answer.
+- [x] Run tests and verify they pass.
+- [x] Run `.\gradlew spotlessApply` and commit changes.
 
 ---
 
-### Task 6: CLI флаги и запуск в `IceAdapter.java`
+### Task 6: CLI Flags and Startup in `IceAdapter.java`
 
 **Files:**
 - Modify: `ice-adapter/src/main/java/com/faforever/iceadapter/IceAdapter.java`
 - Test: `ice-adapter/src/test/java/com/faforever/iceadapter/IceAdapterArgsTest.java`
 
 **Steps:**
-- [x] Написать failing test `IceAdapterArgsTest` на разбор флагов `--icebreaker-url`, `--access-token`, `--force-turn-relay`.
-- [x] Добавить аннотированные `@Option` поля в класс `IceAdapter`.
-- [x] Добавить ветвление инициализации: если заданы `--icebreaker-url` и `--access-token`, инициализировать и запустить `IcebreakerSignalingProvider`, запросить серверы сессии и зарегистрировать адреса.
-- [x] Запустить тесты CLI аргументов.
-- [x] Запустить `.\gradlew spotlessApply` и закоммитить изменения.
+- [x] Write failing test `IceAdapterArgsTest` for parsing `--icebreaker-url`, `--access-token`, `--force-turn-relay` flags.
+- [x] Add `@Option`-annotated fields to `IceAdapter` class.
+- [x] Add startup branching: if `--icebreaker-url` and `--access-token` are specified, initialize and launch `IcebreakerSignalingProvider`, request session servers, and register addresses.
+- [x] Run CLI argument tests.
+- [x] Run `.\gradlew spotlessApply` and commit changes.
 
 ---
 
-### Task 7: End-to-End интеграционный тест работы с icebreaker
+### Task 7: End-to-End Integration Test for Icebreaker Operation
 
 **Files:**
 - Create: `ice-adapter/src/test/java/com/faforever/iceadapter/icebreaker/IcebreakerIntegrationTest.java`
 
 **Steps:**
-- [x] Написать E2E тест с двумя инстансами `IceAdapter` (или `WebRtcSession`), соединенными через локальный mock `faf-icebreaker`.
-- [x] Проверить полный цикл: авторизация, обмен SDP offer/answer через SSE, сбор кандидатов, установление WebRTC DataChannel соединения между пирами.
-- [x] Проверить graceful shutdown и отправку `peerClosing`.
-- [x] Запустить полный набор тестов проекта: `.\gradlew test`.
-- [x] Запустить `.\gradlew spotlessCheck`.
-- [x] Закоммитить финальные изменения.
+- [x] Write E2E test with two `IceAdapter` (or `WebRtcSession`) instances connected via local mock `faf-icebreaker`.
+- [x] Verify full lifecycle: authorization, SDP offer/answer exchange via SSE, candidate gathering, WebRTC DataChannel connection establishment between peers.
+- [x] Verify graceful shutdown and sending `peerClosing`.
+- [x] Run full project test suite: `.\gradlew test`.
+- [x] Run `.\gradlew spotlessCheck`.
+- [x] Commit final changes.
