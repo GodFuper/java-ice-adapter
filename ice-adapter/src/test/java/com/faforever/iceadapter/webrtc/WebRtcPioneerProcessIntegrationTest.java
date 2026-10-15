@@ -80,7 +80,8 @@ class WebRtcPioneerProcessIntegrationTest {
             if (pioneerDir.exists()) {
                 try {
                     log.info("Attempting to build direct-harness in {}", pioneerDir.getAbsolutePath());
-                    ProcessBuilder pb = new ProcessBuilder("go", "build", "-o", "direct-harness.exe", "./cmd/direct-harness");
+                    ProcessBuilder pb =
+                            new ProcessBuilder("go", "build", "-o", "direct-harness.exe", "./cmd/direct-harness");
                     pb.directory(pioneerDir);
                     Process p = pb.start();
                     boolean finished = p.waitFor(30, TimeUnit.SECONDS);
@@ -136,8 +137,10 @@ class WebRtcPioneerProcessIntegrationTest {
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pioneerProcess = pb.start();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
+        BufferedReader reader =
+                new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
+        BufferedWriter writer =
+                new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
 
         WebRtcConnectionFactory factory = WebRtcConnectionFactory.getInstance();
         assertNotNull(factory.getFactory());
@@ -240,9 +243,13 @@ class WebRtcPioneerProcessIntegrationTest {
         assertTrue(connectedLatch.await(15, TimeUnit.SECONDS), "Session should connect with Pioneer");
         assertTrue(localSession.isConnected(), "localSession must be connected");
         assertFalse(localSession.isRemoteIsJavaAdapter(), "Pioneer must NOT be recognized as Java adapter");
-        assertTrue(localSession.getControlDataChannel().isEmpty(), "No controlData channel should be created for Pioneer");
+        assertTrue(
+                localSession.getControlDataChannel().isEmpty(), "No controlData channel should be created for Pioneer");
         assertTrue(localSession.getDataChannel().isPresent(), "gameData channel must exist");
-        assertEquals(RTCDataChannelState.OPEN, localSession.getDataChannel().get().getState(), "gameData channel must be OPEN");
+        assertEquals(
+                RTCDataChannelState.OPEN,
+                localSession.getDataChannel().get().getState(),
+                "gameData channel must be OPEN");
 
         // Send 50 packets of varying sizes (from 16 to 1400 bytes)
         int numPackets = 50;
@@ -266,7 +273,8 @@ class WebRtcPioneerProcessIntegrationTest {
 
         assertEquals(numPackets, receivedPackets.size(), "All sent packets must be echoed back by Pioneer");
         for (int i = 0; i < numPackets; i++) {
-            assertArrayEquals(sentPackets.get(i), receivedPackets.get(i), "Packet " + i + " payload must match bit-exact");
+            assertArrayEquals(
+                    sentPackets.get(i), receivedPackets.get(i), "Packet " + i + " payload must match bit-exact");
         }
     }
 
@@ -276,12 +284,15 @@ class WebRtcPioneerProcessIntegrationTest {
     void testPioneerOffererToJavaAnswerer() throws Exception {
         Assumptions.assumeTrue(pioneerHarnessExe != null, "Pioneer direct-harness executable must be available");
 
-        ProcessBuilder pb = new ProcessBuilder(pioneerHarnessExe.getAbsolutePath(), "-role=offerer", "-channel=gameData");
+        ProcessBuilder pb =
+                new ProcessBuilder(pioneerHarnessExe.getAbsolutePath(), "-role=offerer", "-channel=gameData");
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pioneerProcess = pb.start();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
+        BufferedReader reader =
+                new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
+        BufferedWriter writer =
+                new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
 
         // Read offer from Pioneer
         String offerLine = reader.readLine();
@@ -366,7 +377,10 @@ class WebRtcPioneerProcessIntegrationTest {
         assertTrue(connectedLatch.await(15, TimeUnit.SECONDS), "Session should connect with Pioneer");
         assertTrue(localSession.isConnected(), "localSession must be connected");
         assertTrue(localSession.getDataChannel().isPresent(), "gameData channel must exist");
-        assertEquals(RTCDataChannelState.OPEN, localSession.getDataChannel().get().getState(), "gameData channel must be OPEN");
+        assertEquals(
+                RTCDataChannelState.OPEN,
+                localSession.getDataChannel().get().getState(),
+                "gameData channel must be OPEN");
 
         // Send 50 packets
         int numPackets = 50;
@@ -398,8 +412,10 @@ class WebRtcPioneerProcessIntegrationTest {
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pioneerProcess = pb.start();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
+        BufferedReader reader =
+                new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
+        BufferedWriter writer =
+                new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
 
         WebRtcConnectionFactory factory = WebRtcConnectionFactory.getInstance();
         localSession = new WebRtcSession(factory);
@@ -465,8 +481,17 @@ class WebRtcPioneerProcessIntegrationTest {
                 CandidatePacket cp = CandidateUtil.webRtcCandidateToPacket(cd.candidate());
                 if (cp != null) {
                     pioneerCandidates.add(new CandidatePacket(
-                            cp.foundation(), cp.protocol(), cp.priority(), cp.ip(), cp.port(),
-                            cp.type(), cp.generation(), cp.id(), cp.relAddr(), cp.relPort(), null));
+                            cp.foundation(),
+                            cp.protocol(),
+                            cp.priority(),
+                            cp.ip(),
+                            cp.port(),
+                            cp.type(),
+                            cp.generation(),
+                            cp.id(),
+                            cp.relAddr(),
+                            cp.relPort(),
+                            null));
                 }
             }
         }
@@ -489,8 +514,11 @@ class WebRtcPioneerProcessIntegrationTest {
 
         long t1 = System.nanoTime();
         double elapsedMs = (t1 - t0) / 1_000_000.0;
-        log.info("Sent and received {} packets with Pioneer in {} ms (avg {} ms/pkt)",
-                totalPackets, String.format("%.2f", elapsedMs), String.format("%.3f", elapsedMs / totalPackets));
+        log.info(
+                "Sent and received {} packets with Pioneer in {} ms (avg {} ms/pkt)",
+                totalPackets,
+                String.format("%.2f", elapsedMs),
+                String.format("%.3f", elapsedMs / totalPackets));
 
         assertEquals(totalPackets, receivedPackets.size(), "All 200 stress test packets must be received with 0% loss");
     }
@@ -505,8 +533,10 @@ class WebRtcPioneerProcessIntegrationTest {
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pioneerProcess = pb.start();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
+        BufferedReader reader =
+                new BufferedReader(new InputStreamReader(pioneerProcess.getInputStream(), StandardCharsets.UTF_8));
+        BufferedWriter writer =
+                new BufferedWriter(new OutputStreamWriter(pioneerProcess.getOutputStream(), StandardCharsets.UTF_8));
 
         faSocket = new InMemoryDatagramSocket();
 
@@ -525,46 +555,61 @@ class WebRtcPioneerProcessIntegrationTest {
                     }
                     SdpMessageDto offerDto = new SdpMessageDto("offer", message.password(), candidateDtos);
 
-                    new Thread(() -> {
-                        try {
-                            writer.write(ObjectMapperUtil.toJson(offerDto));
-                            writer.newLine();
-                            writer.flush();
+                    new Thread(
+                                    () -> {
+                                        try {
+                                            writer.write(ObjectMapperUtil.toJson(offerDto));
+                                            writer.newLine();
+                                            writer.flush();
 
-                            String answerLine = reader.readLine();
-                            assertNotNull(answerLine, "Pioneer must answer offer");
-                            SdpMessageDto answerDto = ObjectMapperUtil.fromJson(answerLine, SdpMessageDto.class);
+                                            String answerLine = reader.readLine();
+                                            assertNotNull(answerLine, "Pioneer must answer offer");
+                                            SdpMessageDto answerDto =
+                                                    ObjectMapperUtil.fromJson(answerLine, SdpMessageDto.class);
 
-                            List<CandidatePacket> pioneerCandidates = new ArrayList<>();
-                            if (answerDto.candidates() != null) {
-                                for (CandidateDto cd : answerDto.candidates()) {
-                                    CandidatePacket cp = CandidateUtil.webRtcCandidateToPacket(cd.candidate());
-                                    if (cp != null) {
-                                        pioneerCandidates.add(new CandidatePacket(
-                                                cp.foundation(), cp.protocol(), cp.priority(), cp.ip(), cp.port(),
-                                                cp.type(), cp.generation(), cp.id(), cp.relAddr(), cp.relPort(), null));
-                                    }
-                                }
-                            }
+                                            List<CandidatePacket> pioneerCandidates = new ArrayList<>();
+                                            if (answerDto.candidates() != null) {
+                                                for (CandidateDto cd : answerDto.candidates()) {
+                                                    CandidatePacket cp =
+                                                            CandidateUtil.webRtcCandidateToPacket(cd.candidate());
+                                                    if (cp != null) {
+                                                        pioneerCandidates.add(new CandidatePacket(
+                                                                cp.foundation(),
+                                                                cp.protocol(),
+                                                                cp.priority(),
+                                                                cp.ip(),
+                                                                cp.port(),
+                                                                cp.type(),
+                                                                cp.generation(),
+                                                                cp.id(),
+                                                                cp.relAddr(),
+                                                                cp.relPort(),
+                                                                null));
+                                                    }
+                                                }
+                                            }
 
-                            CandidatesMessage answerMsg = new CandidatesMessage(
-                                    2, 1, answerDto.sdp(), "answer", pioneerCandidates);
+                                            CandidatesMessage answerMsg = new CandidatesMessage(
+                                                    2, 1, answerDto.sdp(), "answer", pioneerCandidates);
 
-                            Peer target = peerRef.get();
-                            if (target != null) {
-                                target.iceMessageFromRPC(answerMsg);
-                            }
-                        } catch (IOException e) {
-                            fail("RPC interaction with Pioneer failed: " + e.getMessage());
-                        }
-                    }, "Pioneer-RPC-Bridge").start();
+                                            Peer target = peerRef.get();
+                                            if (target != null) {
+                                                target.iceMessageFromRPC(answerMsg);
+                                            }
+                                        } catch (IOException e) {
+                                            fail("RPC interaction with Pioneer failed: " + e.getMessage());
+                                        }
+                                    },
+                                    "Pioneer-RPC-Bridge")
+                            .start();
                 } else {
                     super.sendToRpc(message);
                 }
             }
         };
 
-        IceOptions options = new IceOptions(1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, false, true);
+        IceOptions options =
+                new IceOptions(1, 0, "PlayerA", 0, 0, 0, false, false, false, 0, 0, 250.0, null, true, false, true);
         gameSession = new TestGameSession(rpcBus, options, Set.of(PeerModule.CONNECTION_CHECKER_MODULE));
         gameSession.setLobbyPort(faSocket.getLocalPort());
 
@@ -599,7 +644,8 @@ class WebRtcPioneerProcessIntegrationTest {
 
         // Wait for echoed packets to arrive back at FA socket
         deadline = System.currentTimeMillis() + 5000;
-        while (System.currentTimeMillis() < deadline && faSocket.getReceivedBytes().size() < numPackets) {
+        while (System.currentTimeMillis() < deadline
+                && faSocket.getReceivedBytes().size() < numPackets) {
             Thread.sleep(20);
         }
 

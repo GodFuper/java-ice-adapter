@@ -92,10 +92,7 @@ public class RelayBestRttPeerCheckerModule implements ModuleBase, PeerEventListe
         Set<Integer> idsForSend = allPeers.entrySet().stream()
                 .filter(entry -> {
                     Peer p = entry.getValue();
-                    return !p.isClosing()
-                            && p.isConnected()
-                            && p.isRemoteJavaAdapter()
-                            && !Objects.equals(peer, p);
+                    return !p.isClosing() && p.isConnected() && p.isRemoteJavaAdapter() && !Objects.equals(peer, p);
                 })
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());

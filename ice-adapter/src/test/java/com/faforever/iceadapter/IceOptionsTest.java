@@ -170,9 +170,9 @@ class IceOptionsTest {
     }
 
     @Test
-    void testDefaultAdditionalPacketForwardingIsTrue() {
+    void testDefaultAdditionalPacketForwardingIsFalse() {
         IceOptions options = new IceOptions();
-        assertTrue(options.isAdditionalPacketForwarding());
+        assertFalse(options.isAdditionalPacketForwarding());
     }
 
     @Test

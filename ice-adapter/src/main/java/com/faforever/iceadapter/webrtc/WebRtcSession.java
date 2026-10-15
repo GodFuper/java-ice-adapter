@@ -246,12 +246,10 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         try {
             try {
                 if (pc.getConnectionState() != null) {
-                    stats.setPeerConnectionState(
-                            pc.getConnectionState().toString());
+                    stats.setPeerConnectionState(pc.getConnectionState().toString());
                 }
                 if (pc.getIceConnectionState() != null) {
-                    stats.setIceConnectionState(
-                            pc.getIceConnectionState().toString());
+                    stats.setIceConnectionState(pc.getIceConnectionState().toString());
                 }
             } catch (Exception ignored) {
             }
@@ -874,7 +872,9 @@ public class WebRtcSession implements PeerConnectionObserver, RTCDataChannelObse
         }
         if (remoteIsJavaAdapter) {
             if (pendingControlMessages.size() >= MAX_PENDING_CONTROL_MESSAGES) {
-                log.warn("pendingControlMessages queue is full ({} messages), dropping control message", MAX_PENDING_CONTROL_MESSAGES);
+                log.warn(
+                        "pendingControlMessages queue is full ({} messages), dropping control message",
+                        MAX_PENDING_CONTROL_MESSAGES);
                 return false;
             }
             pendingControlMessages.offer(data);

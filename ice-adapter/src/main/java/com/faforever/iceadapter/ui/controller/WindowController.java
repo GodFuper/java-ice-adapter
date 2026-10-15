@@ -725,7 +725,8 @@ public class WindowController {
                     var items = getTableView() != null ? getTableView().getItems() : null;
                     if (index > 0 && items != null && index < items.size()) {
                         WebRtcDataChannelView prev = items.get(index - 1);
-                        if (prev != null && prev.getPeerId().get() != item.getPeerId().get()) {
+                        if (prev != null
+                                && prev.getPeerId().get() != item.getPeerId().get()) {
                             needsTopBorder = true;
                         }
                     }
